@@ -1,2 +1,13 @@
 export PS1="\\w:\$(git branch 2>/dev/null | grep '^*' | colrm 1 2)\$ "
-alias todo="python /home/peterbraden/repositories/all-that-stuff/scripts/todo.py -f /home/peterbraden/repositories/web/todo.json"
+
+alias vi=vim
+alias gp='git pull'
+alias gd='git diff'
+alias gca='git commit -a'
+
+function psgrep() {
+EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
+ps aux | grep $EXP
+}
+
+
