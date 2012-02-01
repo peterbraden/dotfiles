@@ -25,7 +25,8 @@
     ./install.sh
 
 
- ## Install Node ##
+
+ ## Install Node
  
     git clone https://github.com/joyent/node.git && cd node
     ./configure
