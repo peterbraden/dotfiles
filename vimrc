@@ -29,7 +29,6 @@ set scrolloff=3                                                 " Keep 3 lines b
 set ruler                                                               " line numbers and column the cursor is on
 set number                                                              " Show line numbering
 set numberwidth=1                                               " Use 1 col + 1 space for numbers
-colorscheme tango                                       " Use tango colors
 
 " tab labels show the filename without path(tail)
 set guitablabel=%N/\ %t\ %M
