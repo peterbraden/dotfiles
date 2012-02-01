@@ -35,7 +35,7 @@ directory_name(){
   echo "%{$fg_bold[green]%}%~${reset_color%}"
 }
 
-export PROMPT="$(directory_name):$(git_dirty)\$"  
+
 
 
 function precmd() {
@@ -53,6 +53,10 @@ function precmd() {
     print -Pn "\e]2;$2\a" # plain xterm title ($3 for pwd)
     ;;
   esac
+
+  export PROMPT="$(directory_name):$(git_dirty)\$"  
+
+
 }
 
 
@@ -73,3 +77,8 @@ SAVEHIST=1000
 setopt   appendhistory
 setopt   incappendhistory
 setopt histignorealldups
+setopt EXTENDED_HISTORY
+
+
+
+source $HOME/.profile
