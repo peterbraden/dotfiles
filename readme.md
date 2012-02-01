@@ -8,6 +8,7 @@
 - Flux: http://stereopsis.com/flux/
 - Sublime text
 
+
     sudo ln -s "/Applications/Sublime Text 2.app/Contents/SharedSupport/bin/subl" /usr/bin/subl
 
 
@@ -26,7 +27,7 @@
 
 
 
- ## Install Node
+## Install Node
  
     git clone https://github.com/joyent/node.git && cd node
     ./configure
