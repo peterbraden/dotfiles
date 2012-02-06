@@ -32,7 +32,7 @@ git_prompt_info () {
 
 
 directory_name(){
-  echo "%{$fg_bold[green]%}%~${reset_color%}"
+  echo "%{$fg_bold[green]%}%~%{${reset_color%}%}"
 }
 
 
@@ -54,8 +54,7 @@ function precmd() {
     ;;
   esac
 
-  export PROMPT="$(directory_name):$(git_dirty)\$"  
-
+export PROMPT="$(directory_name):$(git_dirty)$ "
 
 }
 
@@ -82,3 +81,7 @@ setopt EXTENDED_HISTORY
 
 
 source $HOME/.profile
+
+
+autoload -Uz compinit
+compinit
