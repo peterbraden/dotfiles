@@ -53,10 +53,11 @@ set vb t_vb=                                                    " Disable visual
 set backspace=2                                                 " Backspace over anything! (Super backspace!)
 set showmatch                                                   " Briefly jump to the previous matching paren
 set matchtime=2                                                 " For .2 seconds
-set formatoptions-=tc                                   " I can format for myself, thank you very much
-set tabstop=4                                                   " Tab stop of 4
-set shiftwidth=4                                                " sw 4 spaces (used on auto indent)
-"set softtabstop=4                                              " 4 spaces as a tab for bs/del
+set formatoptions-=tc                                           " I can format for myself, thank you very much
+set expandtab                                                   " Use soft tabs
+set tabstop=2                                                   " Tab stop of 2
+set shiftwidth=2                                                " sw 2 spaces (used on auto indent)
+set softtabstop=2                                               " 2 spaces as a tab for bs/del
 set autoindent
 
 
