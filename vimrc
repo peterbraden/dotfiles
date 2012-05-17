@@ -1,5 +1,3 @@
-" Author: John Anderson (sontek@gmail.com)
-
 " Don't load plugins if we aren't in Vim7
 if version < 700
        set noloadplugins
@@ -192,7 +190,6 @@ function! EatChar(pat)
        return (c =~ a:pat) ? '' : c
 endfunc
 
-iabbr _me John M. Anderson (sontek@gmail.com)<C-R>=EatChar('\s')<CR>
 iabbr _t  <C-R>=strftime("%H:%M:%S")<CR><C-R>=EatChar('\s')<CR>
 iabbr _d  <C-R>=strftime("%a, %d %b %Y")<CR><C-R>=EatChar('\s')<CR>
 iabbr _dt <C-R>=strftime("%a, %d %b %Y %H:%M:%S %z")<CR><C-R>=EatChar('\s')<CR>
