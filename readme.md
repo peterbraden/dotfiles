@@ -3,6 +3,7 @@
 
 - Visor: http://totalterminal.binaryage.com/
 - Git: http://git-scm.com/download
+- Iterm: http://www.iterm2.com/#/section/home
 - Firefox: http://www.mozilla.org/en-US/firefox/channel/
 - Evernote: http://www.evernote.com/
 - Flux: http://stereopsis.com/flux/
