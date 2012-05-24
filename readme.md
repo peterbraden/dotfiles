@@ -27,14 +27,3 @@
     ./install.sh
 
 
-
-## Install Node
- 
-    git clone https://github.com/joyent/node.git && cd node
-    ./configure
-    make
-    sudo make install
-    cd ..
-    git clone https://github.com/isaacs/npm.git && cd npm
-    make
-    sudo make install
