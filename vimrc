@@ -63,7 +63,7 @@ set autoindent
 set encoding=utf-8
 
 
-set undofile
+"set undofile
 
 " we don't want to edit these type of files
 set wildignore=*.o,*.obj,*.bak,*.exe,*.pyc,*.swp
