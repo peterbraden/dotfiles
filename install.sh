@@ -5,6 +5,6 @@ ln -s $DOTPATH/profile ~/.profile
 ln -s $DOTPATH/screenrc ~/.screenrc
 ln -s $DOTPATH/vimrc ~/.vimrc
 ln -s $DOTPATH/zshrc ~/.zshrc
-
+ln -s $DOTPATH/vim ~/.vim
 
 chsh -s /bin/zsh
