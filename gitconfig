@@ -3,3 +3,4 @@
 	name = Peter Braden
 [core]
 	editor = vi
+	excludesfile = /Users/pbraden/.gitignore
