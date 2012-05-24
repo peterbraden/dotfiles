@@ -261,3 +261,5 @@ augroup encrypted
   " after the file has been written.
   autocmd BufWritePost,FileWritePost *.gpg,*.asc u
 augroup END
+
+call pathogen#infect()
