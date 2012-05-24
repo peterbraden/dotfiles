@@ -10,4 +10,5 @@ EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
 ps aux | grep $EXP
 }
 
+PATH=$PATH:$HOME/bin
 
