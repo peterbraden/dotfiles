@@ -1,4 +1,5 @@
 servers = (
+  { address = "irc.freenode.com"; chatnet = "freenode"; port="6667"; nick = "peterbraden1"; autoconnect = "yes";},
   { address = "irc.ubuntu.com"; chatnet = "Ubuntu"; port = "8001"; },
   { address = "eu.irc6.net"; chatnet = "IRCnet"; port = "6667"; },
   { 
@@ -94,6 +95,7 @@ chatnets = {
   };
   SILC = { type = "SILC"; };
   Ubuntu = { type = "IRC"; };
+  freenode ={ type = "IRC"; };
 };
 
 channels = (
@@ -264,9 +266,13 @@ statusbar = {
 };
 settings = {
   core = {
-    real_name = "Unknown";
-    user_name = "peterbraden";
-    nick = "peterbraden";
+    real_name = "Peter Braden";
+    user_name = "peterbraden1";
+    nick = "peterbraden1";
   };
   "fe-text" = { actlist_sort = "refnum"; };
 };
+
+windows = {
+	1 = { immortal = "yes"; name="(status)"; level = "ALL"; };
+}

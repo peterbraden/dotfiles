@@ -1,6 +1,36 @@
 [user]
 	email = peterbraden@peterbraden.co.uk
 	name = Peter Braden
+[color]
+        diff = auto
+        status = auto
+        branch = auto
+        interactive = auto
+        ui = true
+        pager = true
+
+[color "branch"]
+        current = yellow reverse
+        local = yellow
+        remote = green
+
+[color "diff"]
+        meta = yellow bold
+        frag = magenta bold
+        old = red bold
+        new = green bold
+
+[color "status"]
+        added = yellow
+        changed = green
+        untracked = cyan
+
 [core]
 	editor = vi
 	excludesfile = ~/.gitignore
+  pager = less -FRSX
+  whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
+
+[alias]
+        co = checkout
+
