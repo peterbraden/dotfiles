@@ -1,4 +1,8 @@
+#!/bin/bash
 DOTPATH=`pwd`
+
+echo "=== Linking Dotfiles ===\n"
+
 ln -s $DOTPATH/gitconfig ~/.gitconfig
 ln -s $DOTPATH/gitignore ~/.gitignore
 ln -s $DOTPATH/hgrc ~/.hgrc
@@ -8,5 +12,18 @@ ln -s $DOTPATH/vimrc ~/.vimrc
 ln -s $DOTPATH/zshrc ~/.zshrc
 ln -s $DOTPATH/vim ~/.vim
 
+if [ "$SHELL" != "/bin/zsh" ]; then
+  echo "=== Changing shell to zsh ===\n"
+  chsh -s /bin/zsh
+fi  
 
-chsh -s /bin/zsh
+# ============== Tools =================
+echo "=== Installing tools ===\n"
+
+# Ack
+curl http://betterthangrep.com/ack-standalone > ~/bin/ack && chmod 0755 ~/bin/ack
+
+# Node
+git clone https://github.com/joyent/node.git && cd node &&  ./configure && make && sudo make install && cd .. && rm -rf node
+
+
