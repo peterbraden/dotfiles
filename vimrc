@@ -27,6 +27,9 @@ set scrolloff=3                                                 " Keep 3 lines b
 set ruler                                                               " line numbers and column the cursor is on
 set number                                                              " Show line numbering
 set numberwidth=1                                               " Use 1 col + 1 space for numbers
+set showcmd
+set showmode
+
 
 " tab labels show the filename without path(tail)
 set guitablabel=%N/\ %t\ %M
@@ -57,7 +60,10 @@ set tabstop=2                                                   " Tab stop of 2
 set shiftwidth=2                                                " sw 2 spaces (used on auto indent)
 set softtabstop=2                                               " 2 spaces as a tab for bs/del
 set autoindent
+set encoding=utf-8
 
+
+set undofile
 
 " we don't want to edit these type of files
 set wildignore=*.o,*.obj,*.bak,*.exe,*.pyc,*.swp
