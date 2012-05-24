@@ -1,6 +1,9 @@
 #!/bin/bash
 DOTPATH=`pwd`
 
+echo "=== Setup System =="
+#cat hosts | sudo tee -a /etc/hosts
+
 echo "=== Linking Dotfiles ===\n"
 
 ln -s $DOTPATH/gitconfig ~/.gitconfig
@@ -28,3 +31,5 @@ echo "=== Installing tools ===\n"
 
 #echo "--> NPM"
 #git clone https://github.com/isaacs/npm.git && cd npm && make && sudo make install
+
+
