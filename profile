@@ -21,7 +21,7 @@ ps aux | grep $EXP
 }
 
 
-PATH=$PATH:$HOME/bin
+PATH=$PATH:$HOME/bin:./node_modules/.bin
 
 
 SSHAGENT=/usr/bin/ssh-agent
