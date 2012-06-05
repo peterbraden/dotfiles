@@ -63,7 +63,6 @@ set autoindent
 set encoding=utf-8
 set hidden
 
-let mapleader = ","
 
 "set undofile
 
@@ -266,6 +265,7 @@ augroup END
 
 
 " =====  Shortcut  =====
+let mapleader = ","
 " Edit files in curr folder http://vimcasts.org/episodes/the-edit-command/
 cnoremap %% <C-R>=expand('%:h').'/'<cr>
 map <leader>ew :e %%
