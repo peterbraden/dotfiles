@@ -61,7 +61,9 @@ set shiftwidth=2                                                " sw 2 spaces (u
 set softtabstop=2                                               " 2 spaces as a tab for bs/del
 set autoindent
 set encoding=utf-8
+set hidden
 
+let mapleader = ","
 
 "set undofile
 
