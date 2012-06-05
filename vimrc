@@ -264,4 +264,14 @@ augroup encrypted
   autocmd BufWritePost,FileWritePost *.gpg,*.asc u
 augroup END
 
+
+" =====  Shortcut  =====
+" Edit files in curr folder http://vimcasts.org/episodes/the-edit-command/
+cnoremap %% <C-R>=expand('%:h').'/'<cr>
+map <leader>ew :e %%
+map <leader>es :sp %%
+map <leader>ev :vsp %%
+map <leader>et :tabe %%
+
+
 call pathogen#infect()
