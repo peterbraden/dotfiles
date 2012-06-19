@@ -2,7 +2,7 @@
 DOTPATH=`pwd`
 
 echo "=== Setup System =="
-#cat hosts | sudo tee -a /etc/hosts
+cat hosts | sudo tee -a /etc/hosts
 
 echo "=== Linking Dotfiles ===\n"
 
@@ -23,13 +23,13 @@ fi
 # ============== Tools =================
 echo "=== Installing tools ===\n"
 
-#echo "\n\n--> Ack\n"
-#curl http://betterthangrep.com/ack-standalone > ~/bin/ack && chmod 0755 ~/bin/ack
+echo "\n\n--> Ack\n"
+curl http://betterthangrep.com/ack-standalone > ~/bin/ack && chmod 0755 ~/bin/ack
 
-#echo "\n\n--> Node\n"
-#git clone https://github.com/joyent/node.git && cd node &&  ./configure && make && sudo make install && cd .. && rm -rf node
+echo "\n\n--> Node\n"
+git clone https://github.com/joyent/node.git && cd node &&  ./configure && make && sudo make install && cd .. && rm -rf node
 
-#echo "--> NPM"
-#git clone https://github.com/isaacs/npm.git && cd npm && make && sudo make install
+echo "--> NPM"
+git clone https://github.com/isaacs/npm.git && cd npm && make && sudo make install
 
 

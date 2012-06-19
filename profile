@@ -7,6 +7,9 @@ alias gd='git diff'
 alias gs='git status'
 alias gca='git commit -a'
 alias gl='git log -p'
+alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
+
+
 
 alias d="date --rfc-3339=seconds"
 alias shipr="last peterbraden -n 1 -i | grep 'still logged in' | awk '{print \$3}'"
