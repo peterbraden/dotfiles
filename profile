@@ -25,7 +25,7 @@ ps aux | grep $EXP
 
 
 PATH=$PATH:$HOME/bin:./node_modules/.bin
-
+PATH=/opt/local/bin:/opt/local/sbin:$PATH
 
 SSHAGENT=/usr/bin/ssh-agent
 SSHAGENTARGS="-s"
