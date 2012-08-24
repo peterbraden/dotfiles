@@ -273,5 +273,6 @@ map <leader>es :sp %%
 map <leader>ev :vsp %%
 map <leader>et :tabe %%
 
+cnoreabbrev Wq wq
 
 call pathogen#infect()
