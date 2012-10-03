@@ -273,5 +273,14 @@ map <leader>es :sp %%
 map <leader>ev :vsp %%
 map <leader>et :tabe %%
 
+"Borrowed the following from http://mrqe.co/OwAmwT
+if has ('mouse')
+    set mouse=a
+    if &term =~ "xterm" || &term =~ "screen"
+        set ttymouse=xterm2
+    endif
+endif
+
 
 call pathogen#infect()
+
