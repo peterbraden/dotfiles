@@ -1,13 +1,5 @@
 call pathogen#infect()
 
-" Don't load plugins if we aren't in Vim7
-if version < 700
-       set noloadplugins
-endif
-
-"" Skip this file unless we have +eval
-if 1
-
 """ Settings
 set nocompatible                                                " Don't be compatible with vi
 
@@ -208,7 +200,6 @@ iabbr _t  <C-R>=strftime("%H:%M:%S")<CR><C-R>=EatChar('\s')<CR>
 iabbr _d  <C-R>=strftime("%a, %d %b %Y")<CR><C-R>=EatChar('\s')<CR>
 iabbr _dt <C-R>=strftime("%a, %d %b %Y %H:%M:%S %z")<CR><C-R>=EatChar('\s')<CR>
 
-endif
 inoremap <expr> <C-Space> pumvisible() \|\| &omnifunc == '' ?
                        \ "\<lt>C-n>" :
                        \ "\<lt>C-x>\<lt>C-o><c-r>=pumvisible() ?" .
