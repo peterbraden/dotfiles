@@ -206,26 +206,10 @@ inoremap <expr> <C-Space> pumvisible() \|\| &omnifunc == '' ?
                        \ "\"\\<lt>c-n>\\<lt>c-p>\\<lt>c-n>\" :" .
                        \ "\" \\<lt>bs>\\<lt>C-n>\"\<CR>"
 imap <C-@> <C-Space>
-let Tlist_Ctags_Cmd="/nail/home/paul/bin/ctags"
 
 " Toggle the tag list bar
 nmap <a-down> :TlistAddFiles %:p<CR>:TlistUpdate<CR>
 nmap <F4> :TlistToggle<CR><a-down><CR>
-
-autocmd BufRead *.as set filetype=actionscript
-
-let Tlist_Ctags_Cmd="/nail/home/paul/bin/ctags"
-let Tlist_Compact_Format=0
-let Tlist_Show_Menu=1
-let Tlist_Auto_Highlight_Tag=1
-let Tlist_Auto_Open=1
-let Tlist_Auto_Update=1
-let Tlist_Highlight_Tag_On_BufEnter=1
-let Tlist_Process_File_Always=1
-let Tlist_Show_One_File=1
-let Tlist_Use_Right_Window = 1
-let Tlist_Sort_Type = "name"
-let Tlist_WinWidth = 50
 
 
 
