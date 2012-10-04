@@ -1,3 +1,5 @@
+call pathogen#infect()
+
 " Don't load plugins if we aren't in Vim7
 if version < 700
        set noloadplugins
@@ -75,6 +77,11 @@ set showfulltag                                                 " Show more info
 filetype plugin on                                              " Enable filetype plugins
 filetype plugin indent on                               " Let filetype plugins indent for me
 syntax on                                                               " Turn on syntax highlighting
+
+let g:solarized_termcolors=256
+set t_Co=256 
+colorscheme solarized
+set background=dark
 
 " set up tags
 set tags=tags;/
@@ -283,5 +290,4 @@ endif
 
 cnoreabbrev Wq wq
 
-call pathogen#infect()
 
