@@ -290,4 +290,26 @@ endif
 
 cnoreabbrev Wq wq
 
-
+""" FocusMode
+let g:distractionfree=0
+function! ToggleFocusMode()
+  if g:distractionfree != 1
+    let g:distractionfree=1
+    set laststatus=0
+    set numberwidth=10
+    set foldcolumn=12
+    set noruler
+    hi FoldColumn ctermbg=bg
+    hi LineNr ctermfg=bg ctermbg=bg
+    hi NonText ctermfg=bg
+  else
+    let g:distractionfree=0
+    set laststatus=2
+    set numberwidth=4
+    set foldcolumn=0
+    set ruler
+    execute "colorscheme solarized"
+    execute "set background=dark"
+  endif
+endfunc
+nnoremap <leader>df :call ToggleFocusMode()<cr>
