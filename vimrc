@@ -295,6 +295,7 @@ let g:distractionfree=0
 function! ToggleFocusMode()
   if g:distractionfree != 1
     let g:distractionfree=1
+    only
     set laststatus=0
     set numberwidth=10
     set foldcolumn=12
