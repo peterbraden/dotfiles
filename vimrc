@@ -289,3 +289,13 @@ function! ToggleFocusMode()
   endif
 endfunc
 nnoremap <leader>df :call ToggleFocusMode()<cr>
+
+
+"  == From admc
+" Highlight redundant whitespaces.
+highlight RedundantSpaces ctermbg=blue guibg=blue 
+match RedundantSpaces /\s\+$\| \+\ze\t/
+
+" Cycle through the tabs
+map <C-J> :tabp<CR>
+map <C-K> :tabn<CR>
