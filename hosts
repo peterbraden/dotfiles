@@ -1,2 +1,28 @@
+127.0.0.1	localhost
+
 # My Machines
 74.207.251.161 prometheus
+
+
+# ======== Time Wasting =============
+#
+# Peter: If you're about to edit these, then this is your guilt trip:
+#
+# These sites don't make your life better - they make you feel more
+# scattered, jittery and damage your attention span. They exploit
+# your curiosity and your biological need to know whats going on.
+#
+# Call a friend, read a book, do some exercise, create. You'll feel
+# better for it.
+#
+# If you really are going to edit these, go take a 20 minute walk
+# first. Please.
+
+127.0.0.1 reddit.com
+127.0.0.1 www.reddit.com
+127.0.0.1 news.ycombinator.com
+127.0.0.1 www.break.com
+127.0.0.1 break.com
+
+# Facebook: gets to stay for now: friends photos.
+# Twitter: gets to stay: keep up to date with industry contacts.
