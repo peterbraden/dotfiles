@@ -170,6 +170,7 @@ nnoremap <C-g> 2<C-g>
 
 " Arg!  I hate hitting q: instead of :q
 nnoremap q: q:iq<esc>
+nnoremap :W :w<esc>
 
 " <C-l> redraws the screen and removes any search highlighting.
 nnoremap <silent> <C-l> :nohl<CR><C-l>
@@ -254,6 +255,10 @@ map <leader>ew :e %%
 map <leader>es :sp %%
 map <leader>ev :vsp %%
 map <leader>et :tabe %%
+
+set splitbelow
+set splitright
+
 
 "Borrowed the following from http://mrqe.co/OwAmwT
 if has ('mouse')

@@ -85,3 +85,5 @@ source $HOME/.profile
 
 autoload -Uz compinit
 compinit
+
+PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
