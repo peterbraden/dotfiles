@@ -1,6 +1,13 @@
 #!/bin/bash
 DOTPATH=`pwd`
 
+
+if [ "$(uname)" == 'Darwin' ]; then
+  $DOTPATH/osx
+fi;
+
+
+if [0]; then
 echo "=== Setup System =="
 cat hosts | sudo tee -a /etc/hosts
 
@@ -33,3 +40,4 @@ echo "--> NPM"
 git clone https://github.com/isaacs/npm.git && cd npm && make && sudo make install
 
 
+fi
