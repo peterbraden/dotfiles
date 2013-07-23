@@ -90,3 +90,24 @@ defaults write com.apple.terminal StringEncodings -array 4
 
 
 
+
+
+## For install, open tabs to apps
+
+# Visor: 
+open http://totalterminal.binaryage.com/
+
+
+# Iterm:
+open http://www.iterm2.com/#/section/home
+
+# Firefox:
+open http://www.mozilla.org/en-US/firefox/channel/
+
+# Evernote:
+open http://www.evernote.com/
+
+# Flux:
+open http://stereopsis.com/flux/
+
+
