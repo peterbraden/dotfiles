@@ -12,8 +12,8 @@ alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset 
 
 
 alias d="date --rfc-3339=seconds"
-alias shipr="last peterbraden -n 1 -i | grep 'still logged in' | awk '{print \$3}'"
-alias shlocr="geoiplookup \$(shipr) | grep 'Rev 1'  |  awk '{print \$11,\$12}'"
+
+alias genpwd="openssl rand -base64 20"
 
 # SSH
 alias prom='ssh peterbraden@prometheus'
