@@ -1,6 +1,4 @@
 
-# Setup Mac -> The last few versions have had _really_ crappy defaults
-echo "--> Setting up a mac"
 
 # Trackpad! - double tap to right click
 defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -int 1

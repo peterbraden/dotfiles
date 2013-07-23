@@ -1,13 +1,12 @@
 #!/bin/bash
 DOTPATH=`pwd`
 
-
 if [ "$(uname)" == 'Darwin' ]; then
+  # Setup Mac -> The last few versions have had _really_ crappy defaults
+  echo "== Setting up a mac =="
   $DOTPATH/osx
 fi;
 
-
-if [0]; then
 echo "=== Setup System =="
 cat hosts | sudo tee -a /etc/hosts
 
@@ -39,5 +38,3 @@ git clone https://github.com/joyent/node.git && cd node &&  ./configure && make 
 echo "--> NPM"
 git clone https://github.com/isaacs/npm.git && cd npm && make && sudo make install
 
-
-fi

@@ -1,3 +1,11 @@
+# Setup a vanilla machine (no git)
+
+```shell
+cd; mkdir repos; mkdir ~/repos/dotfiles;  curl -L https://github.com/peterbraden/dotfiles/tarball/master | tar -xzvf - -C ~/repos/dotfiles --strip-components 1
+```
+
+
+
 # System Setup Mac
 
 
