@@ -1,5 +1,0 @@
-[paths]
-github = git+ssh://git@github.com/peterbraden/raindrop.git
-[extensions]
-hgext.bookmarks = 
-hggit = 
