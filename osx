@@ -13,7 +13,7 @@ defaults write com.apple.systemuiserver menuExtras -array "/System/Library/CoreS
 defaults write com.apple.LaunchServices LSQuarantine -bool false
 
 # Disable Notification Center and remove the menu bar icon
-launchctl unload -w /System/Library/LaunchAgents/com.apple.notificationcenterui.plist
+#launchctl unload -w /System/Library/LaunchAgents/com.apple.notificationcenterui.plist
 
 # Enable full keyboard access for all controls
 # (e.g. enable Tab in modal dialogs)
@@ -81,6 +81,9 @@ defaults write com.apple.dock wvous-tl-modifier -int 0
 # Top right screen corner → Desktop
 defaults write com.apple.dock wvous-tr-corner -int 4
 defaults write com.apple.dock wvous-tr-modifier -int 0
+# bottom left screen corner → Mission Control
+defaults write com.apple.dock wvous-bl-corner -int 2
+defaults write com.apple.dock wvous-bl-modifier -int 0
 
 # Set Safari’s home page to `about:blank` for faster loading
 defaults write com.apple.Safari HomePage -string "about:blank"
@@ -89,25 +92,13 @@ defaults write com.apple.Safari HomePage -string "about:blank"
 defaults write com.apple.terminal StringEncodings -array 4
 
 
+# Link repos on desktop
+ln -s ~/repos ~/Desktop/repos
 
 
-
-## For install, open tabs to apps
-
-# Visor: 
-open http://totalterminal.binaryage.com/
-
-
-# Iterm:
-open http://www.iterm2.com/#/section/home
-
-# Firefox:
-open http://www.mozilla.org/en-US/firefox/channel/
-
-# Evernote:
-open http://www.evernote.com/
-
-# Flux:
-open http://stereopsis.com/flux/
+# Kill all affected apps
+for app in "Dock" "SystemUIServer" "Finder"; do
+  killall "$app" > /dev/null 2>&1
+done
 
 

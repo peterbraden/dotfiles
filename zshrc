@@ -1,4 +1,4 @@
-
+export GIT="$(which git)"
 
 ############ Prompt ######################
 
@@ -6,11 +6,11 @@ autoload colors && colors
 
 
 git_branch() {
-  echo $(/usr/bin/git symbolic-ref HEAD 2>/dev/null | awk -F/ {'print $NF'})
+  echo $($GIT symbolic-ref HEAD 2>/dev/null | awk -F/ {'print $NF'})
 }
 
 git_dirty() {
-  st=$(/usr/bin/git status 2>/dev/null | tail -n 1)
+  st=$($GIT status 2>/dev/null | tail -n 1)
   if [[ $st == "" ]]
   then
     echo ""
@@ -25,7 +25,7 @@ git_dirty() {
 }
 
 git_prompt_info () {
- ref=$(/usr/bin/git symbolic-ref HEAD 2>/dev/null) || return
+ ref=$($GIT symbolic-ref HEAD 2>/dev/null) || return
 # echo "(%{\e[0;33m%}${ref#refs/heads/}%{\e[0m%})"
  echo "${ref#refs/heads/}"
 }

@@ -1,5 +1,8 @@
 # Set Up a Vanilla Machine:
 
+## Remove OSX's retarded app security
+System Prefs > Security > Allow Apps from anywhere
+
 ## Get Git
 [http://git-scm.com/download](http://git-scm.com/download)
 
