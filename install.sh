@@ -1,6 +1,6 @@
 #!/bin/bash
 export DOTPATH=`pwd`
-export REPOPATH=$DOTPATH/repos
+export REPOPATH=~/repos
 
 if [ "$(uname)" == 'Darwin' ]; then
   # Setup Mac -> The last few versions have had _really_ crappy defaults
