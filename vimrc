@@ -304,3 +304,8 @@ match RedundantSpaces /\s\+$\| \+\ze\t/
 " Cycle through the tabs
 map <C-J> :tabp<CR>
 map <C-K> :tabn<CR>
+
+
+" Arduino
+au BufRead,BufNewFile *.pde set filetype=arduino
+au BufRead,BufNewFile *.ino set filetype=arduino
