@@ -58,3 +58,8 @@ extract () {
      fi
 }
  
+
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+
+export DOCKER_HOST=tcp://127.0.0.1:4243
