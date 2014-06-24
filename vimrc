@@ -313,3 +313,7 @@ au BufRead,BufNewFile *.ino set filetype=arduino
 " Ctrl P
 let g:ctrlp_map = '<c-p>'
 let g:ctrlp_cmd = 'CtrlP'
+
+
+" Use Mac clipboard
+set clipboard=unnamed
