@@ -1,5 +1,6 @@
 # ====== ALIASES ======
 alias vi=vim
+set -o vi
 
 # GIT
 alias gp='git pull'
