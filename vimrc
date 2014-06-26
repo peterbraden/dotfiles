@@ -317,3 +317,6 @@ let g:ctrlp_cmd = 'CtrlP'
 
 " Use Mac clipboard
 set clipboard=unnamed
+
+
+let g:vim_json_syntax_conceal = 0
