@@ -1,6 +1,6 @@
 # ====== ALIASES ======
 alias vi=vim
-set -o vi
+alias tmux=tmux -2
 
 # GIT
 alias gp='git pull'
@@ -10,11 +10,9 @@ alias gca='git commit -a'
 alias gl='git log -p'
 alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
 
-
-
 alias d="date --rfc-3339=seconds"
-
 alias genpwd="openssl rand -base64 20"
+
 
 # SSH
 alias prom='ssh peterbraden@prometheus'
@@ -58,7 +56,7 @@ extract () {
          echo "'$1' is not a valid file"
      fi
 }
- 
+
 
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8

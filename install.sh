@@ -18,6 +18,7 @@ ln -s $DOTPATH/gitignore ~/.gitignore
 ln -s $DOTPATH/hgrc ~/.hgrc
 ln -s $DOTPATH/profile ~/.profile
 ln -s $DOTPATH/screenrc ~/.screenrc
+ln -s $DOTPATH/tmuxrc ~/.tmux.conf
 ln -s $DOTPATH/vimrc ~/.vimrc
 ln -s $DOTPATH/zshrc ~/.zshrc
 ln -s $DOTPATH/vim ~/.vim
@@ -31,10 +32,13 @@ fi
 echo "=== Installing tools ===\n"
 cd $REPO_PATH
 
+sudo curl https://raw.githubusercontent.com/isaacs/nave/master/nave.sh > /usr/local/bin/nave
+sudo nave usemain stable
 
-echo "\n\n--> Node\n"
-git clone https://github.com/joyent/node.git && cd node &&  ./configure && make && sudo make install && cd .. && rm -rf node
 
-#echo "--> NPM"
-#git clone https://github.com/isaacs/npm.git && cd npm && make && sudo make install
+# HOMEBREW
+ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+
+# Ack
+brew install ack
 
