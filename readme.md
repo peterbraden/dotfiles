@@ -1,6 +1,9 @@
 # Set Up a Vanilla Machine:
 
-## Remove OSX's retarded app security
+## Install Xcode from app store
+Because Apple need a user account to give you a compiler...
+
+## Remove OSX's dumb app security
 System Prefs > Security > Allow Apps from anywhere
 
 ## Get Git

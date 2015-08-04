@@ -101,8 +101,6 @@ for app in "Dock" "SystemUIServer" "Finder"; do
   killall "$app" > /dev/null 2>&1
 done
 
-# Install Brew
-ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
 
 # Update vim
 sudo mv /usr/bin/vim /usr/bin/system-compiled-vim
