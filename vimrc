@@ -255,6 +255,7 @@ map <leader>ew :e %%
 map <leader>es :sp %%
 map <leader>ev :vsp %%
 map <leader>et :tabe %%
+map <leader>ee :CtrlP<CR>
 
 set splitbelow
 set splitright
@@ -313,6 +314,10 @@ au BufRead,BufNewFile *.ino set filetype=arduino
 " Ctrl P
 let g:ctrlp_map = '<c-p>'
 let g:ctrlp_cmd = 'CtrlP'
+let g:ctrlp_custom_ignore = {
+  \ 'vcs' : '\v[\/]\.(git|hg|svn|)$',
+  \ 'dir': 'node_modules',
+  \ }
 
 
 " Use Mac clipboard
