@@ -318,6 +318,11 @@ let g:ctrlp_custom_ignore = {
   \ 'vcs' : '\v[\/]\.(git|hg|svn|)$',
   \ 'dir': 'node_modules',
   \ }
+let g:ctrlp_open_new_file = 't'
+let g:ctrlp_prompt_mappings = {
+  \ 'AcceptSelection("t")': ['<c-t>', '<cr>'],
+  \ 'AcceptSelection("e")': [],
+  \ }
 
 
 " Use Mac clipboard
