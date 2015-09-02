@@ -13,7 +13,7 @@ deflogin off
 #autodetach off
 
 vbell on
-vbell_msg "   Suddenly, your kitten starts purring!!  "
+vbell_msg " BEEP  "
 
 # all termcap entries are now duplicated as terminfo entries.
 # only difference should be the slightly modified syntax, and check for
@@ -101,3 +101,9 @@ hardstatus alwayslastline "%{kr} %H %{ky} load[%l] %{kg} %d.%m.%Y %c %{+b}%{yb} 
 nethack on
 defscrollback 4096
 #escape ^Pp
+
+# Colors:
+attrcolor b ".I"
+termcapinfo xterm "Co#256:AB=\E[48;5;%dm:AF=\E[38;5;%dm"
+termcapinfo xterm-color256 "Co#256:AB=\E[48;5;%dm:AF=\E[38;5;%dm"
+defbce "on"

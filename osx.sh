@@ -107,4 +107,7 @@ sudo mv /usr/bin/vim /usr/bin/system-compiled-vim
 brew install vim
 brew install macvim --override-system-vim
 
+brew tap homebrew/dupes
+brew install screen
+
 

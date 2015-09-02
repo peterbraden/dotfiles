@@ -71,8 +71,9 @@ filetype plugin on                                              " Enable filetyp
 filetype plugin indent on                               " Let filetype plugins indent for me
 syntax on                                                               " Turn on syntax highlighting
 
+set t_Co=256
 let g:solarized_termcolors=256
-set t_Co=256 
+let g:solarized_termtrans = 1
 colorscheme solarized
 set background=dark
 
