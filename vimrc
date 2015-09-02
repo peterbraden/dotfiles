@@ -23,6 +23,7 @@ set number                                                              " Show l
 set numberwidth=1                                               " Use 1 col + 1 space for numbers
 set showcmd
 set showmode
+set title
 
 
 " tab labels show the filename without path(tail)
