@@ -70,9 +70,9 @@ zstyle ':completion:*' insert-tab pending
 
 
 ################### History #############
-HISTFILE=$HOME/.history
-HISTSIZE=1000
-SAVEHIST=1000
+HISTFILE=$HOME/.history/$(date -u +%Y-%m-%d.%H.%M.%S)._sh
+HISTSIZE=2000
+SAVEHIST=2000
 setopt   appendhistory
 setopt   incappendhistory
 setopt histignorealldups
