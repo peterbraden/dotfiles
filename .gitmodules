@@ -1,3 +1,30 @@
 [submodule "vim/bundle/ctrlp.vim"]
 	path = vim/bundle/ctrlp.vim
 	url = git@github.com:kien/ctrlp.vim.git
+[submodule "vim/bundle/dustjs.vim"]
+	path = vim/bundle/dustjs.vim
+	url = git@github.com:jimmyhchan/dustjs.vim.git
+[submodule "vim/bundle/editorconfig.vim"]
+	path = vim/bundle/editorconfig.vim
+	url = https://github.com/editorconfig/editorconfig-vim.git
+[submodule "vim/bundle/startify.vim"]
+	path = vim/bundle/startify.vim
+	url = git@github.com:mhinz/vim-startify.git
+[submodule "vim/bundle/colors-solarized.vim"]
+	path = vim/bundle/colors-solarized.vim
+	url = git@github.com:altercation/vim-colors-solarized.git
+[submodule "vim/bundle/json.vim"]
+	path = vim/bundle/json.vim
+	url = git@github.com:elzr/vim-json.git
+[submodule "vim/bundle/jshint2.vim"]
+	path = vim/bundle/jshint2.vim
+	url = git@github.com:Shutnik/jshint2.vim.git
+[submodule "vim/bundle/fugitive.vim"]
+	path = vim/bundle/fugitive.vim
+	url = git@github.com:tpope/vim-fugitive.git
+[submodule "vim/bundle/jade.vim"]
+	path = vim/bundle/jade.vim
+	url = git@github.com:digitaltoad/vim-jade.git
+[submodule "vim/bundle/arduino.vim"]
+	path = vim/bundle/arduino.vim
+	url = git@github.com:tclem/vim-arduino.git
