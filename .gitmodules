@@ -31,3 +31,6 @@
 [submodule "vim/bundle/markdown.vim"]
 	path = vim/bundle/markdown.vim
 	url = git@github.com:plasticboy/vim-markdown.git
+[submodule "vim/bundle/javascript.vim"]
+	path = vim/bundle/javascript.vim
+	url = https://github.com/pangloss/vim-javascript.git
