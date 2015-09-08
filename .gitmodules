@@ -28,3 +28,6 @@
 [submodule "vim/bundle/arduino.vim"]
 	path = vim/bundle/arduino.vim
 	url = git@github.com:tclem/vim-arduino.git
+[submodule "vim/bundle/markdown.vim"]
+	path = vim/bundle/markdown.vim
+	url = git@github.com:plasticboy/vim-markdown.git
