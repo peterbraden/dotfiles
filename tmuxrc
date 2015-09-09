@@ -23,6 +23,9 @@ set -g window-status-bg black
 set -g window-status-fg colour244
 set-window-option -g window-status-attr dim
 set-window-option -g window-status-current-fg red
+setw -g window-status-activity-bg black
+setw -g window-status-activity-fg yellow
+set-window-option -g window-status-activity-attr none
 set -g status-right-length 100
 set -g status-right "#[fg=black,bg=yellow] #h #[fg=black,bg=red] #(ifconfig | awk '$1 == \"inet\" { print $2 }'|tail -1) "
 set -g status-left ""
