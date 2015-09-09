@@ -97,7 +97,7 @@ bind } history
 
 shell "-${SHELL}"
 shelltitle -
-hardstatus alwayslastline "%{kr} %H %{ky} load[%l] %{kg} %d.%m.%Y %c %{+b}%{yb} %=%?%-w%?[%n%f %t]%?%+w%? "
+hardstatus alwayslastline "%{kr} %H %{ky} load[%l] %{kg} %d.%m.%Y %c %{+b}%{yb} %=%?%-w%?[%n%f %t]%?%+w%?"
 nethack on
 defscrollback 4096
 #escape ^Pp

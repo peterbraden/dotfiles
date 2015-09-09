@@ -163,13 +163,6 @@ else
   vnoremap > >gv
 endif
 
-" Extra functionality for some existing commands:
-" <C-6> switches back to the alternate file and the correct column in the line.
-nnoremap <C-6> <C-6>`"
-
-" CTRL-g shows filename and buffer number, too.
-nnoremap <C-g> 2<C-g>
-
 " Arg!  I hate hitting q: instead of :q
 nnoremap q: q:iq<esc>
 nnoremap :W :w<esc>
@@ -331,4 +324,13 @@ let g:ctrlp_prompt_mappings = {
 set clipboard=unnamed
 
 
+" Statusline
+"set statusline=
+
 let g:vim_json_syntax_conceal = 0
+
+let g:airline_powerline_fonts = 1
+let g:airline_section_c='%f'
+let g:airline_section_z = '%c'
+let g:airline_section_warning= ''
+
