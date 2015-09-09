@@ -1,6 +1,5 @@
 # ====== ALIASES ======
 alias vi=vim
-alias tmux=tmux -2
 
 # GIT
 alias gp='git pull'
@@ -17,9 +16,19 @@ alias genpwd="openssl rand -base64 20"
 # SSH
 alias prom='ssh peterbraden@prometheus'
 
+# TMUX
+# - supports 256 colors
+alias tmux=tmux -2
+# attach or create session - similar to `screen -dR foo`
+alias tm='tmux new-session -AD'
+
 function psgrep() {
 EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
 ps aux | grep $EXP
+}
+
+function ip(){
+ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
 }
 
 
