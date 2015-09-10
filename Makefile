@@ -27,7 +27,8 @@ change_shell:
 osx:
 	if [ "$(uname)" == 'Darwin' ]; then \
 		echo "- Setting up a mac" \
-		$DOTPATH/osx \
+		$DOTPATH/osx/osx.sh \
+		$DOTPATH/osx/osx-apps.sh \
 		make brew_install \
 	fi;
 
