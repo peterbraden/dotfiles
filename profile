@@ -9,9 +9,9 @@ alias gca='git commit -a'
 alias gl='git log -p'
 alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
 
+# Shortcuts
 alias d="date --rfc-3339=seconds"
 alias genpwd="openssl rand -base64 20"
-
 
 # SSH
 alias prom='ssh peterbraden@prometheus'
