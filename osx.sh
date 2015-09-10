@@ -1,5 +1,4 @@
 
-
 # Trackpad! - double tap to right click
 defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -int 1
 
@@ -18,7 +17,6 @@ defaults write com.apple.LaunchServices LSQuarantine -bool false
 # Enable full keyboard access for all controls
 # (e.g. enable Tab in modal dialogs)
 defaults write NSGlobalDomain AppleKeyboardUIMode -int 3
-
 
 # Require password immediately after sleep or screen saver begins
 defaults write com.apple.screensaver askForPassword -int 1
@@ -91,23 +89,12 @@ defaults write com.apple.Safari HomePage -string "about:blank"
 # Only use UTF-8 in Terminal.app
 defaults write com.apple.terminal StringEncodings -array 4
 
-
 # Link repos on desktop
 ln -s ~/repos ~/Desktop/repos
-
 
 # Kill all affected apps
 for app in "Dock" "SystemUIServer" "Finder"; do
   killall "$app" > /dev/null 2>&1
 done
-
-
-# Update vim
-sudo mv /usr/bin/vim /usr/bin/system-compiled-vim
-brew install vim
-brew install macvim --override-system-vim
-
-brew tap homebrew/dupes
-brew install screen
 
 
