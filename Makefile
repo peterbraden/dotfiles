@@ -4,24 +4,24 @@ REPOPATH=~/repos
 
 link_dotfiles:
 	echo "=== Linking Dotfiles ===\n"
-	ln -s $(DOTPATH)/gitconfig ~/.gitconfig
-	ln -s $(DOTPATH)/gitignore ~/.gitignore
-	ln -s $(DOTPATH)/hgrc ~/.hgrc
-	ln -s $(DOTPATH)/profile ~/.profile
-	ln -s $(DOTPATH)/screenrc ~/.screenrc
-	ln -s $(DOTPATH)/vimrc ~/.vimrc
-	ln -s $(DOTPATH)/zshrc ~/.zshrc
-	ln -s $(DOTPATH)/vim ~/.vim
-	ln -s $(DOTPATH)/tmuxrc ~/.tmux.conf
+	ln -sf $(DOTPATH)/gitconfig ~/.gitconfig
+	ln -sf $(DOTPATH)/gitignore ~/.gitignore
+	ln -sf $(DOTPATH)/hgrc ~/.hgrc
+	ln -sf $(DOTPATH)/profile ~/.profile
+	ln -sf $(DOTPATH)/screenrc ~/.screenrc
+	ln -sf $(DOTPATH)/vimrc ~/.vimrc
+	ln -sf $(DOTPATH)/zshrc ~/.zshrc
+	ln -sf $(DOTPATH)/vim ~/.vim
+	ln -sf $(DOTPATH)/tmuxrc ~/.tmux.conf
 
 add_hosts:
-	cat $(DOTPATH)/hosts | sudo tee -a /etc/hosts
+	grep -c 'PB HOSTS' /etc/hosts || cat $(DOTPATH)/hosts | sudo tee -a /etc/hosts
 
 change_shell:
-	if [ "$SHELL" != "/bin/zsh" ]; then
-		echo "- Changing shell to zsh\n"
-		chsh -s /bin/zsh
-	fi
+	if [ "$$SHELL" != "/bin/zsh" ]; then \
+		echo "- Changing shell to zsh\n"; \
+		chsh -s /bin/zsh; \
+	fi;
 
 # Setup Mac -> The last few versions have had _really_ crappy defaults
 osx:
