@@ -92,42 +92,17 @@ set wildmenu                                                    " Autocomplete f
 if has("autocmd")
 augroup vimrcEx
 au!
-       " In plain-text files and svn commit buffers, wrap automatically at 78 chars
-       au FileType text,svn setlocal tw=78 fo+=t
-
        " In all files, try to jump back to the last spot cursor was in before exiting
        au BufReadPost *
                \ if line("'\"") > 0 && line("'\"") <= line("$") |
                \   exe "normal g`\"" |
                \ endif
-
-       " Use :make to check a script with perl
-       au FileType perl set makeprg=perl\ -c\ %\ $* errorformat=%f:%l:%m
-
-       " Use :make to compile c, even without a makefile
-       au FileType c,cpp if glob('Makefile') == "" | let &mp="gcc -o %< %" | endif
-
-       " Switch to the directory of the current file, unless it's a help file.
-"       au BufEnter * if &ft != 'help' | silent! cd %:p:h | endif
-
-       " Insert Vim-version as X-Editor in mail headers
-       au FileType mail sil 1  | call search("^$")
-                                \ | sil put! ='X-Editor: Vim-' . Version()
-
-       " smart indenting for python
-"       au FileType python set smartindent cinwords=if,elif,else,for,while,try,except,finally,def,class
-
-       " allows us to run :make and get syntax errors for our python scripts
-       au FileType python set makeprg=python\ -c\ \"import\ py_compile,sys;\ sys.stderr=sys.stdout;\ py_compile.compile(r'%')\"
-       " setup file type for code snippets
-       "au FileType python if &ft !~ 'django' | setlocal filetype=python.django_tempate.django_model | endif
-"       au FileType python set expandtab
-
        " kill calltip window if we move cursor or leave insert mode
        au CursorMovedI * if pumvisible() == 0|pclose|endif
        au InsertLeave * if pumvisible() == 0|pclose|endif
 
        augroup END
+
 endif
 
 """" Key Mappings

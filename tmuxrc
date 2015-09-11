@@ -14,6 +14,8 @@ set-option -g default-command $SHELL
 
 # Same as screen ctrl-a-a
 bind-key C-a last-window
+# beginning of line
+bind a send-prefix
 
 
 bind r source-file ~/.tmux.conf; display "Reloaded!"
