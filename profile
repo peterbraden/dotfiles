@@ -22,6 +22,10 @@ alias tmux=tmux -2
 # attach or create session - similar to `screen -dR foo`
 alias tm='tmux new-session -AD'
 
+
+alias boot2dockerinit=eval "$(boot2docker shellinit)"
+
+
 function psgrep() {
 EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
 ps aux | grep $EXP
@@ -70,4 +74,5 @@ extract () {
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 
-export DOCKER_HOST=tcp://127.0.0.1:4243
+
+
