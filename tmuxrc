@@ -20,6 +20,7 @@ bind a send-prefix
 
 bind r source-file ~/.tmux.conf; display "Reloaded!"
 
+# Necessary for scroll
 set -g mode-mouse on
 
 

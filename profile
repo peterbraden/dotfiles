@@ -23,7 +23,7 @@ alias tmux=tmux -2
 alias tm='tmux new-session -AD'
 
 
-alias boot2dockerinit=eval "$(boot2docker shellinit)"
+alias boot2dockerinit='eval "$(boot2docker shellinit)"'
 
 
 function psgrep() {
