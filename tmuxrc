@@ -36,5 +36,5 @@ setw -g window-status-activity-bg black
 setw -g window-status-activity-fg yellow
 set-window-option -g window-status-activity-attr none
 set -g status-right-length 100
-set -g status-right "#[fg=black,bg=blue] #S #[fg=black,bg=yellow] #h #[fg=black,bg=red] #(ifconfig | awk '$1 == \"inet\" { print $2 }'|tail -1) "
+set -g status-right "#[fg=black,bg=blue] #S #[fg=black,bg=yellow] #(whoami)@#h #[fg=black,bg=red] #(ifconfig | awk '$1 == \"inet\" { print $2 }'|tail -1) "
 set -g status-left ""
