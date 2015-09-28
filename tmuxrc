@@ -16,6 +16,8 @@ set-option -g default-command $SHELL
 bind-key C-a last-window
 # beginning of line
 bind a send-prefix
+# Kill with x
+bind k kill-window
 
 
 bind r source-file ~/.tmux.conf; display "Reloaded!"
