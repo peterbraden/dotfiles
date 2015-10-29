@@ -13,15 +13,18 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/zshrc ~/.zshrc
 	ln -sf $(DOTPATH)/vim ~/.vim
 	ln -sf $(DOTPATH)/tmuxrc ~/.tmux.conf
+.PHONY: link_dotfiles
 
 add_hosts:
 	grep -c 'PB HOSTS' /etc/hosts || cat $(DOTPATH)/hosts | sudo tee -a /etc/hosts
+.PHONY: add_hosts
 
 change_shell:
 	if [ "$$SHELL" != "/bin/zsh" ]; then \
 		echo "- Changing shell to zsh\n"; \
 		chsh -s /bin/zsh; \
 	fi;
+.PHONY: change_shell
 
 # Setup Mac -> The last few versions have had _really_ crappy defaults
 osx:
@@ -31,11 +34,18 @@ osx:
 		$DOTPATH/osx/osx-apps.sh \
 		$DOTPATH/osx/brew.sh \
 	fi;
+.PHONY: osx
 
 node_install:
 	sudo curl https://raw.githubusercontent.com/isaacs/nave/master/nave.sh > /usr/local/bin/nave
 	sudo nave usemain stable
+.PHONY: node_install
 
-
+setup_ssh:
+	mkdir -p ~/.ssh
+	cp $(DOTPATH)/ssh/authorized_keys ~/.ssh
+.PHONY: setup_ssh
 
 install: add_hosts change_shell link_dotfiles osx
+.PHONY: install
+.DEFAULT: install
