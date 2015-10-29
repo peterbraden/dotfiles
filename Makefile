@@ -44,6 +44,8 @@ node_install:
 setup_ssh:
 	mkdir -p ~/.ssh
 	cp $(DOTPATH)/ssh/authorized_keys ~/.ssh
+	cp $(DOTPATH)/ssh/sshd_config ~/.ssh
+	cp $(DOTPATH)/ssh/config ~/.ssh
 .PHONY: setup_ssh
 
 install: add_hosts change_shell link_dotfiles osx
