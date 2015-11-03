@@ -138,19 +138,14 @@ else
   vnoremap > >gv
 endif
 
-" Arg!  I hate hitting q: instead of :q
-nnoremap q: q:iq<esc>
-nnoremap :W :w<esc>
 
 " <C-l> redraws the screen and removes any search highlighting.
 nnoremap <silent> <C-l> :nohl<CR><C-l>
 
-" Q formats paragraphs, instead of entering ex mode
-noremap Q gq
 
-" * and # search for next/previous of selected text when used in visual mode
-vnoremap * y/<C-R>"<CR>
-vnoremap # y?<C-R>"<CR>
+" Arg!  I hate hitting q: instead of :q
+nnoremap q: q:iq<esc>
+nnoremap :W :w<esc>
 
 " <space> toggles folds opened and closed
 nnoremap <space> za
@@ -167,9 +162,6 @@ function! EatChar(pat)
        return (c =~ a:pat) ? '' : c
 endfunc
 
-iabbr _t  <C-R>=strftime("%H:%M:%S")<CR><C-R>=EatChar('\s')<CR>
-iabbr _d  <C-R>=strftime("%a, %d %b %Y")<CR><C-R>=EatChar('\s')<CR>
-iabbr _dt <C-R>=strftime("%a, %d %b %Y %H:%M:%S %z")<CR><C-R>=EatChar('\s')<CR>
 
 inoremap <expr> <C-Space> pumvisible() \|\| &omnifunc == '' ?
                        \ "\<lt>C-n>" :
@@ -221,11 +213,11 @@ augroup END
 let mapleader = ","
 " Edit files in curr folder http://vimcasts.org/episodes/the-edit-command/
 cnoremap %% <C-R>=expand('%:h').'/'<cr>
-map <leader>ew :e %%
-map <leader>es :sp %%
-map <leader>ev :vsp %%
-map <leader>et :tabe %%
-map <leader>ee :CtrlP<CR>
+noremap <leader>ew :e <C-R>=expand('%:h').'/'<cr>
+noremap <leader>es :sp <C-R>=expand('%:h').'/'<cr>
+noremap <leader>ev :vsp <C-R>=expand('%:h').'/'<cr>
+noremap <leader>et :tabe <C-R>=expand('%:h').'/'<cr>
+noremap <leader>ee :CtrlP<CR>
 
 set splitbelow
 set splitright
@@ -240,32 +232,6 @@ if has ('mouse')
 endif
 
 cnoreabbrev Wq wq
-
-""" FocusMode
-let g:distractionfree=0
-function! ToggleFocusMode()
-  if g:distractionfree != 1
-    let g:distractionfree=1
-    only
-    set laststatus=0
-    set numberwidth=10
-    set foldcolumn=12
-    set noruler
-    hi FoldColumn ctermbg=bg
-    hi LineNr ctermfg=bg ctermbg=bg
-    hi NonText ctermfg=bg
-  else
-    let g:distractionfree=0
-    set laststatus=2
-    set numberwidth=4
-    set foldcolumn=0
-    set ruler
-    execute "colorscheme solarized"
-    execute "set background=dark"
-  endif
-endfunc
-nnoremap <leader>df :call ToggleFocusMode()<cr>
-
 
 "  == From admc
 " Highlight redundant whitespaces.
@@ -298,7 +264,6 @@ let g:ctrlp_prompt_mappings = {
 " Use Mac clipboard
 set clipboard=unnamed
 
-
 " Statusline
 "set statusline=
 
@@ -309,3 +274,9 @@ let g:airline_section_c='%f'
 let g:airline_section_z = '%c'
 let g:airline_section_warning= ''
 
+" Shortcuts.vim
+source $HOME/shortcuts.vim
+
+" Open vimrc or shortcuts.vim
+:nnoremap <leader>rc :vsplit $MYVIMRC<cr>
+:nnoremap <leader>sc :vsplit $HOME/shortcuts.vim<cr>

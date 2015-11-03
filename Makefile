@@ -13,6 +13,7 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/zshrc ~/.zshrc
 	ln -sf $(DOTPATH)/vim ~/.vim
 	ln -sf $(DOTPATH)/tmuxrc ~/.tmux.conf
+	ln -sf $(DOTPATH)/shortcuts.vim ~/shortcuts.vim
 .PHONY: link_dotfiles
 
 add_hosts:
