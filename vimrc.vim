@@ -81,15 +81,6 @@ else                                                                    " Try ot
 endif
 " }}}
 
-" Tags {{{
-" set up tags
-set tags=tags;/
-set tags+=$HOME/.vim/tags/python.ctags
-" Toggle the tag list bar
-"nmap <a-down> :TlistAddFiles %:p<CR>:TlistUpdate<CR>
-"nmap <F4> :TlistToggle<CR><a-down><CR>
-" }}}
-
 " Folding ----------------------{{{
 set foldmethod=syntax     " By default, use syntax to determine folds
 set foldlevelstart=99     " All folds open by default
@@ -106,7 +97,6 @@ nnoremap <space> za
 vnoremap <space> zf
 " }}}
 
-" Plugins:
 " Airline {{{
 let g:airline_powerline_fonts = 1
 let g:airline_section_c='%f'
