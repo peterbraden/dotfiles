@@ -1,6 +1,5 @@
 call pathogen#infect()
 
-
 " Basic Settings -------------------- {{{
 set nocompatible    " Don't be compatible with vi
 
@@ -12,8 +11,8 @@ noremap k gk
 """" Searching and Patterns
 set ignorecase          " search is case insensitive
 set smartcase           " search case sensitive if caps on
-set incsearch                               " show best match so far
-set hlsearch                        " Highlight matches to the search
+set incsearch           " show best match so far
+set hlsearch            " Highlight matches to the search
 
 """" Display
 set background=dark         " I use dark background
@@ -25,17 +24,19 @@ set numberwidth=1           " Use 1 col + 1 space for numbers
 set showcmd
 set showmode
 set title
-
-" tab labels show the filename without path(tail)
-set guitablabel=%N/\ %t\ %M
-"""" Messages, Info, Status
-set shortmess+=a                            " Use [+] [RO] [w] for modified, read-only, modified
+set guitablabel=%N/\ %t\ %M     " tab labels show the filename without path(tail)
+set shortmess+=a                " Use [+] [RO] [w] for modified, read-only, modified
 set showcmd                     " Display what command is waiting for an operator
 set ruler                       " Show pos below the win if there's no status line
 set laststatus=2        " Always show statusline, even if only 1 window
 set report=0            " Notify me whenever any lines have changed
-set confirm                     " Y-N-C prompt if closing with unsaved changes
+set confirm             " Y-N-C prompt if closing with unsaved changes
 set vb t_vb=            " Disable visual bell!  I hate that flashing.
+set t_Co=256
+"let g:solarized_termcolors=256
+let g:solarized_termtrans = 1
+colorscheme solarized
+set background=dark
 
 """" Editing
 set backspace=2         " Backspace over anything! (Super backspace!)
@@ -55,18 +56,12 @@ set undofile
 set wildignore=*.o,*.obj,*.bak,*.exe,*.pyc,*.swp
 
 """" Coding
-set history=100                                                 " 100 Lines of history
-set showfulltag                                                 " Show more information while completing tags
-filetype plugin on                                              " Enable filetype plugins
-filetype plugin indent on                               " Let filetype plugins indent for me
-syntax on                                                               " Turn on syntax highlighting
+set history=100         " 100 Lines of history
+set showfulltag         " Show more information while completing tags
+filetype plugin on      " Enable filetype plugins
+filetype plugin indent on           " Let filetype plugins indent for me
+syntax on               " Turn on syntax highlighting
 
-set t_Co=256
-"let g:solarized_termcolors=256
-let g:solarized_termtrans = 1
-colorscheme solarized
-set background=dark
-" }}}
 
 """" Command Line
 set wildmenu                                                    " Autocomplete features in the status bar
@@ -74,7 +69,10 @@ set wildmenu                                                    " Autocomplete f
 " Use Mac clipboard
 set clipboard=unnamed
 
-" Windows --------------- {{{
+
+" }}}
+
+" Windows  {{{
 if exists(":tab")                                               " Try to move to other windows if changing buf
        set switchbuf=useopen,usetab
 else                                                                    " Try other windows & tabs if available
@@ -82,21 +80,32 @@ else                                                                    " Try ot
 endif
 " }}}
 
-
+" Tags {{{
 " set up tags
 set tags=tags;/
 set tags+=$HOME/.vim/tags/python.ctags
-
-" Folding ---------------------- {{{
-set foldmethod=syntax                                   " By default, use syntax to determine folds
-set foldlevelstart=99                                   " All folds open by default
+" Toggle the tag list bar
+"nmap <a-down> :TlistAddFiles %:p<CR>:TlistUpdate<CR>
+"nmap <F4> :TlistToggle<CR><a-down><CR>
 " }}}
 
-" Statusline
-"set statusline=
+" Folding ----------------------{{{
+set foldmethod=syntax     " By default, use syntax to determine folds
+set foldlevelstart=99     " All folds open by default
 
-let g:vim_json_syntax_conceal = 0
+augroup filetype_vim_fold
+    autocmd!
+    autocmd FileType vim setlocal foldmethod=marker
+    autocmd FileType vim setlocal foldlevelstart=0     " All folds closed
+augroup END
 
+" <space> toggles folds opened and closed
+nnoremap <space> za
+" <space> in visual mode creates a fold over the marked range
+vnoremap <space> zf
+" }}}
+
+" Plugins:
 " Airline {{{
 let g:airline_powerline_fonts = 1
 let g:airline_section_c='%f'
@@ -104,45 +113,23 @@ let g:airline_section_z = '%c'
 let g:airline_section_warning= ''
 " }}}
 
-"""" Autocommands
-if has("autocmd")
+" Statusline
+"set statusline=
+
+let g:vim_json_syntax_conceal = 0
+
+
 augroup vimrcEx
-au!
-       " In all files, try to jump back to the last spot cursor was in before exiting
-       au BufReadPost *
-               \ if line("'\"") > 0 && line("'\"") <= line("$") |
-               \   exe "normal g`\"" |
-               \ endif
-       " kill calltip window if we move cursor or leave insert mode
-       au CursorMovedI * if pumvisible() == 0|pclose|endif
-       au InsertLeave * if pumvisible() == 0|pclose|endif
-
-       augroup END
-
-endif
-
-"""" Key Mappings
-" bind ctrl+space for omnicompletion
-inoremap <Nul> <C-x><C-o>
-
-" Toggle the tag list bar
-nmap <F4> :TlistToggle<CR>
-
-" tab navigation (next tab) with alt left / alt right
-nnoremap  <a-right>  gt
-nnoremap  <a-left>   gT
-
-" Ctrl + Arrows - Move around quickly
-nnoremap  <c-up>     {
-nnoremap  <c-down>   }
-nnoremap  <c-right>  El
-nnoremap  <c-down>   Bh
-
-" Shift + Arrows - Visually Select text
-nnoremap  <s-up>     Vk
-nnoremap  <s-down>   Vj
-nnoremap  <s-right>  vl
-nnoremap  <s-left>   vh
+  au!
+   " In all files, try to jump back to the last spot cursor was in before exiting
+   au BufReadPost *
+           \ if line("'\"") > 0 && line("'\"") <= line("$") |
+           \   exe "normal g`\"" |
+           \ endif
+   " kill calltip window if we move cursor or leave insert mode
+   au CursorMovedI * if pumvisible() == 0|pclose|endif
+   au InsertLeave * if pumvisible() == 0|pclose|endif
+augroup END
 
 if &diff
 " easily handle diffing
@@ -157,38 +144,6 @@ endif
 
 " <C-l> redraws the screen and removes any search highlighting.
 nnoremap <silent> <C-l> :nohl<CR><C-l>
-
-
-" Arg!  I hate hitting q: instead of :q
-nnoremap q: q:iq<esc>
-nnoremap :W :w<esc>
-
-" <space> toggles folds opened and closed
-nnoremap <space> za
-
-" <space> in visual mode creates a fold over the marked range
-vnoremap <space> zf
-
-" allow arrow keys when code completion window is up
-inoremap <Down> <C-R>=pumvisible() ? "\<lt>C-N>" : "\<lt>Down>"<CR>
-
-""" Abbreviations
-function! EatChar(pat)
-       let c = nr2char(getchar(0))
-       return (c =~ a:pat) ? '' : c
-endfunc
-
-
-inoremap <expr> <C-Space> pumvisible() \|\| &omnifunc == '' ?
-                       \ "\<lt>C-n>" :
-                       \ "\<lt>C-x>\<lt>C-o><c-r>=pumvisible() ?" .
-                       \ "\"\\<lt>c-n>\\<lt>c-p>\\<lt>c-n>\" :" .
-                       \ "\" \\<lt>bs>\\<lt>C-n>\"\<CR>"
-imap <C-@> <C-Space>
-
-" Toggle the tag list bar
-nmap <a-down> :TlistAddFiles %:p<CR>:TlistUpdate<CR>
-nmap <F4> :TlistToggle<CR><a-down><CR>
 
 
 " Transparent editing of GnuPG-encrypted files {{{
@@ -224,15 +179,9 @@ augroup encrypted
 augroup END
 " }}}
 
-
-augroup filetype_vim
-    autocmd!
-    autocmd FileType vim setlocal foldmethod=marker
-augroup END
-
 let mapleader = ","
 
-" File Navigation Shortcuts {{{
+" Navigate files and directories --------------------------------------------{{{
 " Edit files in curr folder http://vimcasts.org/episodes/the-edit-command/
 cnoremap %% <C-R>=expand('%:h').'/'<cr>
 noremap <leader>ew :e <C-R>=expand('%:h').'/'<cr>
@@ -242,10 +191,20 @@ noremap <leader>et :tabe <C-R>=expand('%:h').'/'<cr>
 noremap <leader>ee :CtrlP<CR>
 " }}}
 
+" Navigate splits and tabs {{{
 set splitbelow
 set splitright
 
+" Cycle through the tabs
+map <C-J> :tabp<CR>
+map <C-K> :tabn<CR>
 
+" tab navigation (next tab) with alt left / alt right
+nnoremap  <a-right>  gt
+nnoremap  <a-left>   gT
+" }}}
+
+" Mouse {{{
 "Borrowed the following from http://mrqe.co/OwAmwT
 if has ('mouse')
     set mouse=a
@@ -253,17 +212,14 @@ if has ('mouse')
         set ttymouse=xterm2
     endif
 endif
+" }}}
 
-cnoreabbrev Wq wq
 
 "  == From admc
 " Highlight redundant whitespaces.
 highlight RedundantSpaces ctermbg=blue guibg=blue 
 match RedundantSpaces /\s\+$\| \+\ze\t/
 
-" Cycle through the tabs
-map <C-J> :tabp<CR>
-map <C-K> :tabn<CR>
 
 
 " Arduino

@@ -9,7 +9,7 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/hgrc ~/.hgrc
 	ln -sf $(DOTPATH)/profile ~/.profile
 	ln -sf $(DOTPATH)/screenrc ~/.screenrc
-	ln -sf $(DOTPATH)/vimrc ~/.vimrc
+	ln -sf $(DOTPATH)/vimrc.vim ~/.vimrc
 	ln -sf $(DOTPATH)/zshrc ~/.zshrc
 	ln -sf $(DOTPATH)/vim ~/.vim
 	ln -sf $(DOTPATH)/tmuxrc ~/.tmux.conf
