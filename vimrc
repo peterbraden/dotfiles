@@ -12,7 +12,7 @@ noremap k gk
 """" Searching and Patterns
 set ignorecase          " search is case insensitive
 set smartcase           " search case sensitive if caps on
-set incse                                " show best match so far
+set incsearch                               " show best match so far
 set hlsearch                        " Highlight matches to the search
 
 """" Display
@@ -68,7 +68,13 @@ colorscheme solarized
 set background=dark
 " }}}
 
-""" Windows --------------- {{{
+"""" Command Line
+set wildmenu                                                    " Autocomplete features in the status bar
+
+" Use Mac clipboard
+set clipboard=unnamed
+
+" Windows --------------- {{{
 if exists(":tab")                                               " Try to move to other windows if changing buf
        set switchbuf=useopen,usetab
 else                                                                    " Try other windows & tabs if available
@@ -81,25 +87,22 @@ endif
 set tags=tags;/
 set tags+=$HOME/.vim/tags/python.ctags
 
-""""" Folding
+" Folding ---------------------- {{{
 set foldmethod=syntax                                   " By default, use syntax to determine folds
 set foldlevelstart=99                                   " All folds open by default
-
-"""" Command Line
-set wildmenu                                                    " Autocomplete features in the status bar
-
-" Use Mac clipboard
-set clipboard=unnamed
+" }}}
 
 " Statusline
 "set statusline=
 
 let g:vim_json_syntax_conceal = 0
 
+" Airline {{{
 let g:airline_powerline_fonts = 1
 let g:airline_section_c='%f'
 let g:airline_section_z = '%c'
 let g:airline_section_warning= ''
+" }}}
 
 """" Autocommands
 if has("autocmd")
@@ -188,7 +191,7 @@ nmap <a-down> :TlistAddFiles %:p<CR>:TlistUpdate<CR>
 nmap <F4> :TlistToggle<CR><a-down><CR>
 
 
-" Transparent editing of GnuPG-encrypted files
+" Transparent editing of GnuPG-encrypted files {{{
 " Based on a solution by Wouter Hanegraaff
 augroup encrypted
   au!
@@ -219,14 +222,17 @@ augroup encrypted
   " after the file has been written.
   autocmd BufWritePost,FileWritePost *.gpg,*.asc u
 augroup END
+" }}}
+
 
 augroup filetype_vim
     autocmd!
     autocmd FileType vim setlocal foldmethod=marker
 augroup END
 
-" =====  Shortcut  =====
 let mapleader = ","
+
+" File Navigation Shortcuts {{{
 " Edit files in curr folder http://vimcasts.org/episodes/the-edit-command/
 cnoremap %% <C-R>=expand('%:h').'/'<cr>
 noremap <leader>ew :e <C-R>=expand('%:h').'/'<cr>
@@ -234,6 +240,7 @@ noremap <leader>es :sp <C-R>=expand('%:h').'/'<cr>
 noremap <leader>ev :vsp <C-R>=expand('%:h').'/'<cr>
 noremap <leader>et :tabe <C-R>=expand('%:h').'/'<cr>
 noremap <leader>ee :CtrlP<CR>
+" }}}
 
 set splitbelow
 set splitright
@@ -263,7 +270,7 @@ map <C-K> :tabn<CR>
 au BufRead,BufNewFile *.pde set filetype=arduino
 au BufRead,BufNewFile *.ino set filetype=arduino
 
-" Ctrl P
+" Ctrl P {{{
 let g:ctrlp_map = '<c-p>'
 let g:ctrlp_cmd = 'CtrlP'
 let g:ctrlp_custom_ignore = {
@@ -275,10 +282,12 @@ let g:ctrlp_prompt_mappings = {
   \ 'AcceptSelection("t")': ['<c-t>', '<cr>'],
   \ 'AcceptSelection("e")': [],
   \ }
+" }}}
 
+" Editing VIM {{{
 " Shortcuts.vim
 source $HOME/shortcuts.vim
-
 " Open vimrc or shortcuts.vim
 :nnoremap <leader>rc :vsplit $MYVIMRC<cr>
 :nnoremap <leader>sc :vsplit $HOME/shortcuts.vim<cr>
+" }}}
