@@ -1,4 +1,5 @@
 call pathogen#infect()
+let mapleader = ","
 
 " Basic Settings -------------------- {{{
 set nocompatible    " Don't be compatible with vi
@@ -113,39 +114,6 @@ let g:airline_section_z = '%c'
 let g:airline_section_warning= ''
 " }}}
 
-" Statusline
-"set statusline=
-
-let g:vim_json_syntax_conceal = 0
-
-
-augroup vimrcEx
-  au!
-   " In all files, try to jump back to the last spot cursor was in before exiting
-   au BufReadPost *
-           \ if line("'\"") > 0 && line("'\"") <= line("$") |
-           \   exe "normal g`\"" |
-           \ endif
-   " kill calltip window if we move cursor or leave insert mode
-   au CursorMovedI * if pumvisible() == 0|pclose|endif
-   au InsertLeave * if pumvisible() == 0|pclose|endif
-augroup END
-
-if &diff
-" easily handle diffing
-  vnoremap < :diffget<CR>
-  vnoremap > :diffput<CR>
-else
-" visual shifting (builtin-repeat)
-  vnoremap < <gv
-  vnoremap > >gv
-endif
-
-
-" <C-l> redraws the screen and removes any search highlighting.
-nnoremap <silent> <C-l> :nohl<CR><C-l>
-
-
 " Transparent editing of GnuPG-encrypted files {{{
 " Based on a solution by Wouter Hanegraaff
 augroup encrypted
@@ -178,8 +146,6 @@ augroup encrypted
   autocmd BufWritePost,FileWritePost *.gpg,*.asc u
 augroup END
 " }}}
-
-let mapleader = ","
 
 " Navigate files and directories --------------------------------------------{{{
 " Edit files in curr folder http://vimcasts.org/episodes/the-edit-command/
@@ -214,17 +180,51 @@ if has ('mouse')
 endif
 " }}}
 
+" Editor Misc {{{
+
+" Statusline
+"set statusline=
+
+let g:vim_json_syntax_conceal = 0
+
+
+augroup vimrcEx
+  au!
+   " In all files, try to jump back to the last spot cursor was in before exiting
+   au BufReadPost *
+           \ if line("'\"") > 0 && line("'\"") <= line("$") |
+           \   exe "normal g`\"" |
+           \ endif
+   " kill calltip window if we move cursor or leave insert mode
+   au CursorMovedI * if pumvisible() == 0|pclose|endif
+   au InsertLeave * if pumvisible() == 0|pclose|endif
+augroup END
+
+if &diff
+" easily handle diffing
+  vnoremap < :diffget<CR>
+  vnoremap > :diffput<CR>
+else
+" visual shifting (builtin-repeat)
+  vnoremap < <gv
+  vnoremap > >gv
+endif
+
+
+" <C-l> redraws the screen and removes any search highlighting.
+nnoremap <silent> <C-l> :nohl<CR><C-l>
 
 "  == From admc
 " Highlight redundant whitespaces.
 highlight RedundantSpaces ctermbg=blue guibg=blue 
 match RedundantSpaces /\s\+$\| \+\ze\t/
+" }}}
 
-
-
+" Filetypes {{{
 " Arduino
 au BufRead,BufNewFile *.pde set filetype=arduino
 au BufRead,BufNewFile *.ino set filetype=arduino
+" }}}
 
 " Ctrl P {{{
 let g:ctrlp_map = '<c-p>'
