@@ -1,64 +1,54 @@
 call pathogen#infect()
 
-""" Settings
-set nocompatible                                                " Don't be compatible with vi
+
+" Basic Settings -------------------- {{{
+set nocompatible    " Don't be compatible with vi
 
 """" Movement
-" work more logically with wrapped lines
+" Work more logically with wrapped lines
 noremap j gj
 noremap k gk
 
 """" Searching and Patterns
-set ignorecase                                                  " search is case insensitive
-set smartcase                                                   " search case sensitive if caps on
-set incsearch                                                   " show best match so far
-set hlsearch                                                    " Highlight matches to the search
+set ignorecase          " search is case insensitive
+set smartcase           " search case sensitive if caps on
+set incse                                " show best match so far
+set hlsearch                        " Highlight matches to the search
 
 """" Display
-set background=dark                                             " I use dark background
-set lazyredraw                                                  " Don't repaint when scripts are running
-set scrolloff=3                                                 " Keep 3 lines below and above the cursor
-set ruler                                                               " line numbers and column the cursor is on
-set number                                                              " Show line numbering
-set numberwidth=1                                               " Use 1 col + 1 space for numbers
+set background=dark         " I use dark background
+set lazyredraw              " Don't repaint when scripts are running
+set scrolloff=3             " Keep 3 lines below and above the cursor
+set ruler                   " line numbers and column the cursor is on
+set number                  " Show line numbering
+set numberwidth=1           " Use 1 col + 1 space for numbers
 set showcmd
 set showmode
 set title
 
-
 " tab labels show the filename without path(tail)
 set guitablabel=%N/\ %t\ %M
-
-""" Windows
-if exists(":tab")                                               " Try to move to other windows if changing buf
-       set switchbuf=useopen,usetab
-else                                                                    " Try other windows & tabs if available
-               set switchbuf=useopen
-endif
-
 """" Messages, Info, Status
-set shortmess+=a                                                " Use [+] [RO] [w] for modified, read-only, modified
-set showcmd                                                             " Display what command is waiting for an operator
-set ruler                                                               " Show pos below the win if there's no status line
-set laststatus=2                                                " Always show statusline, even if only 1 window
-set report=0                                                    " Notify me whenever any lines have changed
-set confirm                                                             " Y-N-C prompt if closing with unsaved changes
-set vb t_vb=                                                    " Disable visual bell!  I hate that flashing.
+set shortmess+=a                            " Use [+] [RO] [w] for modified, read-only, modified
+set showcmd                     " Display what command is waiting for an operator
+set ruler                       " Show pos below the win if there's no status line
+set laststatus=2        " Always show statusline, even if only 1 window
+set report=0            " Notify me whenever any lines have changed
+set confirm                     " Y-N-C prompt if closing with unsaved changes
+set vb t_vb=            " Disable visual bell!  I hate that flashing.
 
 """" Editing
-set backspace=2                                                 " Backspace over anything! (Super backspace!)
-set showmatch                                                   " Briefly jump to the previous matching paren
-set matchtime=2                                                 " For .2 seconds
-set formatoptions-=tc                                           " I can format for myself, thank you very much
-set expandtab                                                   " Use soft tabs
-set tabstop=2                                                   " Tab stop of 2
-set shiftwidth=2                                                " sw 2 spaces (used on auto indent)
-set softtabstop=2                                               " 2 spaces as a tab for bs/del
+set backspace=2         " Backspace over anything! (Super backspace!)
+set showmatch           " Briefly jump to the previous matching paren
+set matchtime=2         " For .2 seconds
+set formatoptions-=tc   " I can format for myself, thank you very much
+set expandtab           " Use soft tabs
+set tabstop=2           " Tab stop of 2
+set shiftwidth=2        " sw 2 spaces (used on auto indent)
+set softtabstop=2       " 2 spaces as a tab for bs/del
 set autoindent
 set encoding=utf-8
 set hidden
-
-
 set undofile
 
 " we don't want to edit these type of files
@@ -76,6 +66,16 @@ set t_Co=256
 let g:solarized_termtrans = 1
 colorscheme solarized
 set background=dark
+" }}}
+
+""" Windows --------------- {{{
+if exists(":tab")                                               " Try to move to other windows if changing buf
+       set switchbuf=useopen,usetab
+else                                                                    " Try other windows & tabs if available
+               set switchbuf=useopen
+endif
+" }}}
+
 
 " set up tags
 set tags=tags;/
@@ -87,6 +87,19 @@ set foldlevelstart=99                                   " All folds open by defa
 
 """" Command Line
 set wildmenu                                                    " Autocomplete features in the status bar
+
+" Use Mac clipboard
+set clipboard=unnamed
+
+" Statusline
+"set statusline=
+
+let g:vim_json_syntax_conceal = 0
+
+let g:airline_powerline_fonts = 1
+let g:airline_section_c='%f'
+let g:airline_section_z = '%c'
+let g:airline_section_warning= ''
 
 """" Autocommands
 if has("autocmd")
@@ -175,7 +188,6 @@ nmap <a-down> :TlistAddFiles %:p<CR>:TlistUpdate<CR>
 nmap <F4> :TlistToggle<CR><a-down><CR>
 
 
-
 " Transparent editing of GnuPG-encrypted files
 " Based on a solution by Wouter Hanegraaff
 augroup encrypted
@@ -208,6 +220,10 @@ augroup encrypted
   autocmd BufWritePost,FileWritePost *.gpg,*.asc u
 augroup END
 
+augroup filetype_vim
+    autocmd!
+    autocmd FileType vim setlocal foldmethod=marker
+augroup END
 
 " =====  Shortcut  =====
 let mapleader = ","
@@ -259,20 +275,6 @@ let g:ctrlp_prompt_mappings = {
   \ 'AcceptSelection("t")': ['<c-t>', '<cr>'],
   \ 'AcceptSelection("e")': [],
   \ }
-
-
-" Use Mac clipboard
-set clipboard=unnamed
-
-" Statusline
-"set statusline=
-
-let g:vim_json_syntax_conceal = 0
-
-let g:airline_powerline_fonts = 1
-let g:airline_section_c='%f'
-let g:airline_section_z = '%c'
-let g:airline_section_warning= ''
 
 " Shortcuts.vim
 source $HOME/shortcuts.vim
