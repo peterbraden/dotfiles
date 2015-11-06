@@ -59,6 +59,7 @@ set wildignore=*.o,*.obj,*.bak,*.exe,*.pyc,*.swp
 """" Coding
 set history=100         " 100 Lines of history
 set showfulltag         " Show more information while completing tags
+filetype on
 filetype plugin on      " Enable filetype plugins
 filetype plugin indent on           " Let filetype plugins indent for me
 syntax on               " Turn on syntax highlighting
@@ -89,6 +90,7 @@ augroup filetype_vim_fold
     autocmd!
     autocmd FileType vim setlocal foldmethod=marker
     autocmd FileType vim setlocal foldlevelstart=0     " All folds closed
+    autocmd FileType vim setlocal foldlevel=0     " For files that are opened (when you first load vim, the file is open before this is called)
 augroup END
 
 " <space> toggles folds opened and closed

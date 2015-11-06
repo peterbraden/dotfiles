@@ -1,6 +1,8 @@
 # ====== ALIASES ======
 alias vi=vim
 
+alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
+
 # GIT
 alias gp='git pull'
 alias gd='git diff'
