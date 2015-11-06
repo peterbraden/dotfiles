@@ -4,11 +4,6 @@ let mapleader = ","
 " Basic Settings -------------------- {{{
 set nocompatible    " Don't be compatible with vi
 
-"""" Movement
-" Work more logically with wrapped lines
-noremap j gj
-noremap k gk
-
 """" Searching and Patterns
 set ignorecase          " search is case insensitive
 set smartcase           " search case sensitive if caps on
@@ -75,10 +70,10 @@ set clipboard=unnamed
 " }}}
 
 " Windows  {{{
-if exists(":tab")                                               " Try to move to other windows if changing buf
-       set switchbuf=useopen,usetab
-else                                                                    " Try other windows & tabs if available
-               set switchbuf=useopen
+if exists(":tab")                 " Try to move to other windows if changing buf
+  set switchbuf=useopen,usetab
+else                              " Try other windows & tabs if available
+  set switchbuf=useopen
 endif
 " }}}
 
@@ -97,6 +92,37 @@ augroup END
 nnoremap <space> za
 " <space> in visual mode creates a fold over the marked range
 vnoremap <space> zf
+" }}}
+
+" Navigate within File {{{
+
+" Work more logically with wrapped lines
+noremap j gj
+noremap k gk
+
+" }}}
+
+" Navigate files and directories --------------------------------------------{{{
+" Edit files in curr folder http://vimcasts.org/episodes/the-edit-command/
+cnoremap %% <C-R>=expand('%:h').'/'<cr>
+noremap <leader>ew :e <C-R>=expand('%:h').'/'<cr>
+noremap <leader>es :sp <C-R>=expand('%:h').'/'<cr>
+noremap <leader>ev :vsp <C-R>=expand('%:h').'/'<cr>
+noremap <leader>et :tabe <C-R>=expand('%:h').'/'<cr>
+noremap <leader>ee :CtrlP<CR>
+" }}}
+
+" Navigate splits and tabs {{{
+set splitbelow
+set splitright
+
+" Cycle through the tabs
+map <C-J> :tabp<CR>
+map <C-K> :tabn<CR>
+
+" tab navigation (next tab) with alt left / alt right
+nnoremap  <a-right>  gt
+nnoremap  <a-left>   gT
 " }}}
 
 " Airline {{{
@@ -137,29 +163,6 @@ augroup encrypted
   " after the file has been written.
   autocmd BufWritePost,FileWritePost *.gpg,*.asc u
 augroup END
-" }}}
-
-" Navigate files and directories --------------------------------------------{{{
-" Edit files in curr folder http://vimcasts.org/episodes/the-edit-command/
-cnoremap %% <C-R>=expand('%:h').'/'<cr>
-noremap <leader>ew :e <C-R>=expand('%:h').'/'<cr>
-noremap <leader>es :sp <C-R>=expand('%:h').'/'<cr>
-noremap <leader>ev :vsp <C-R>=expand('%:h').'/'<cr>
-noremap <leader>et :tabe <C-R>=expand('%:h').'/'<cr>
-noremap <leader>ee :CtrlP<CR>
-" }}}
-
-" Navigate splits and tabs {{{
-set splitbelow
-set splitright
-
-" Cycle through the tabs
-map <C-J> :tabp<CR>
-map <C-K> :tabn<CR>
-
-" tab navigation (next tab) with alt left / alt right
-nnoremap  <a-right>  gt
-nnoremap  <a-left>   gT
 " }}}
 
 " Mouse {{{
