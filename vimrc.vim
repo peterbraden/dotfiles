@@ -10,6 +10,14 @@ set smartcase           " search case sensitive if caps on
 set incsearch           " show best match so far
 set hlsearch            " Highlight matches to the search
 
+""" Backups etc.
+set nobackup
+set nowritebackup
+set noswapfile
+set undofile
+set undodir=~/.vimundo/
+
+
 """" Display
 set background=dark         " I use dark background
 set lazyredraw              " Don't repaint when scripts are running
