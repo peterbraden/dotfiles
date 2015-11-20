@@ -3,35 +3,43 @@ let mapleader = ","
 
 " Basic Settings -------------------- {{{
 set nocompatible    " Don't be compatible with vi
+set history=100         " 100 Lines of history
+set showfulltag         " Show more information while completing tags
+filetype on
+filetype plugin on      " Enable filetype plugins
+filetype plugin indent on           " Let filetype plugins indent for me
+" Use Mac clipboard
+set clipboard=unnamed
+" }}}
 
-"""" Searching and Patterns
+" Searching and Patterns ------------ {{{
 set ignorecase          " search is case insensitive
 set smartcase           " search case sensitive if caps on
 set incsearch           " show best match so far
 set hlsearch            " Highlight matches to the search
+" }}}
 
-""" Backups etc.
+" Backups / Swapfiles etc ------------ {{{
 set nobackup
 set nowritebackup
 set noswapfile
 set undofile
 set undodir=~/.vimundo/
+" }}}
 
-
-"""" Display
+" Display -------------- {{{
+syntax on               " Turn on syntax highlighting
 set background=dark         " I use dark background
 set lazyredraw              " Don't repaint when scripts are running
 set scrolloff=3             " Keep 3 lines below and above the cursor
 set ruler                   " line numbers and column the cursor is on
 set number                  " Show line numbering
 set numberwidth=1           " Use 1 col + 1 space for numbers
-set showcmd
 set showmode
 set title
 set guitablabel=%N/\ %t\ %M     " tab labels show the filename without path(tail)
 set shortmess+=a                " Use [+] [RO] [w] for modified, read-only, modified
 set showcmd                     " Display what command is waiting for an operator
-set ruler                       " Show pos below the win if there's no status line
 set laststatus=2        " Always show statusline, even if only 1 window
 set report=0            " Notify me whenever any lines have changed
 set confirm             " Y-N-C prompt if closing with unsaved changes
@@ -41,8 +49,11 @@ set t_Co=256
 let g:solarized_termtrans = 1
 colorscheme solarized
 set background=dark
+set textwidth=80
+set colorcolumn=+1
+" }}}
 
-"""" Editing
+" Editing ------------- {{{
 set backspace=2         " Backspace over anything! (Super backspace!)
 set showmatch           " Briefly jump to the previous matching paren
 set matchtime=2         " For .2 seconds
@@ -56,25 +67,13 @@ set encoding=utf-8
 set hidden
 set undofile
 
+
 " we don't want to edit these type of files
 set wildignore=*.o,*.obj,*.bak,*.exe,*.pyc,*.swp
+" }}}
 
-"""" Coding
-set history=100         " 100 Lines of history
-set showfulltag         " Show more information while completing tags
-filetype on
-filetype plugin on      " Enable filetype plugins
-filetype plugin indent on           " Let filetype plugins indent for me
-syntax on               " Turn on syntax highlighting
-
-
-"""" Command Line
+" Command Line {{{
 set wildmenu                                                    " Autocomplete features in the status bar
-
-" Use Mac clipboard
-set clipboard=unnamed
-
-
 " }}}
 
 " Windows  {{{
@@ -225,8 +224,30 @@ match RedundantSpaces /\s\+$\| \+\ze\t/
 
 " Filetypes {{{
 " Arduino
-au BufRead,BufNewFile *.pde set filetype=arduino
-au BufRead,BufNewFile *.ino set filetype=arduino
+augroup vimrcFiletypes
+  autocmd!
+
+  au BufRead,BufNewFile *.pde set filetype=arduino
+  au BufRead,BufNewFile *.ino set filetype=arduino
+
+  " Enable spellchecking for Markdown
+  autocmd FileType markdown setlocal spell
+
+  " Automatically wrap at 80 characters for Markdown
+  autocmd BufRead,BufNewFile *.md setlocal textwidth=80
+
+  " Automatically wrap at 72 characters and spell check git commit messages
+  autocmd FileType gitcommit setlocal textwidth=72
+  autocmd FileType gitcommit setlocal spell
+
+  " Allow stylesheets to autocomplete hyphenated words
+  autocmd FileType css,scss,sass setlocal iskeyword+=-
+
+  " Treat <li> and <p> tags like the block tags they are
+  let g:html_indent_tags = 'li\|p'
+
+augroup END
+
 " }}}
 
 " Ctrl P {{{
