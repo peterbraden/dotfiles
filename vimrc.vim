@@ -31,6 +31,7 @@ set undodir=~/.vimundo/
 syntax on               " Turn on syntax highlighting
 set background=dark         " I use dark background
 set lazyredraw              " Don't repaint when scripts are running
+set ttyfast
 set scrolloff=3             " Keep 3 lines below and above the cursor
 set ruler                   " line numbers and column the cursor is on
 set number                  " Show line numbering
@@ -65,7 +66,6 @@ set softtabstop=2       " 2 spaces as a tab for bs/del
 set autoindent
 set encoding=utf-8
 set hidden
-set undofile
 
 
 " we don't want to edit these type of files
