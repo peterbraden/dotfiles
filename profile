@@ -17,6 +17,7 @@ alias genpwd="openssl rand -base64 20"
 
 # SSH
 alias prom='ssh peterbraden@prometheus'
+alias metis='ssh -i ~/.ssh/peter--work--ireland.pem ubuntu@metis'
 
 # TMUX
 # - supports 256 colors
