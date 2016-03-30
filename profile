@@ -1,5 +1,7 @@
 # ====== ALIASES ======
-alias vi=vim
+alias vi=vim -p
+export EDITOR=vim
+export VISUAL=vim
 
 alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
 
