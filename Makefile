@@ -1,7 +1,6 @@
 DOTPATH=`pwd`
 REPOPATH=~/repos
 
-
 link_dotfiles:
 	echo "=== Linking Dotfiles ===\n"
 	ln -sf $(DOTPATH)/gitconfig ~/.gitconfig
