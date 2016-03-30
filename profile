@@ -27,6 +27,7 @@ alias metis='ssh -i ~/.ssh/peter--work--ireland.pem ubuntu@metis'
 alias tmux=tmux -2
 # attach or create session - similar to `screen -dR foo`
 alias tm='tmux new-session -AD'
+alias tml='tmux list-sessions'
 
 
 alias boot2dockerinit='eval "$(boot2docker shellinit)"'
