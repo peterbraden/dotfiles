@@ -97,4 +97,6 @@ for app in "Dock" "SystemUIServer" "Finder"; do
   killall "$app" > /dev/null 2>&1
 done
 
+# iterm scroll
+defaults write com.googlecode.iterm2 AlternateMouseScroll -bool true
 
