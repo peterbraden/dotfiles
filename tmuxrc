@@ -1,4 +1,6 @@
-set -g default-terminal "screen-254color"
+set -g utf8
+set-window-option -g utf8 on
+set -g default-terminal "screen-256color"
 
 set -g prefix C-a
 unbind C-b
@@ -21,7 +23,8 @@ bind k kill-window
 bind r source-file ~/.tmux.conf; display "Reloaded!"
 
 # Necessary for scroll
-set -g mouse on
+set -g mode-mouse on
+
 
 set-option -g message-bg black
 set-option -g message-fg green
