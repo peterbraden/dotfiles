@@ -1,6 +1,4 @@
-set -g utf8
-set-window-option -g utf8 on
-set -g default-terminal "screen-256color"
+set -g default-terminal "screen-254color"
 
 set -g prefix C-a
 unbind C-b
@@ -23,8 +21,7 @@ bind k kill-window
 bind r source-file ~/.tmux.conf; display "Reloaded!"
 
 # Necessary for scroll
-set -g mode-mouse on
-
+set -g mouse on
 
 set-option -g message-bg black
 set-option -g message-fg green
@@ -40,3 +37,6 @@ set-window-option -g window-status-activity-attr none
 set -g status-right-length 100
 set -g status-right "#[fg=black,bg=blue] #S #[fg=black,bg=yellow] #(whoami)@#h #[fg=black,bg=red] #(ifconfig | awk '$1 == \"inet\" { print $2 }'|tail -1) "
 set -g status-left ""
+
+# iterm scroll
+set -g terminal-overrides 'xterm*:smcup@:rmcup@'
