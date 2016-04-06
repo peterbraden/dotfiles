@@ -9,7 +9,8 @@ bind C-a send-prefix
 set-option -g default-command $SHELL
 
 # Integrate with clipboard
-#set-option -g default-command "reattach-to-user-namespace -l zsh"
+set-option -g default-command "which reattach-to-user-namespace > /dev/null && reattach-to-user-namespace -l $SHELL || $SHELL"
+
 #set-window-option -g automatic-rename on
 
 # Same as screen ctrl-a-a
