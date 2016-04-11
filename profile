@@ -29,8 +29,9 @@ alias tmux=tmux -2
 alias tm='tmux new-session -AD'
 alias tml='tmux list-sessions'
 
-
+# Docker
 alias dockerinit='eval "$(docker-machine env)"'
+alias dockercleanup='docker rm -v $(docker ps -a -q -f status=exited)'
 
 
 function psgrep() {
