@@ -30,7 +30,7 @@ alias tm='tmux new-session -AD'
 alias tml='tmux list-sessions'
 
 
-alias dockerinit='eval "$(docker-machine env dev)"'
+alias dockerinit='eval "$(docker-machine env)"'
 
 
 function psgrep() {
