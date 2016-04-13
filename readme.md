@@ -31,7 +31,7 @@ cd;
 mkdir ~/repos;
 
 git clone git@github.com:peterbraden/dotfiles.git && cd dotfiles
-./install.sh
+make
 ```
 
 
