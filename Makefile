@@ -1,7 +1,7 @@
 DOTPATH=`pwd`
 REPOPATH=~/repos
 
-install: add_hosts change_shell link_dotfiles osx
+install: add_hosts change_shell link_dotfiles osx setup_ssh
 .PHONY: install
 .DEFAULT: install
 
@@ -24,6 +24,7 @@ add_hosts:
 	grep -c 'PB HOSTS' /etc/hosts || cat $(DOTPATH)/hosts | sudo tee -a /etc/hosts
 .PHONY: add_hosts
 
+# Use ZSH
 change_shell:
 	if [ "$$SHELL" != "/bin/zsh" ]; then \
 		echo "- Changing shell to zsh\n"; \
