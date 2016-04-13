@@ -81,4 +81,3 @@ compinit
 PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
 
 eval "`npm completion`"
-export PATH="/usr/local/sbin:$PATH"

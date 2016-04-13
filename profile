@@ -1,11 +1,26 @@
-# ====== ALIASES ======
-alias vi=vim -p
+# vim:fdm=marker
+
+# Environment -------------------  {{{
+export CLICOLOR=1
+export LSCOLORS=ExFxCxDxBxegedabagacad
 export EDITOR=vim
 export VISUAL=vim
+export HISTSIZE=10000
+export HISTCONTROL='ignoreboth';
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+# Highlight section titles in manual pages.
+export LESS_TERMCAP_md="${yellow}";
 
+export PATH="/usr/local/sbin:$PATH"
+# }}}
+
+# ALIASES ----------------------- {{{
+alias vi=vim -p
 alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
+# }}}
 
-# GIT
+# GIT ---------------------------- {{{
 alias gp='git pull'
 alias gd='git diff'
 alias gs='git status'
@@ -13,6 +28,7 @@ alias gca='git commit -a'
 alias gl='git log -p'
 alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
 alias git-cleanup='git branch --merged | grep -v "\*" | xargs -n 1 git branch -d'
+# }}}
 
 # Shortcuts
 alias d="date --rfc-3339=seconds"
@@ -30,10 +46,11 @@ alias tm='tmux new-session -AD'
 alias tml='tmux list-sessions'
 
 # Docker
-alias dockerinit='eval "$(docker-machine env)"'
-alias dockercleanup='docker rm -v $(docker ps -a -q -f status=exited)'
+alias docker-init='eval "$(docker-machine env)"'
+alias docker-cleanup='docker rm -v $(docker ps -a -q -f status=exited)'
+alias docker-killall=docker ps -a -q
 
-
+# Functions ----- {{{
 function psgrep() {
 EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
 ps aux | grep $EXP
@@ -42,6 +59,7 @@ ps aux | grep $EXP
 function ip(){
 ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
 }
+# }}}
 
 
 PATH=$PATH:$HOME/bin:./node_modules/.bin
@@ -55,7 +73,6 @@ if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
 	trap "kill $SSH_AGENT_PID" 0
 fi
 
-export HISTSIZE=10000
 
 extract () {
     if [ -f $1 ] ; then
@@ -79,8 +96,6 @@ extract () {
 }
 
 
-export LC_ALL=en_US.UTF-8
-export LANG=en_US.UTF-8
 
 
 

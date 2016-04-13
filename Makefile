@@ -1,6 +1,10 @@
 DOTPATH=`pwd`
 REPOPATH=~/repos
 
+install: add_hosts change_shell link_dotfiles osx
+.PHONY: install
+.DEFAULT: install
+
 link_dotfiles:
 	echo "=== Linking Dotfiles ===\n"
 	ln -sf $(DOTPATH)/gitconfig ~/.gitconfig
@@ -49,6 +53,3 @@ setup_ssh:
 	cp $(DOTPATH)/ssh/config ~/.ssh
 .PHONY: setup_ssh
 
-install: add_hosts change_shell link_dotfiles osx
-.PHONY: install
-.DEFAULT: install
