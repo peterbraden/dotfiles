@@ -13,7 +13,7 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/vim ~/.vim
 	ln -sf $(DOTPATH)/tmuxrc ~/.tmux.conf
 	ln -sf $(DOTPATH)/shortcuts.vim ~/shortcuts.vim
-	mkdir ~/.vimundo
+	mkdir -p ~/.vimundo
 .PHONY: link_dotfiles
 
 add_hosts:
