@@ -1,7 +1,8 @@
 DOTPATH=`pwd`
 REPOPATH=~/repos
+UNAME_S := $(shell uname -s)
 
-install: add_hosts change_shell link_dotfiles osx setup_ssh
+install: add_hosts change_shell link_dotfiles linux osx setup_ssh
 .PHONY: install
 .DEFAULT: install
 
@@ -25,7 +26,7 @@ add_hosts:
 .PHONY: add_hosts
 
 # Use ZSH
-change_shell:
+change_shell: linux
 	if [ "$$SHELL" != "/bin/zsh" ]; then \
 		echo "- Changing shell to zsh\n"; \
 		chsh $$USER  -s /bin/zsh; \
@@ -34,13 +35,21 @@ change_shell:
 
 # Setup Mac -> The last few versions have had _really_ crappy defaults
 osx:
-	if [ "$(uname)" == 'Darwin' ]; then \
-		echo "- Setting up a mac" \
-		$DOTPATH/osx/osx.sh \
-		$DOTPATH/osx/osx-apps.sh \
-		$DOTPATH/osx/brew.sh \
-	fi;
+ifeq ($(UNAME_S), Darwin)
+	echo "- Setting up a mac"
+	$(DOTPATH)/osx/osx.sh
+	$(DOTPATH)/osx/osx-apps.sh
+	$(DOTPATH)/osx/brew.sh
+endif
 .PHONY: osx
+
+
+linux:
+ifeq ($(UNAME_S), Linux)
+	echo " -setting up linux"
+	$(DOTPATH)/linux/apt.sh
+endif
+.PHONY: linux
 
 node_install:
 	sudo curl https://raw.githubusercontent.com/isaacs/nave/master/nave.sh > /usr/local/bin/nave

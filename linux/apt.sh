@@ -9,5 +9,4 @@ sudo apt-get upgrade
 
 sudo apt-get install -y build-essential
 
-
-sudo apt-get install -y vim
+sudo apt-get install -y zsh vim
