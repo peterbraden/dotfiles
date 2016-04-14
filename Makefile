@@ -29,7 +29,7 @@ add_hosts:
 change_shell: linux
 	if [ "$$SHELL" != "/bin/zsh" ]; then \
 		echo "- Changing shell to zsh\n"; \
-		chsh $$USER  -s /bin/zsh; \
+		chsh $$USER  -s $(which zsh) \
 	fi;
 .PHONY: change_shell
 
