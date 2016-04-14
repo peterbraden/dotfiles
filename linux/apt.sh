@@ -7,4 +7,7 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 sudo apt-get update
 sudo apt-get upgrade
 
-apt-get install build-essential
+sudo apt-get install -y build-essential
+
+
+sudo apt-get install -y vim
