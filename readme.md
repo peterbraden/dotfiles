@@ -15,21 +15,17 @@ System Prefs > Security > Allow Apps from anywhere
 - Private Key etc
 
 ## Setup Github keys:
-```shell
+```sh
 ssh-keygen -t rsa -C "peterbraden@peterbraden.co.uk"
 cat ~/.ssh/id_rsa.pub | pbcopy
 ```
 
-Paste into:
-```shell
-https://github.com/settings/ssh
-```
+Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
 
 ## Setup
-```shell
-cd;
-mkdir ~/repos;
-
+```sh
+cd
+mkdir ~/repos
 git clone git@github.com:peterbraden/dotfiles.git && cd dotfiles
 make
 ```
