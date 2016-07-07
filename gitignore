@@ -22,6 +22,7 @@
 *.log
 *.sql
 *.sqlite
+npm-debug.log*
 
 ### OS generated files
 .DS_Store
@@ -32,3 +33,11 @@
 ehthumbs.db
 Thumbs.db
 *~
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+
