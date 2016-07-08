@@ -100,3 +100,7 @@ done
 # iterm scroll
 defaults write com.googlecode.iterm2 AlternateMouseScroll -bool true
 
+
+# Kill useless
+defaults write com.apple.gamed Disabled -bool true
+
