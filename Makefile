@@ -23,6 +23,10 @@ link_dotfiles:
 
 add_hosts:
 	grep -c 'PB HOSTS' /etc/hosts || cat $(DOTPATH)/hosts | sudo tee -a /etc/hosts
+	## Symlinks don't currently work on osx
+	#sudo ln -sf $(DOTPATH)/hosts /etc/hosts
+	#dscacheutil -flushcache
+	#sudo killall -HUP mDNSResponder
 .PHONY: add_hosts
 
 # Use ZSH

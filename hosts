@@ -1,13 +1,13 @@
 # -- PB HOSTS --
 
 127.0.0.1	localhost
+::1 localhost
 
 # My Machines
 173.255.254.35 prometheus # Linode
 52.49.130.228 metis # EC2
 
 54.225.239.171 frozenridge-ec2-0
-
 
 # ======== Time Wasting =============
 127.0.0.1 reddit.com
@@ -17,6 +17,9 @@
 127.0.0.1 news.ycombinator.com
 127.0.0.1 hckrnews.com
 127.0.0.1 twitter.com
+127.0.0.1 www.twitter.com
 127.0.0.1 facebook.com
+127.0.0.1 www.facebook.com
+
 
 
