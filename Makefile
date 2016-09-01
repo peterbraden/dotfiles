@@ -42,7 +42,7 @@ osx:
 ifeq ($(UNAME_S), Darwin)
 	echo "- Setting up a mac"
 	$(DOTPATH)/osx/osx.sh
-	$(DOTPATH)/osx/osx-apps.sh
+	$(DOTPATH)/osx/apps.sh
 	$(DOTPATH)/osx/brew.sh
 endif
 .PHONY: osx
