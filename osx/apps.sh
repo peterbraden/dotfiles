@@ -11,10 +11,10 @@ open http://www.mozilla.org/en-US/firefox/channel/
 
 # Google Drive
 # GPG
-open https://gpgtools.org/`
+open 'https://gpgtools.org/'
 
 # Iterm:
-open http://www.iterm2.com/#/section/home
+open "http://www.iterm2.com/#/section/home"
 
 # Macports
 http://www.macports.org/install.php
@@ -33,3 +33,4 @@ open https://adblockplus.org/en/chrome
 open https://www.ghostery.com/en/
 
 #NValt
+
