@@ -7,6 +7,8 @@ install: add_hosts change_shell link_dotfiles linux osx setup_ssh
 .DEFAULT: install
 
 link_dotfiles:
+	git submodule init
+	git submodule update
 	echo "=== Linking Dotfiles ===\n"
 	ln -sf $(DOTPATH)/gitconfig ~/.gitconfig
 	ln -sf $(DOTPATH)/gitignore ~/.gitignore
@@ -18,6 +20,7 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/vim ~/.vim
 	ln -sf $(DOTPATH)/tmuxrc ~/.tmux.conf
 	ln -sf $(DOTPATH)/shortcuts.vim ~/shortcuts.vim
+	ln -sf $(DOTPATH)/vim ~/.vim
 	mkdir -p ~/.vimundo
 .PHONY: link_dotfiles
 
