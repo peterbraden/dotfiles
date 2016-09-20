@@ -12,7 +12,9 @@ export LANG=en_US.UTF-8
 # Highlight section titles in manual pages.
 export LESS_TERMCAP_md="${yellow}";
 
+
 export PATH="/usr/local/sbin:$PATH"
+export PATH="/usr/local/bin:$PATH"
 # }}}
 
 # ALIASES ----------------------- {{{

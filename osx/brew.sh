@@ -11,8 +11,6 @@ ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/
 brew update
 brew upgrade --all
 
-
-
 brew install coreutils
 sudo ln -s /usr/local/bin/gsha256sum /usr/local/bin/sha256sum
 
@@ -37,5 +35,7 @@ brew install homebrew/dupes/screen
 brew install tmux
 brew install ack
 brew install git
+
+brew install pass
 
 brew cleanup

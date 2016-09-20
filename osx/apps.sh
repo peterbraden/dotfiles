@@ -1,13 +1,7 @@
 ## For install, open tabs to apps
 
-# Adium
-open https://adium.im/
-
 # Chrome
 open https://www.google.com/intl/en/chrome/browser/thankyou.html
-
-# Evernote:
-open http://www.evernote.com/
 
 # Flux:
 open http://stereopsis.com/flux/
@@ -16,14 +10,11 @@ open http://stereopsis.com/flux/
 open http://www.mozilla.org/en-US/firefox/channel/
 
 # Google Drive
-
 # GPG
-open https://gpgtools.org/`
-
-# Harvest
+open 'https://gpgtools.org/'
 
 # Iterm:
-open http://www.iterm2.com/#/section/home
+open "http://www.iterm2.com/#/section/home"
 
 # Macports
 http://www.macports.org/install.php
@@ -40,4 +31,6 @@ open http://itunes.apple.com/us/app/xcode/id497799835?ls=1&mt=12
 open https://www.eff.org/https-everywhere
 open https://adblockplus.org/en/chrome
 open https://www.ghostery.com/en/
+
+#NValt
 
