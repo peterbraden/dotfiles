@@ -12,3 +12,4 @@ nnoremap q: q:iq<esc>
 nnoremap :W :w<esc>
 " }}}
 
+nnoremap :whitespace :%s/\s\+$//
