@@ -20,7 +20,7 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/vim ~/.vim
 	ln -sf $(DOTPATH)/tmuxrc ~/.tmux.conf
 	ln -sf $(DOTPATH)/shortcuts.vim ~/shortcuts.vim
-	ln -sf $(DOTPATH)/vim ~/.vim
+	ln -sf $(DOTPATH)/vim ~/.vim/
 	mkdir -p ~/.vimundo
 .PHONY: link_dotfiles
 
@@ -36,7 +36,7 @@ add_hosts:
 change_shell: linux
 	if [ "$$SHELL" != "/bin/zsh" ]; then \
 		echo "- Changing shell to zsh\n"; \
-		chsh $$USER  -s $(shell which zsh); \
+		chsh -u $$USER  -s $(shell which zsh); \
 	fi;
 .PHONY: change_shell
 
