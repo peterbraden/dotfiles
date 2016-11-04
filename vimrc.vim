@@ -1,3 +1,4 @@
+set nocp
 call pathogen#infect()
 let mapleader = ","
 
