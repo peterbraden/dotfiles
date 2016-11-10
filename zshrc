@@ -10,7 +10,7 @@ git_branch() {
 }
 
 git_dirty() {
-  st=$($GIT status 2>/dev/null | tail -n 1)
+  st=$($GIT status --porcelain 2>/dev/null | tail -n 1)
   if [[ $st == "" ]]
   then
     echo ""
