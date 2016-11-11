@@ -4,6 +4,7 @@ export GIT="$(which git)"
 
 autoload colors && colors
 
+bindkey -e
 
 git_branch() {
   echo $($GIT symbolic-ref HEAD 2>/dev/null | awk -F/ {'print $NF'})
@@ -13,7 +14,7 @@ git_dirty() {
   st=$($GIT status --porcelain 2>/dev/null | tail -n 1)
   if [[ $st == "" ]]
   then
-    echo ""
+      echo "%{$fg[green]%}$(git_prompt_info)%{$reset_color%}"
   else
     if [[ $st =~ ^nothing ]]
     then
