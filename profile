@@ -46,6 +46,7 @@ alias tmux=tmux -2
 # attach or create session - similar to `screen -dR foo`
 alias tm='tmux new-session -AD'
 alias tml='tmux list-sessions'
+alias tmo='~/repos/dotfiles/scripts/open-project.sh'
 
 # Docker
 alias docker-init='eval "$(docker-machine env)"'

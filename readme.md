@@ -30,7 +30,12 @@ git clone git@github.com:peterbraden/dotfiles.git && cd dotfiles
 make
 ```
 
+# Pathogen add
 
+```
+git submodule add https://github.com/pathto/repo.git vim/bundle/repo.vim
+
+```
 
 
 
