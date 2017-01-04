@@ -16,12 +16,7 @@ open 'https://gpgtools.org/'
 # Iterm:
 open "http://www.iterm2.com/#/section/home"
 
-# Macports
-http://www.macports.org/install.php
-
-# Skype
-
-# Visor: 
+# Visor:
 open http://totalterminal.binaryage.com/
 
 # Xcode
@@ -33,4 +28,4 @@ open https://adblockplus.org/en/chrome
 open https://www.ghostery.com/en/
 
 #NValt
-
+# Lightroom
