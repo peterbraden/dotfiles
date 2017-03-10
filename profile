@@ -38,7 +38,7 @@ alias genpwd="openssl rand -base64 20"
 
 # SSH
 alias prom='ssh peterbraden@prometheus'
-alias metis='ssh -i ~/.ssh/peter--work--ireland.pem ubuntu@metis'
+alias metis='ssh -i ~/.ssh/peter-ratatosk-metis.pem peterbraden@metis'
 
 # TMUX
 # - supports 256 colors
@@ -102,3 +102,5 @@ extract () {
 
 
 
+
+export PATH="$HOME/.cargo/bin:$PATH"

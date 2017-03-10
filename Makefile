@@ -36,7 +36,7 @@ add_hosts:
 change_shell: linux
 	if [ "$$SHELL" != "/bin/zsh" ]; then \
 		echo "- Changing shell to zsh\n"; \
-		chsh -u $$USER  -s $(shell which zsh); \
+		sudo chsh --shell $(shell which zsh) $$USER; \
 	fi;
 .PHONY: change_shell
 
@@ -64,9 +64,9 @@ node_install:
 .PHONY: node_install
 
 setup_ssh:
-	mkdir -p ~/.ssh
-	cp $(DOTPATH)/ssh/authorized_keys ~/.ssh
-	cp $(DOTPATH)/ssh/sshd_config ~/.ssh
-	cp $(DOTPATH)/ssh/config ~/.ssh
+	#mkdir -p ~/.ssh
+	#cp $(DOTPATH)/ssh/authorized_keys ~/.ssh
+	#cp $(DOTPATH)/ssh/sshd_config ~/.ssh
+	#cp $(DOTPATH)/ssh/config ~/.ssh
 .PHONY: setup_ssh
 

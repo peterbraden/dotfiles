@@ -104,3 +104,5 @@ defaults write com.googlecode.iterm2 AlternateMouseScroll -bool true
 # Kill useless
 defaults write com.apple.gamed Disabled -bool true
 
+
+defaults write com.google.Chrome.plist AppleEnableSwipeNavigateWithScrolls -bool FALSE
