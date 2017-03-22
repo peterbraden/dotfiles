@@ -25,7 +25,7 @@ link_dotfiles:
 .PHONY: link_dotfiles
 
 add_hosts:
-	grep -c 'PB HOSTS' /etc/hosts || cat $(DOTPATH)/hosts | sudo tee -a /etc/hosts
+	#grep -c 'PB HOSTS' /etc/hosts || cat $(DOTPATH)/hosts | sudo tee -a /etc/hosts
 	## Symlinks don't currently work on osx
 	#sudo ln -sf $(DOTPATH)/hosts /etc/hosts
 	#dscacheutil -flushcache

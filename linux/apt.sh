@@ -9,5 +9,5 @@ sudo apt-get -y upgrade
 
 sudo apt-get install -y build-essential
 
-sudo apt-get install -y python
+sudo apt-get install -y python nodejs npm
 sudo apt-get install -y awscli zsh vim
