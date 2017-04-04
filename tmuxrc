@@ -39,7 +39,7 @@ setw -g window-status-activity-bg black
 setw -g window-status-activity-fg yellow
 set-window-option -g window-status-activity-attr none
 set -g status-right-length 100
-set -g status-right "#[fg=black,bg=blue] #S #[fg=black,bg=yellow] #(whoami)@#h #[fg=black,bg=red] #(ifconfig | awk '$1 == \"inet\" { print $2 }'|tail -1) "
+set -g status-right "#[fg=black,bg=blue] #S #[fg=black,bg=yellow] #(whoami)@#h #[fg=black,bg=red] #(ifconfig | awk '($1 == \"inet\") && ($2 !~ /127.0.0.1/) { print $2 }' | sed 's/addr\://')"
 set -g status-left ""
 
 
