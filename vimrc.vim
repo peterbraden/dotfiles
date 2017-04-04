@@ -11,6 +11,10 @@ filetype plugin on      " Enable filetype plugins
 filetype plugin indent on           " Let filetype plugins indent for me
 " Use Mac clipboard
 set clipboard=unnamed
+
+"Disable Ex Mode
+nnoremap Q <nop>
+
 " }}}
 
 " Searching and Patterns ------------ {{{
