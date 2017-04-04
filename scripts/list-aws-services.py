@@ -6,11 +6,16 @@ for instance in skew.scan('arn:aws:ec2:*:*:instance/*'):
     for tag in instance.data['Tags']:
         if (tag['Key'] == 'Name'):
             name = tag['Value']
-
-    print '- ', instance.id, name
-    print ('   - %s (%s)' % (instance.data['PublicDnsName'], instance.data['PublicIpAddress']))
-    print ('   - Launched %s by %s' % (instance.data['LaunchTime'], instance.data['KeyName']))
-    print('   - %s' % (instance.data['InstanceType']))
+    try:
+        if (instance.data['State']['Name'] == 'running'):
+            print '- ', instance.id, name, 'running'
+            print ('   - %s (%s)' % (instance.data['PublicDnsName'], instance.data['PublicIpAddress']))
+            print ('   - Launched %s by %s' % (instance.data['LaunchTime'], instance.data['KeyName']))
+            print('   - %s' % (instance.data['InstanceType']))
+        else:
+            print '- ', instance.id, name, instance.data['State']['Name']
+    except KeyError:
+        print instance.data
 
 # EBS Volumes
 #for volume in skew.scan('arn:aws:ec2:*:*:volume/*')
