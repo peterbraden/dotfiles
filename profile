@@ -30,6 +30,8 @@ alias gca='git commit -a'
 alias gl='git log -p'
 alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
 alias git-cleanup='git branch --merged | grep -v "\*" | xargs -n 1 git branch -d'
+alias git-fix-merges='vim -p `git diff --name-only`'
+alias gfm='git-fix-merges'
 # }}}
 
 # Shortcuts
@@ -38,7 +40,7 @@ alias genpwd="openssl rand -base64 20"
 
 # SSH
 alias prom='ssh peterbraden@prometheus'
-alias metis='ssh -i ~/.ssh/peter-ratatosk-metis.pem peterbraden@metis'
+alias metis='ssh -i ~/.ssh/peter--frankfurt--ratatosk.pem peterbraden@metis'
 
 # TMUX
 # - supports 256 colors
