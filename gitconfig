@@ -1,6 +1,6 @@
 [user]
   email = peterbraden@peterbraden.co.uk
-	name = Peter Braden
+  name = Peter Braden
 
 [color]
   diff = auto
@@ -27,16 +27,13 @@
   untracked = cyan
 
 [core]
-	editor = vim
-	excludesfile = ~/.gitignore
+  editor = vim
+  excludesfile = ~/.gitignore
   pager = less -FRSX
   whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
 
-[alias]
-  co = checkout
-
 [push]
-	default = current
+  default = current
 
 [remote "origin"]
-	fetch = +refs/pull/*/head:refs/remotes/origin/pr/*
+  fetch = +refs/pull/*/head:refs/remotes/origin/pr/*
