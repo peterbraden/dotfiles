@@ -13,14 +13,14 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/gitconfig ~/.gitconfig
 	ln -sf $(DOTPATH)/gitignore ~/.gitignore
 	ln -sf $(DOTPATH)/hgrc ~/.hgrc
+	ln -sf $(DOTPATH)/inputrc ~/.inputrc
 	ln -sf $(DOTPATH)/profile ~/.profile
 	ln -sf $(DOTPATH)/screenrc ~/.screenrc
-	ln -sf $(DOTPATH)/vimrc.vim ~/.vimrc
-	ln -sf $(DOTPATH)/zshrc ~/.zshrc
-	ln -sf $(DOTPATH)/vim ~/.vim
-	ln -sf $(DOTPATH)/tmuxrc ~/.tmux.conf
 	ln -sf $(DOTPATH)/shortcuts.vim ~/shortcuts.vim
-	ln -sf $(DOTPATH)/vim ~/.vim/
+	ln -sf $(DOTPATH)/tmuxrc ~/.tmux.conf
+	ln -sf $(DOTPATH)/vimrc.vim ~/.vimrc
+	ln -sf $(DOTPATH)/vim ~/.vim
+	ln -sf $(DOTPATH)/zshrc ~/.zshrc
 	mkdir -p ~/.vimundo
 .PHONY: link_dotfiles
 
