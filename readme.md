@@ -37,6 +37,6 @@ git submodule add https://github.com/pathto/repo.git vim/bundle/repo.vim
 
 ```
 
-
+- Set lock screen message with contact info
 
 
