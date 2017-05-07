@@ -54,6 +54,7 @@ alias tmo='~/repos/dotfiles/scripts/open-project.sh'
 alias docker-init='eval "$(docker-machine env)"'
 alias docker-cleanup='docker rm -v $(docker ps -a -q -f status=exited)'
 alias docker-killall=docker ps -a -q
+alias docker-nuke='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) && docker volume rm $(docker volume ls -f dangling=true -q)' 
 
 # Functions ----- {{{
 function psgrep() {
