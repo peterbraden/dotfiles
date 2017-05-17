@@ -30,7 +30,7 @@ alias gca='git commit -a'
 alias gl='git log -p'
 alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
 alias git-cleanup='git branch --merged | grep -v "\*" | xargs -n 1 git branch -d'
-alias git-fix-merges='vim -p `git diff --name-only`'
+alias git-fix-merges='vim -p `git diff --name-only | uniq`'
 alias gfm='git-fix-merges'
 # }}}
 
