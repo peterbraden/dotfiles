@@ -30,6 +30,8 @@ alias gca='git commit -a'
 alias gl='git log -p'
 alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
 alias git-cleanup='git branch --merged | grep -v "\*" | xargs -n 1 git branch -d'
+alias git-fix-merges='vim -p `git diff --name-only | uniq`'
+alias gfm='git-fix-merges'
 # }}}
 
 # Shortcuts
@@ -52,6 +54,7 @@ alias tmo='~/repos/dotfiles/scripts/open-project.sh'
 alias docker-init='eval "$(docker-machine env)"'
 alias docker-cleanup='docker rm -v $(docker ps -a -q -f status=exited)'
 alias docker-killall=docker ps -a -q
+alias docker-nuke='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) && docker volume rm $(docker volume ls -f dangling=true -q)' 
 
 # Functions ----- {{{
 function psgrep() {

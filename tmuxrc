@@ -20,12 +20,10 @@ bind a send-prefix
 # Kill with x
 bind k kill-window
 
-
-#bind r source-file ~/.tmux.conf; display "Reloaded!"
+bind r source-file ~/.tmux.conf; display "Reloaded!"
 
 # Necessary for scroll (tmux 2.1 or later)
 set -g mouse on
-
 
 set-option -g message-bg black
 set-option -g message-fg green
@@ -37,6 +35,9 @@ set-window-option -g window-status-attr dim
 set-window-option -g window-status-current-fg red
 setw -g window-status-activity-bg black
 setw -g window-status-activity-fg yellow
+set-option -g window-status-current-format "#I:#{pane_current_command}#F"
+set-option -g window-status-format '#I:#{pane_current_command}#F'
+set-option -g status-interval 1
 set-window-option -g window-status-activity-attr none
 set -g status-right-length 100
 set -g status-right "#[fg=black,bg=blue] #S #[fg=black,bg=yellow] #(whoami)@#h #[fg=black,bg=red] #(ifconfig | awk '($1 == \"inet\") && ($2 !~ /127.0.0.1/) { print $2 }' | sed 's/addr\://')"

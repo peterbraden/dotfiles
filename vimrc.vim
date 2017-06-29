@@ -258,7 +258,7 @@ augroup END
 " Ctrl P {{{
 let g:ctrlp_map = '<c-p>'
 let g:ctrlp_cmd = 'CtrlP'
-let g:ctrlp_user_command = ['.git/', 'git --git-dir=%s/.git ls-files -oc --exclude-standard']
+let g:ctrlp_user_command = ['.git/', 'git --git-dir=%s/.git ls-files -oc --exclude-standard', 'find %s -type f']
 let g:ctrlp_custom_ignore = {
   \ 'vcs' : '\v[\/]\.(git|hg|svn|)$',
   \ 'dir': 'node_modules',
