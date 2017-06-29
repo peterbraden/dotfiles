@@ -2,12 +2,15 @@ W="\033[01;37m"
 B="\033[30;44m"
 BB="\033[34m"
 Y="\033[30;43m"
+YY="\033[33m"
 R="\033[30;41m"
 X="\033[0m"
 
-echo  "$B    $Y $USER@$(uname -n) $R $(ifconfig | awk '$1 == "inet" { print $2 }' | tail -1) $X"
-echo "# $(uname -srvm)"
-echo "# $(uptime)"
+IPADDR=$(ifconfig | awk '($1 == "inet") && ($2 !~ /127.0.0.1/) { print $2 }' | sed 's/addr\://' | tail -1)
 
-echo "$BB --- tmux sessions: --- $X"
+echo  "$B              $Y        $USER@$(uname -n)      $R            $IPADDR        $X"
+echo "# $(uname -srvm)"
+echo "#$(uptime)"
+
+echo "$BB# --- tmux sessions: --- $X"
 echo "$(tmux list-sessions)"
