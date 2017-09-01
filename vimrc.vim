@@ -192,6 +192,9 @@ endif
 " Statusline
 "set statusline=
 
+" Paste doesn't yank
+xnoremap p "_dP
+
 let g:vim_json_syntax_conceal = 0
 
 
