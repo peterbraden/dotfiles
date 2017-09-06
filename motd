@@ -9,8 +9,12 @@ X="\033[0m"
 IPADDR=$(ifconfig | awk '($1 == "inet") && ($2 !~ /127.0.0.1/) { print $2 }' | sed 's/addr\://' | tail -1)
 
 echo  "$B              $Y        $USER@$(uname -n)      $R            $IPADDR        $X"
+echo ""
 echo "# $(uname -srvm)"
 echo "#$(uptime)"
 
-echo "$BB# --- tmux sessions: --- $X"
+echo "$BB# --- TMUX sessions: --- $X"
 echo "$(tmux list-sessions)"
+
+echo "$BB# --- SSH Logins --- $X"
+last --dns --fullnames -x | grep -v "0.0.0.0" | grep -v "begins"
