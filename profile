@@ -1,5 +1,5 @@
 # vim:fdm=marker
-DOTPATH=$(pwd -L)
+DOTPATH=~/repos/dotfiles
 
 # Environment -------------------  {{{
 export CLICOLOR=1
