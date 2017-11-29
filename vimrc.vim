@@ -75,6 +75,7 @@ set hidden
 
 " we don't want to edit these type of files
 set wildignore=*.o,*.obj,*.bak,*.exe,*.pyc,*.swp
+set wildignore+=*/.git/*,*/tmp/*,*.swp
 " }}}
 
 " Command Line {{{
@@ -271,6 +272,13 @@ let g:ctrlp_prompt_mappings = {
   \ 'AcceptSelection("t")': ['<c-t>', '<cr>'],
   \ 'AcceptSelection("e")': [],
   \ }
+
+if executable('rg')
+  set grepprg=rg\ --color=never
+  let g:ctrlp_user_command = 'rg %s --files --color=never --glob ""'
+  let g:ctrlp_use_caching = 0
+endif
+
 " }}}
 
 " Editing VIM {{{
