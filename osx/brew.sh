@@ -33,9 +33,8 @@ brew install homebrew/dupes/openssh
 brew install homebrew/dupes/screen
 
 brew install tmux
-brew install ack
 brew install git
-
 brew install pass
+brew install ripgrep
 
 brew cleanup

@@ -67,7 +67,9 @@ ps aux | grep $EXP
 function ip(){
 ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
 }
-# }}}
+# }}} 
+
+# PATH Manipulation ---- {{{
 
 
 PATH=$PATH:$HOME/bin:./node_modules/.bin
@@ -108,4 +110,4 @@ extract () {
 
 
 
-export PATH="$HOME/.cargo/bin:$PATH"
+# }}}
