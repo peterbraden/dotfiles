@@ -10,7 +10,7 @@ filetype on
 filetype plugin on      " Enable filetype plugins
 filetype plugin indent on           " Let filetype plugins indent for me
 " Use Mac clipboard
-set clipboard=unnamed
+"set clipboard=unnamed "Disabled as of osx sierra update because apple suck.
 
 "Disable Ex Mode
 nnoremap Q <nop>
@@ -191,6 +191,9 @@ endif
 
 " Statusline
 "set statusline=
+
+" Paste doesn't yank
+xnoremap p "_dP
 
 let g:vim_json_syntax_conceal = 0
 

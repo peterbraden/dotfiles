@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>AboutToPasteTabsWithCancel</key>
+	<true/>
+	<key>AboutToPasteTabsWithCancel_selection</key>
+	<integer>0</integer>
 	<key>AdjustWindowForFontSizeChange</key>
 	<true/>
 	<key>AllowClipboardAccess</key>
@@ -329,7 +333,7 @@
 	<key>NSWindow Frame SUStatusFrame</key>
 	<string>581 160 400 129 0 0 1280 777 </string>
 	<key>NSWindow Frame SUUpdateAlert</key>
-	<string>330 307 620 392 0 0 1280 800 </string>
+	<string>410 1568 620 392 -560 800 2560 1417 </string>
 	<key>NSWindow Frame SharedPreferences</key>
 	<string>225 241 796 473 0 0 1280 800 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
@@ -1075,7 +1079,7 @@
 	<key>OpenArrangementAtStartup</key>
 	<false/>
 	<key>OpenBookmark</key>
-	<true/>
+	<false/>
 	<key>OpenTmuxWindowsIn</key>
 	<integer>2</integer>
 	<key>PassOnControlClick</key>
@@ -1127,6 +1131,8 @@
 	<integer>8</integer>
 	<key>RightOption</key>
 	<integer>3</integer>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUFeedAlternateAppNameKey</key>
@@ -1136,7 +1142,7 @@
 	<key>SUHasLaunchedBefore</key>
 	<true/>
 	<key>SULastCheckTime</key>
-	<date>2017-01-09T16:00:44Z</date>
+	<date>2017-06-14T13:59:24Z</date>
 	<key>SUSendProfileInfo</key>
 	<false/>
 	<key>SavePasteHistory</key>
@@ -1186,6 +1192,6 @@
 	<key>findRegex_iTerm</key>
 	<false/>
 	<key>iTerm Version</key>
-	<string>3.0.12</string>
+	<string>3.0.13</string>
 </dict>
 </plist>
