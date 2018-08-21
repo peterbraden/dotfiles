@@ -66,13 +66,14 @@ zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 zstyle ':completion:*' insert-tab pending
 
 ################### History #############
-HISTFILE=$HOME/.history/$(date -u +%Y-%m-%d.%H.%M.%S)._sh
+HISTFILE=$HOME/.history/$(date -u +%Y-%m-%d)._sh
 HISTSIZE=2000
 SAVEHIST=2000
 setopt   appendhistory
 setopt   incappendhistory
 setopt histignorealldups
 setopt EXTENDED_HISTORY
+setopt share_history
 
 source $HOME/.profile
 

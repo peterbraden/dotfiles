@@ -1,7 +1,7 @@
 #!/bin/bash
 SESSION=$1
 DIRECTORY=~/repos/$SESSION
-SESSION_NO_DOTS=${SESSION/\./-}
+SESSION_NO_DOTS=${SESSION//\./-}
 
 if tmux info &> /dev/null && tmux has-session -t $SESSION_NO_DOTS; then
   echo "reattaching to $SESSION_NO_DOTS"
