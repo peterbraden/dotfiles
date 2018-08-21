@@ -22,6 +22,8 @@ export PATH="/usr/local/bin:$PATH"
 alias vi=vim -p
 alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
 alias motd=$DOTPATH/motd
+alias ack=rg
+alias s=rg
 
 # GIT
 alias gp='git pull'
@@ -67,20 +69,6 @@ ps aux | grep $EXP
 function ip(){
 ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
 }
-# }}}
-
-
-PATH=$PATH:$HOME/bin:./node_modules/.bin
-PATH=/opt/local/bin:/opt/local/sbin:$PATH
-
-SSHAGENT=/usr/bin/ssh-agent
-SSHAGENTARGS="-s"
-
-if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
-	eval `$SSHAGENT $SSHAGENTARGS`
-	trap "kill $SSH_AGENT_PID" 0
-fi
-
 
 extract () {
     if [ -f $1 ] ; then
@@ -102,10 +90,28 @@ extract () {
          echo "'$1' is not a valid file"
      fi
 }
+# }}} 
+
+# PATH Manipulation ---- {{{
+
+
+PATH=$PATH:$HOME/bin:./node_modules/.bin
+PATH=/opt/local/bin:/opt/local/sbin:$PATH
+PATH="$HOME/.cargo/bin:$PATH"
+
+# }}}
+
+SSHAGENT=/usr/bin/ssh-agent
+SSHAGENTARGS="-s"
+
+if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
+	eval `$SSHAGENT $SSHAGENTARGS`
+	trap "kill $SSH_AGENT_PID" 0
+fi
 
 
 
 
 
 
-export PATH="$HOME/.cargo/bin:$PATH"
+

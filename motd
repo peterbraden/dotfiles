@@ -17,4 +17,8 @@ echo "$BB# --- TMUX sessions: --- $X"
 echo "$(tmux list-sessions)"
 
 echo "$BB# --- SSH Logins --- $X"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+last
+else
 last --dns --fullnames -x | grep -v "0.0.0.0" | grep -v "begins"
+fi
