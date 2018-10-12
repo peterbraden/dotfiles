@@ -110,8 +110,8 @@ if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
 fi
 
 
-
-
-
+if [ -f ~/.profile.local ]; then
+  source ~/.profile.local
+fi
 
 

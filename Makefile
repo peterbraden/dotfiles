@@ -36,7 +36,7 @@ add_hosts:
 change_shell: linux
 	if [ "$$SHELL" != "/bin/zsh" ]; then \
 		echo "- Changing shell to zsh\n"; \
-		sudo chsh --shell $(shell which zsh) $$USER; \
+		sudo chsh -s $(shell which zsh) $$USER; \
 	fi;
 .PHONY: change_shell
 
