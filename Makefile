@@ -44,6 +44,7 @@ change_shell: linux
 osx:
 ifeq ($(UNAME_S), Darwin)
 	echo "- Setting up a mac"
+	$(DOTPATH)/osx/install.sh
 	$(DOTPATH)/osx/osx.sh
 	$(DOTPATH)/osx/apps.sh
 	$(DOTPATH)/osx/brew.sh

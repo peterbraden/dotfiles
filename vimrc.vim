@@ -188,7 +188,7 @@ if has ('mouse')
 endif
 " }}}
 
-" Editor Misc {{{
+" Editor Misc {{{ 
 
 " Statusline
 "set statusline=
@@ -229,6 +229,10 @@ nnoremap <silent> <C-l> :nohl<CR><C-l>
 " Highlight redundant whitespaces.
 highlight RedundantSpaces ctermbg=blue guibg=blue 
 match RedundantSpaces /\s\+$\| \+\ze\t/
+
+:set scl=yes  " force the signcolumn to appear
+highlight clear SignColumn
+
 " }}}
 
 " Filetypes {{{
@@ -280,6 +284,16 @@ if executable('rg')
 endif
 
 " }}}
+
+
+" YCM Autocomplete {{{
+let g:ycm_error_symbol = "x"
+let g:ycm_warning_symbol = ">"
+let g:ycm_key_list_previous_completion = ['<S-TAB>']
+
+nnoremap <leader>gd :YcmCompleter GoToDefinition<CR>
+" }}}
+
 
 " Editing VIM {{{
 " Shortcuts.vim
