@@ -28,6 +28,7 @@ brew install cmake
 sudo mv /usr/bin/vim /usr/bin/system-compiled-vim
 brew install vim
 brew install macvim --override-system-vim
+brew install neovim
 
 brew install homebrew/dupes/grep
 brew install homebrew/dupes/openssh
@@ -41,3 +42,4 @@ brew install pass
 brew install ripgrep
 
 brew cleanup
+

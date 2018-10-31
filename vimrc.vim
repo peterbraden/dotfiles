@@ -1,5 +1,9 @@
 set nocp
-call pathogen#infect()
+
+"if !has('nvim')
+  call pathogen#infect()
+"endif
+
 let mapleader = ","
 
 " Basic Settings -------------------- {{{
@@ -180,10 +184,13 @@ augroup END
 
 " Mouse {{{
 "Borrowed the following from http://mrqe.co/OwAmwT
+"Adapted for neovim
 if has ('mouse')
     set mouse=a
     if &term =~ "xterm" || &term =~ "screen"
+      if !has('nvim')
         set ttymouse=xterm2
+      endif
     endif
 endif
 " }}}

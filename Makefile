@@ -22,6 +22,11 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/vim ~/.vim
 	ln -sf $(DOTPATH)/zshrc ~/.zshrc
 	mkdir -p ~/.vimundo
+	echo "=== Linking XDG ===\n"
+	mkdir -p ~/.config
+	ln -sf $(DOTPATH)/vim ~/.config/nvim
+	ln -sf $(DOTPATH)/neovim ~/.config/nvim/init.vim
+
 .PHONY: link_dotfiles
 
 add_hosts:
