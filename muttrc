@@ -2,7 +2,7 @@ color normal green black
 
 # Change the following six lines to match your Gmail account details
 set imap_user = "peterbraden1@gmail.com"
-# set imap_pass = "PASSWORD"
+set imap_pass = `pass gmail/mutt`
 set smtp_url = "smtp://peterbraden1@smtp.gmail.com:587/"
 # set smtp_pass = "PASSWORD"
 set from = "peterbraden@peterbraden.co.uk"

@@ -21,6 +21,7 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/vimrc.vim ~/.vimrc
 	ln -sf $(DOTPATH)/vim ~/.vim
 	ln -sf $(DOTPATH)/zshrc ~/.zshrc
+	ln -sf $(DOTPATH)/muttrc ~/.muttrc
 	mkdir -p ~/.vimundo
 .PHONY: link_dotfiles
 
