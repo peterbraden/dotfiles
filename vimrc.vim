@@ -265,6 +265,10 @@ augroup vimrcFiletypes
 
   " Treat <li> and <p> tags like the block tags they are
   let g:html_indent_tags = 'li\|p'
+  
+  " Typescript balloons
+  autocmd FileType typescript nmap <buffer> <Leader>t : <C-u>echo tsuquyomi#hint()<CR>
+
 
 augroup END
 
@@ -299,6 +303,7 @@ let g:ycm_warning_symbol = ">"
 let g:ycm_key_list_previous_completion = ['<S-TAB>']
 
 nnoremap <leader>gd :YcmCompleter GoToDefinition<CR>
+nnoremap <leader>fi :YcmCompleter FixIt<CR>
 " }}}
 
 

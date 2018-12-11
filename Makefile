@@ -22,6 +22,7 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/vim ~/.vim
 	ln -sf $(DOTPATH)/zshrc ~/.zshrc
 	mkdir -p ~/.vimundo
+	mkdir -p ~/.history
 	echo "=== Linking XDG ===\n"
 	mkdir -p ~/.config
 	ln -sf $(DOTPATH)/vim ~/.config/nvim

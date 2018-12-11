@@ -20,7 +20,8 @@ bind a send-prefix
 # Kill with x
 bind k kill-window
 
-bind r source-file ~/.tmux.conf; display "Reloaded!"
+# BROKEN
+#bind r source-file ~/.tmux.conf; display "Reloaded!"
 
 # Necessary for scroll (tmux 2.1 or later)
 set -g mouse on
