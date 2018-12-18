@@ -1,5 +1,9 @@
 set nocp
-call pathogen#infect()
+
+"if !has('nvim')
+  call pathogen#infect()
+"endif
+
 let mapleader = ","
 
 " Basic Settings -------------------- {{{
@@ -180,15 +184,18 @@ augroup END
 
 " Mouse {{{
 "Borrowed the following from http://mrqe.co/OwAmwT
+"Adapted for neovim
 if has ('mouse')
     set mouse=a
     if &term =~ "xterm" || &term =~ "screen"
+      if !has('nvim')
         set ttymouse=xterm2
+      endif
     endif
 endif
 " }}}
 
-" Editor Misc {{{
+" Editor Misc {{{ 
 
 " Statusline
 "set statusline=
@@ -229,6 +236,10 @@ nnoremap <silent> <C-l> :nohl<CR><C-l>
 " Highlight redundant whitespaces.
 highlight RedundantSpaces ctermbg=blue guibg=blue 
 match RedundantSpaces /\s\+$\| \+\ze\t/
+
+:set scl=yes  " force the signcolumn to appear
+highlight clear SignColumn
+
 " }}}
 
 " Filetypes {{{
@@ -254,6 +265,10 @@ augroup vimrcFiletypes
 
   " Treat <li> and <p> tags like the block tags they are
   let g:html_indent_tags = 'li\|p'
+  
+  " Typescript balloons
+  autocmd FileType typescript nmap <buffer> <Leader>t : <C-u>echo tsuquyomi#hint()<CR>
+
 
 augroup END
 
@@ -280,6 +295,17 @@ if executable('rg')
 endif
 
 " }}}
+
+
+" YCM Autocomplete {{{
+let g:ycm_error_symbol = "x"
+let g:ycm_warning_symbol = ">"
+let g:ycm_key_list_previous_completion = ['<S-TAB>']
+
+nnoremap <leader>gd :YcmCompleter GoToDefinition<CR>
+nnoremap <leader>fi :YcmCompleter FixIt<CR>
+" }}}
+
 
 " Editing VIM {{{
 " Shortcuts.vim

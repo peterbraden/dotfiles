@@ -4,8 +4,8 @@ DOTPATH=~/repos/dotfiles
 # Environment -------------------  {{{
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
-export EDITOR=vim
-export VISUAL=vim
+export EDITOR=nvim
+export VISUAL=nvim
 export HISTSIZE=10000
 export HISTCONTROL='ignoreboth';
 export LC_ALL=en_US.UTF-8
@@ -19,7 +19,8 @@ export PATH="/usr/local/bin:$PATH"
 # }}}
 
 # ALIASES ----------------------- {{{
-alias vi=vim -p
+alias vi="nvim -p"
+alias vim="nvim -p"
 alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
 alias motd=$DOTPATH/motd
 alias ack=rg
@@ -110,8 +111,8 @@ if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
 fi
 
 
-
-
-
+if [ -f ~/.profile.local ]; then
+  source ~/.profile.local
+fi
 
 

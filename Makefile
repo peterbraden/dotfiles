@@ -23,6 +23,12 @@ link_dotfiles:
 	ln -sf $(DOTPATH)/zshrc ~/.zshrc
 	ln -sf $(DOTPATH)/muttrc ~/.muttrc
 	mkdir -p ~/.vimundo
+	mkdir -p ~/.history
+	echo "=== Linking XDG ===\n"
+	mkdir -p ~/.config
+	ln -sf $(DOTPATH)/vim ~/.config/nvim
+	ln -sf $(DOTPATH)/neovim ~/.config/nvim/init.vim
+
 .PHONY: link_dotfiles
 
 add_hosts:
@@ -37,7 +43,7 @@ add_hosts:
 change_shell: linux
 	if [ "$$SHELL" != "/bin/zsh" ]; then \
 		echo "- Changing shell to zsh\n"; \
-		sudo chsh --shell $(shell which zsh) $$USER; \
+		sudo chsh -s $(shell which zsh) $$USER; \
 	fi;
 .PHONY: change_shell
 
@@ -45,6 +51,7 @@ change_shell: linux
 osx:
 ifeq ($(UNAME_S), Darwin)
 	echo "- Setting up a mac"
+	$(DOTPATH)/osx/install.sh
 	$(DOTPATH)/osx/osx.sh
 	$(DOTPATH)/osx/apps.sh
 	$(DOTPATH)/osx/brew.sh

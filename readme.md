@@ -4,6 +4,9 @@
 Because Apple need a user account to give you a compiler...
 
 ## Remove OSX's dumb app security
+```sh
+sudo spctl --master-disable
+```
 System Prefs > Security > Allow Apps from anywhere
 
 ## Get Git
