@@ -4,8 +4,8 @@ DOTPATH=~/repos/dotfiles
 # Environment -------------------  {{{
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
-export EDITOR=nvim
-export VISUAL=nvim
+export EDITOR=vim
+export VISUAL=vim
 export HISTSIZE=10000
 export HISTCONTROL='ignoreboth';
 export LC_ALL=en_US.UTF-8
@@ -19,8 +19,8 @@ export PATH="/usr/local/bin:$PATH"
 # }}}
 
 # ALIASES ----------------------- {{{
-alias vi="nvim -p"
-alias vim="nvim -p"
+alias vi="vim -p"
+alias vim="vim -p"
 alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
 alias motd=$DOTPATH/motd
 alias ack=rg
@@ -48,6 +48,7 @@ alias metis='ssh -i ~/.ssh/peter-ratatosk-metis.pem peterbraden@metis'
 # TMUX
 # - supports 256 colors
 alias tmux=tmux -2
+alias tmux-start-server=tmux new -d
 # attach or create session - similar to `screen -dR foo`
 alias tm='tmux new-session -AD'
 alias tml='tmux list-sessions'
