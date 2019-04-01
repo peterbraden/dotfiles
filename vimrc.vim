@@ -16,6 +16,10 @@ filetype plugin indent on           " Let filetype plugins indent for me
 " Use Mac clipboard
 set clipboard=unnamed
 
+set autoread " Reload files when they change on disk
+au CursorHold,CursorHoldI * checktime " Trigger the reload when the cursor stops moving
+
+
 "Disable Ex Mode
 nnoremap Q <nop>
 
@@ -277,7 +281,8 @@ augroup END
 " Ctrl P {{{
 let g:ctrlp_map = '<c-p>'
 let g:ctrlp_cmd = 'CtrlP'
-let g:ctrlp_user_command = ['.git/', 'git --git-dir=%s/.git ls-files -oc --exclude-standard', 'find %s -type f']
+let g:ctrlp_working_path_mode = 'ra'
+let g:ctrlp_user_command = ['.git', 'git --git-dir=%s/.git ls-files -oc --exclude-standard', 'find . | egrep %s']
 let g:ctrlp_custom_ignore = {
   \ 'vcs' : '\v[\/]\.(git|hg|svn|)$',
   \ 'dir': 'node_modules',
@@ -288,11 +293,11 @@ let g:ctrlp_prompt_mappings = {
   \ 'AcceptSelection("e")': [],
   \ }
 
-if executable('rg')
-  set grepprg=rg\ --color=never
-  let g:ctrlp_user_command = 'rg %s --files --color=never --glob ""'
-  let g:ctrlp_use_caching = 0
-endif
+"if executable('rg')
+"  set grepprg=rg\ --color=never
+"  let g:ctrlp_user_command = 'rg %s --files --color=never --glob ""'
+"  let g:ctrlp_use_caching = 0
+"endif
 
 " }}}
 
@@ -302,7 +307,7 @@ let g:ycm_error_symbol = "x"
 let g:ycm_warning_symbol = ">"
 let g:ycm_key_list_previous_completion = ['<S-TAB>']
 
-nnoremap <leader>gd :YcmCompleter GoToDefinition<CR>
+nnoremap <leader>gd :tab split \| :YcmCompleter GoToDefinition<CR>
 nnoremap <leader>fi :YcmCompleter FixIt<CR>
 " }}}
 

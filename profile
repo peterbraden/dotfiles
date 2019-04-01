@@ -25,6 +25,7 @@ alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -n
 alias motd=$DOTPATH/motd
 alias ack=rg
 alias s=rg
+alias ff='find . | egrep'
 
 # GIT
 alias gp='git pull'
