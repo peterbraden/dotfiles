@@ -3,7 +3,7 @@ if [ -z "$NOTES_DIR" ]; then
 fi
 
 notes () {
-  ls $NOTES_DIR | grep -i 'month of' | grep --invert-match '.plist$' | sort
+  ls $NOTES_DIR | grep -i 'month of' | grep --invert-match '.plist$' | sort -r
 }
 
 
