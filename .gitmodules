@@ -64,3 +64,6 @@
 [submodule "vim/bundle/YouCompleteMe.vim"]
 	path = vim/bundle/YouCompleteMe.vim
 	url = git@github.com:Valloric/YouCompleteMe.git
+[submodule "vim/bundle/openscad.vim"]
+	path = vim/bundle/openscad.vim
+	url = git@github.com:sirtaj/vim-openscad.git
