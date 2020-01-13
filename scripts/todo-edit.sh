@@ -8,7 +8,7 @@ notes () {
 
 
 first_note () {
-  echo "$NOTES_DIR$(notes | head)"
+  echo "$NOTES_DIR$(notes | head -n 1)"
 }
 
 vi "$(first_note)"

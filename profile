@@ -28,6 +28,7 @@ alias motd=$DOTPATH/motd
 alias ack=rg
 alias s=rg
 alias ff='find . | egrep'
+alias td='~/repos/dotfiles/scripts/todo-edit.sh'
 
 # GIT
 alias gp='git pull'
