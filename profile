@@ -16,6 +16,8 @@ export LESS_TERMCAP_md="${yellow}";
 
 export PATH="/usr/local/sbin:$PATH"
 export PATH="/usr/local/bin:$PATH"
+#Go sucks for not respecting conventions:
+export PATH=$PATH:/usr/local/go/bin
 # }}}
 
 # ALIASES ----------------------- {{{
@@ -53,10 +55,12 @@ alias tmux-start-server=tmux new -d
 alias tm='tmux new-session -AD'
 alias tml='tmux list-sessions'
 alias tmo='~/repos/dotfiles/scripts/open-project.sh'
+alias tmk='tmux kill-session -t'
+
 
 # Docker
 alias docker-init='eval "$(docker-machine env)"'
-alias docker-cleanup='docker rm -v $(docker ps -a -q -f status=exited)'
+alias docker-cleanup='docker system prune'
 alias docker-killall=docker ps -a -q
 alias docker-nuke='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) && docker volume rm $(docker volume ls -f dangling=true -q)' 
 
