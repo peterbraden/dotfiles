@@ -29,6 +29,8 @@ alias ack=rg
 alias s=rg
 alias ff='find . | egrep'
 alias td='~/repos/dotfiles/scripts/todo-edit.sh'
+alias diary='~/repos/dotfiles/scripts/diary.sh'
+alias imgcat="~/repos/dotfiles/scripts/imgcat.iterm.sh"
 
 # GIT
 alias gp='git pull'
@@ -51,7 +53,7 @@ alias metis='ssh -i ~/.ssh/peter-ratatosk-metis.pem peterbraden@metis'
 
 # TMUX
 # - supports 256 colors
-alias tmux=tmux -2
+alias tmux=tmux -CC -2
 alias tmux-start-server=tmux new -d
 # attach or create session - similar to `screen -dR foo`
 alias tm='tmux new-session -AD'
