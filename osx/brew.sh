@@ -27,7 +27,7 @@ brew install cmake
 # Vim
 sudo mv /usr/bin/vim /usr/bin/system-compiled-vim
 brew install vim
-brew install macvim 
+brew install macvim
 brew install neovim
 
 brew install homebrew/grep
@@ -40,6 +40,7 @@ brew install tmux
 brew install git
 brew install pass
 brew install ripgrep
+brew install node
 
 brew cleanup
 
