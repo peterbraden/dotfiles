@@ -6,10 +6,10 @@ sudo -v
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 # Install homebrew
-ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 
 brew update
-brew upgrade --all
+brew upgrade
 
 brew install coreutils
 sudo ln -s /usr/local/bin/gsha256sum /usr/local/bin/sha256sum
@@ -19,7 +19,7 @@ brew install moreutils
 # Install GNU `find`, `locate`, `updatedb`, and `xargs`, `g`-prefixed.
 brew install findutils
 # Install GNU `sed`, overwriting the built-in `sed`.
-brew install gnu-sed --with-default-names
+brew install gnu-sed
 
 brew install cmake
 
@@ -27,12 +27,12 @@ brew install cmake
 # Vim
 sudo mv /usr/bin/vim /usr/bin/system-compiled-vim
 brew install vim
-brew install macvim --override-system-vim
+brew install macvim 
 brew install neovim
 
-brew install homebrew/dupes/grep
-brew install homebrew/dupes/openssh
-brew install homebrew/dupes/screen
+brew install homebrew/grep
+brew install homebrew/openssh
+brew install homebrew/screen
 
 brew install reattach-to-user-namespace # OSX SUCKS!!
 

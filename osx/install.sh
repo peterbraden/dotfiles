@@ -1,2 +1,2 @@
 sudo spctl --master-disable
-xcode-select --install
+xcode-select --install || exit 0
