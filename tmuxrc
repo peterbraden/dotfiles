@@ -1,13 +1,12 @@
 #set -g utf8
 #set-window-option -g utf8 on
 set -g default-terminal "screen-256color"
-set -g default-shell /bin/zsh
 
 set -g prefix C-a
 unbind C-b
 bind C-a send-prefix
 
-#set-option -g default-command $SHELL
+set-option -g default-command $SHELL
 
 # Integrate with clipboard
 set-option -g default-command "which reattach-to-user-namespace > /dev/null && reattach-to-user-namespace -l $SHELL || $SHELL"
@@ -22,25 +21,20 @@ bind a send-prefix
 bind k kill-window
 
 # BROKEN
-#bind r source-file ~/.tmux.conf; display "Reloaded!"
+bind r source-file ~/.tmux.conf; display "Reloaded!"
 
 # Necessary for scroll (tmux 2.1 or later)
 set -g mouse on
 
-set-option -g message-bg black
-set-option -g message-fg green
+set-option -g message-style bg=black,fg=green
+set-option -g status-style bg=black
 
-set-option -g status-bg black
-set -g window-status-bg black
-set -g window-status-fg colour244
-set-window-option -g window-status-attr dim
-set-window-option -g window-status-current-fg red
-setw -g window-status-activity-bg black
-setw -g window-status-activity-fg yellow
+set -g window-status-style bg=black,fg=colour244
+set-window-option -g window-status-current-style fg=red
+setw -g window-status-activity-style bg=black,fg=yellow
 set-option -g window-status-current-format "#I:#{pane_current_command}#F"
 set-option -g window-status-format '#I:#{pane_current_command}#F'
 set-option -g status-interval 1
-set-window-option -g window-status-activity-attr none
 set -g status-right-length 100
 set -g status-right "#[fg=black,bg=blue] #S #[fg=black,bg=yellow] #(whoami)@#h #[fg=black,bg=red] #(ifconfig | awk '($1 == \"inet\") && ($2 !~ /127.0.0.1/) { print $2 }' | sed 's/addr\://')"
 set -g status-left ""
