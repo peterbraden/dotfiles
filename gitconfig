@@ -1,6 +1,7 @@
 [user]
-  email = peterbraden@peterbraden.co.uk
-  name = Peter Braden
+  email = peter.braden@hoprnet.org
+  name = Peter Braden (HOPR)
+	signingkey = 27CDB0A6C401D533
 
 [color]
   diff = auto
@@ -37,3 +38,9 @@
 
 [remote "origin"]
   fetch = +refs/pull/*/head:refs/remotes/origin/pr/*
+[commit]
+	gpgsign = true
+[gpg]
+	program = gpg
+[pull]
+	rebase = false

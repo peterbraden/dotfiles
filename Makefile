@@ -8,7 +8,7 @@ install: add_hosts change_shell link_dotfiles linux osx setup_ssh
 
 link_dotfiles:
 	git submodule init
-	git submodule update
+	git submodule update --init --recursive
 	echo "=== Linking Dotfiles ===\n"
 	ln -sf $(DOTPATH)/gitconfig ~/.gitconfig
 	ln -sf $(DOTPATH)/gitignore ~/.gitignore
