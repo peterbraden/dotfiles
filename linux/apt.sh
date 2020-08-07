@@ -12,5 +12,6 @@ sudo apt-get install -y python python-pip python-setuptools python-dev
 sudo apt-get install -y nodejs npm
 sudo apt-get install -y rustc cargo
 sudo apt-get install -y awscli zsh vim
+sudo apt-get install -y mosh
 
 
