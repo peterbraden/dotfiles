@@ -39,7 +39,7 @@
 [remote "origin"]
   fetch = +refs/pull/*/head:refs/remotes/origin/pr/*
 [commit]
-	gpgsign = true
+	gpgsign = false
 [gpg]
 	program = gpg
 [pull]

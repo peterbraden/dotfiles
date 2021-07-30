@@ -24,7 +24,7 @@ bind k kill-window
 bind r source-file ~/.tmux.conf; display "Reloaded!"
 
 # Necessary for scroll (tmux 2.1 or later)
-set -g mouse on
+set -g mouse off
 
 set-option -g message-style bg=black,fg=green
 set-option -g status-style bg=black
