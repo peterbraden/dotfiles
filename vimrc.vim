@@ -99,7 +99,8 @@ endif
 " }}}
 
 " Folding ----------------------{{{
-set foldmethod=syntax     " By default, use syntax to determine folds
+"set foldmethod=syntax     " By default, use syntax to determine folds
+set foldmethod=marker 
 set foldlevelstart=99     " All folds open by default
 
 augroup filetype_vim_fold
