@@ -6,7 +6,6 @@ notes () {
   ls $NOTES_DIR | grep -i 'month of' | grep --invert-match '.plist$' | sort -r
 }
 
-
 first_note () {
   echo "$NOTES_DIR$(notes | head -n 1)"
 }
