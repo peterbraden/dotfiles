@@ -30,6 +30,7 @@ alias s=rg
 alias ff='find . | egrep'
 alias td='~/repos/dotfiles/scripts/todo-edit.sh'
 alias tdl='~/repos/dotfiles/scripts/list-notes.sh'
+alias note='~/repos/dotfiles/scripts/notes-edit.sh'
 alias diary='~/repos/dotfiles/scripts/diary.sh'
 alias imgcat="~/repos/dotfiles/scripts/imgcat.iterm.sh"
 
