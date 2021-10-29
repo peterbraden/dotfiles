@@ -9,7 +9,7 @@ bind C-a send-prefix
 set-option -g default-command $SHELL
 
 # Integrate with clipboard
-set-option -g default-command "which reattach-to-user-namespace > /dev/null && reattach-to-user-namespace -l $SHELL || $SHELL"
+#set-option -g default-command "which reattach-to-user-namespace > /dev/null && reattach-to-user-namespace -l $SHELL || $SHELL"
 
 #set-window-option -g automatic-rename on
 
@@ -21,10 +21,10 @@ bind a send-prefix
 bind k kill-window
 
 # BROKEN
-bind r source-file ~/.tmux.conf; display "Reloaded!"
+#bind r source-file ~/.tmux.conf; display "Reloaded!"
 
 # Necessary for scroll (tmux 2.1 or later)
-set -g mouse off
+#set -g mouse off
 
 set-option -g message-style bg=black,fg=green
 set-option -g status-style bg=black
@@ -41,7 +41,7 @@ set -g status-left ""
 
 
 # iterm scroll
-set -g terminal-overrides 'xterm*:smcup@:rmcup@'
+#set -g terminal-overrides 'xterm*:smcup@:rmcup@'
 
 # Neovim asked
-set-option -sg escape-time 10
+#set-option -sg escape-time 10
