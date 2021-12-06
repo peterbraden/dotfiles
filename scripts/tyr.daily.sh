@@ -43,37 +43,38 @@ zfs_diff_last_day () {
   zfs diff $SNAPSHOT_NAME
 }
 
+main () {
+  # Send daily email digest
+  echo "====================================================="
+  echo "      TYR DAILY UPDATE          "
+  echo "====================================================="
 
-# Send daily email digest
-echo "====================================================="
-echo "      TYR DAILY UPDATE          "
-echo "====================================================="
+  ## Git diff of notes in last day.
+  # TODO
 
-## Git diff of notes in last day.
+  ## ZFS Diff since last snapshot
+  zfs_diff_last_day atlantic/photos
+  echo " "
 
-## ZFS Diff since last snapshot
-zfs_diff_last_day atlantic/photos
-echo " "
+  ## ZFS Status
+  zpool status
+  echo " "
+  zfs list
+  echo " "
 
-## ZFS Status
-zpool status
-echo " "
-zfs list
-echo " "
+  ## Backup Status
 
-## Backup Status
+  backup_folder /atlantic/tortuga tortuga bb-encrypted
 
-
-
-#backup_folder /atlantic/tortuga tortuga aws-encrypted
-
-#backup_dataset atlantic/photos aws
-#backup_folder /atlantic/photos/2004 photos-2004 bb
-
+  #backup_dataset atlantic/photos bb
+  backup_folder /atlantic/photos/2004 photos-2004 bb
 
 
 
-# Trigger jobs
-## ZFS Snapshots
-## ZFS Scrub
-  # zpool scrub atlantic
+
+  # Trigger jobs
+  ## ZFS Snapshots
+  ## ZFS Scrub
+    # zpool scrub atlantic
+}
+
