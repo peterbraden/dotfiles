@@ -16,7 +16,7 @@ function backup_folder () {
   SERVICE="$3"
 
   echo "# Backing up $FOLDER to $SERVICE:$BUCKET_NAME"
-  echo "rclone sync $FOLDER $SERVICE:$BUCKET_NAME --dry-run"
+  rclone sync --fast-list $FOLDER $SERVICE:$BUCKET_NAME -v #--progress
 }
 
 # $1 Dataset
@@ -33,6 +33,16 @@ backup_dataset () {
   done
 }
 
+# $1 DATASET
+zfs_diff_last_day () {
+  DATASET="$1"
+  TODAY=$(date)
+  YESTERDAY=$(date --date="$TODAY - 1 day" --iso="date")
+  SNAPSHOT_NAME=$(zfs list -o name -t snapshot $DATASET | grep zfs-auto-snap_daily | grep $YESTERDAY)
+  echo "Differences between $(date --iso="date") and $YESTERDAY for $DATASET"
+  zfs diff $SNAPSHOT_NAME
+}
+
 
 # Send daily email digest
 echo "====================================================="
@@ -40,20 +50,25 @@ echo "      TYR DAILY UPDATE          "
 echo "====================================================="
 
 ## Git diff of notes in last day.
+
 ## ZFS Diff since last snapshot
+zfs_diff_last_day atlantic/photos
+echo " "
 
 ## ZFS Status
-  # zpool status
-  # zfs list
+zpool status
+echo " "
+zfs list
+echo " "
 
 ## Backup Status
 
 
 
-backup_folder /atlantic/tortuga tortuga aws-encrypted
+#backup_folder /atlantic/tortuga tortuga aws-encrypted
 
 #backup_dataset atlantic/photos aws
-#backup_folder /atlantic/photos/2004 photos-2004 aws
+#backup_folder /atlantic/photos/2004 photos-2004 bb
 
 
 
