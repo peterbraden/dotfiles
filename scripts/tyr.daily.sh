@@ -14,9 +14,18 @@ function backup_folder () {
   BUCKET_PREFIX="peterbraden-$UNIQUE"
   BUCKET_NAME="$BUCKET_PREFIX-$2"
   SERVICE="$3"
+  backup_folder_mixed "$SERVICE:$BUCKET_NAME"
+}
 
-  echo "# Backing up $FOLDER to $SERVICE:$BUCKET_NAME"
-  rclone sync --fast-list $FOLDER $SERVICE:$BUCKET_NAME -v #--progress
+# Backup folder to '$2'
+# $1 FOLDER
+# $2 remote:bucket
+function backup_folder_mixed () {
+  FOLDER="$1"
+  DEST="$2"
+  echo "# Backing up $FOLDER to $DEST"
+  rclone sync --fast-list $FOLDER $DEST -v #--progress
+
 }
 
 # $1 Dataset
@@ -77,4 +86,6 @@ main () {
   ## ZFS Scrub
     # zpool scrub atlantic
 }
+
+backup_folder_mixed /atlantic/tortuga bb-encrypted-tortuga:
 
