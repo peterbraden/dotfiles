@@ -14,7 +14,7 @@ function backup_folder () {
   BUCKET_PREFIX="peterbraden-$UNIQUE"
   BUCKET_NAME="$BUCKET_PREFIX-$2"
   SERVICE="$3"
-  backup_folder_mixed "$SERVICE:$BUCKET_NAME"
+  backup_folder_mixed $FOLDER "$SERVICE:$BUCKET_NAME"
 }
 
 # Backup folder to '$2'
@@ -73,7 +73,7 @@ main () {
 
   ## Backup Status
 
-  backup_folder /atlantic/tortuga tortuga bb-encrypted
+  backup_folder_mixed /atlantic/tortuga bb-encrypted-tortuga:
 
   #backup_dataset atlantic/photos bb
   backup_folder /atlantic/photos/2004 photos-2004 bb
@@ -87,5 +87,4 @@ main () {
     # zpool scrub atlantic
 }
 
-backup_folder_mixed /atlantic/tortuga bb-encrypted-tortuga:
-
+main
