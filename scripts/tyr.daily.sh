@@ -37,7 +37,7 @@ backup_dataset () {
     if [ "$line" != "$DATASET" ]; then
       DATASET_NAME="$(echo $line | cut -d'/' -f2)"
       FOLDER_NAME="$(echo $line | cut -d'/' -f3)"
-      backup_folder $line "$DATASET_NAME-$FOLDER_NAME" $SERVICE
+      backup_folder "/$line" "$DATASET_NAME-$FOLDER_NAME" $SERVICE
     fi
   done
 }
@@ -73,16 +73,12 @@ main () {
 
   ## Backup Status
 
+  backup_dataset atlantic/photos bb
+
   backup_folder_mixed /atlantic/tortuga bb-encrypted-tortuga:
 
   backup_folder /atlantic/footage footage bb
 
-  #backup_dataset atlantic/photos bb
-  backup_folder /atlantic/photos/2004 photos-2004 bb
-  backup_folder /atlantic/photos/2005 photos-2005 bb
-  backup_folder /atlantic/photos/2006 photos-2006 bb
-  backup_folder /atlantic/photos/2007 photos-2007 bb
-  backup_folder /atlantic/photos/2008 photos-2008 bb
 
 
 
