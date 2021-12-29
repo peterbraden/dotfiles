@@ -73,11 +73,10 @@ main () {
 
   ## Backup Status
 
-  backup_dataset atlantic/photos bb
-
-  backup_folder_mixed /atlantic/tortuga bb-encrypted-tortuga:
-
-  backup_folder /atlantic/footage footage bb
+  # TODO enable
+  #backup_dataset atlantic/photos bb
+  #backup_folder_mixed /atlantic/tortuga bb-encrypted-tortuga:
+  #backup_folder /atlantic/footage footage bb
 
 
 
