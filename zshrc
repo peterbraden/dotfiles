@@ -11,7 +11,7 @@ git_branch() {
 }
 
 git_dirty() {
-  st=$($GIT status --porcelain 2>/dev/null | tail -n 1)
+  st=$($GIT status --porcelain --ignore-submodules=dirty 2>/dev/null | tail -n 1)
   if [[ $st == "" ]]
   then
       echo "%{$fg[green]%}$(git_prompt_info)%{$reset_color%}"
