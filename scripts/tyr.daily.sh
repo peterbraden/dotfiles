@@ -72,15 +72,9 @@ main () {
   echo " "
 
   ## Backup Status
-
-  # TODO enable
-  #backup_dataset atlantic/photos bb
-  #backup_folder_mixed /atlantic/tortuga bb-encrypted-tortuga:
-  #backup_folder /atlantic/footage footage bb
-
-
-
-
+  backup_dataset atlantic/photos bb
+  backup_folder_mixed /atlantic/tortuga bb-encrypted-tortuga:
+  backup_folder /atlantic/footage footage bb
 
   # Trigger jobs
   ## ZFS Snapshots
