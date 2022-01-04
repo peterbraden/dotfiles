@@ -55,8 +55,8 @@ alias metis='ssh -i ~/.ssh/peter-ratatosk-metis.pem peterbraden@metis'
 
 # TMUX
 # - supports 256 colors
-alias tmux=tmux -CC -2
-alias tmux-start-server=tmux new -d
+alias tmux='tmux -CC -2'
+alias tmux-start-server='tmux new -d'
 # attach or create session - similar to `screen -dR foo`
 alias tm='tmux new-session -AD'
 alias tml='tmux list-sessions'
@@ -67,7 +67,7 @@ alias tmk='tmux kill-session -t'
 # Docker
 alias docker-init='eval "$(docker-machine env)"'
 alias docker-cleanup='docker system prune'
-alias docker-killall=docker ps -a -q
+alias docker-killall='docker ps -a -q'
 alias docker-nuke='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) && docker volume rm $(docker volume ls -f dangling=true -q)' 
 
 # }}}
