@@ -42,7 +42,7 @@ alias gca='git commit -a'
 alias gl='git log -p'
 alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
 alias git-cleanup='git branch --merged | grep -v "\*" | xargs -n 1 git branch -d'
-alias git-fix-merges='vim -p `git diff --name-only | uniq`'
+alias git-fix-merges="vim -p `git diff --name-only | sed \"s/^/'/;s/$/'/\" | uniq`"
 alias gfm='git-fix-merges'
 
 # Shortcuts
@@ -55,7 +55,7 @@ alias metis='ssh -i ~/.ssh/peter-ratatosk-metis.pem peterbraden@metis'
 
 # TMUX
 # - supports 256 colors
-alias tmux='tmux -CC -2'
+alias tmux='tmux -2'
 alias tmux-start-server='tmux new -d'
 # attach or create session - similar to `screen -dR foo`
 alias tm='tmux new-session -AD'
