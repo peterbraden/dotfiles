@@ -1,3 +1,4 @@
+#!/bin/zsh
 W="\033[01;37m"
 B="\033[30;44m"
 BB="\033[34m"
@@ -20,5 +21,5 @@ echo "$BB# --- SSH Logins --- $X"
 if [[ "$OSTYPE" == "darwin"* ]]; then
 last
 else
-last --dns --fullnames -x | grep -v "0.0.0.0" | grep -v "begins"
+last --since "2 days ago"  --dns --fullnames -x | grep -v "0.0.0.0" | grep -v "begins" | grep -v tmux |  head -20
 fi
