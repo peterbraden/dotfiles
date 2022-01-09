@@ -49,10 +49,6 @@ alias gfm='git-fix-merges'
 alias d="date --rfc-3339=seconds"
 alias genpwd="openssl rand -base64 20"
 
-# SSH
-alias prom='ssh peterbraden@prometheus'
-alias metis='ssh -i ~/.ssh/peter-ratatosk-metis.pem peterbraden@metis'
-
 # TMUX
 # - supports 256 colors
 alias tmux='tmux -2'
