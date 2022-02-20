@@ -11,7 +11,8 @@ notes_stats () {
   first_sha=$(git log --format=format:%H --since="$since" | tail -1)
 
   echo "# -- Changes since $since -- "
-  git diff $first_sha --stat
+  git diff $first_sha --numstat | sort -nr | sed "s/Notebooks\///" | sed "s/.txt//" | awk '{s = ""; for (i = 3; i <= NF; i++) s = s $i " "; print s "," $1 "+ ," $2 "- " }' | column -t -s,
+  echo ""
 
   for sha in $(git rev-list --since="$since" --abbrev-commit master | sed -e '$ d'); do
     added=$(git diff --word-diff=porcelain $sha~1..$sha|grep -e"^+[^+]"|wc -w|xargs)
@@ -30,5 +31,6 @@ notes_stats () {
       echo "$prefix $added added, $deleted deleted, $changed changed"
     done
 
+    echo ""
     echo "Total words added:" $total
 }
