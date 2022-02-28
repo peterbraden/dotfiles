@@ -1,1 +1,1 @@
-/home/peterbraden/repos/dotfiles/neovim
+/Users/peterbraden/Desktop/repos/dotfiles/neovim

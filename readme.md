@@ -1,28 +1,27 @@
 # Set Up a Vanilla Machine:
 
-## Install Xcode from app store
-Because Apple need a user account to give you a compiler...
-
 ## Remove OSX's dumb app security
 ```sh
 sudo spctl --master-disable
 ```
 System Prefs > Security > Allow Apps from anywhere
 
-## Get Git
-[http://git-scm.com/download](http://git-scm.com/download)
+## Install apps from Safari
+- https://brew.sh
 
-## Get Keys from old Machine
+# Install apps from App Store
+- 1password
 
-- SSH Keys
-- Private Key etc
+## Install Git
+`brew install git`
+
+## Login Github
 
 ## Setup Github keys:
-```sh
+```bash
 ssh-keygen -t rsa -C "peterbraden@peterbraden.co.uk"
 cat ~/.ssh/id_rsa.pub | pbcopy
 ```
-
 Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
 
 ## Setup
