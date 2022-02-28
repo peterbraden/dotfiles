@@ -2,7 +2,7 @@ DOTPATH=`pwd`
 REPOPATH=~/repos
 UNAME_S := $(shell uname -s)
 
-install: add_hosts change_shell link_dotfiles linux osx setup_ssh
+install: add_hosts change_shell link_dotfiles linux osx
 .PHONY: install
 .DEFAULT: install
 
@@ -65,16 +65,4 @@ ifeq ($(UNAME_S), Linux)
 	$(DOTPATH)/linux/apt.sh
 endif
 .PHONY: linux
-
-node_install:
-	sudo curl https://raw.githubusercontent.com/isaacs/nave/master/nave.sh > /usr/local/bin/nave
-	sudo nave usemain stable
-.PHONY: node_install
-
-setup_ssh:
-	#mkdir -p ~/.ssh
-	#cp $(DOTPATH)/ssh/authorized_keys ~/.ssh
-	#cp $(DOTPATH)/ssh/sshd_config ~/.ssh
-	#cp $(DOTPATH)/ssh/config ~/.ssh
-.PHONY: setup_ssh
 
