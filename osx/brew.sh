@@ -8,9 +8,6 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 brew update
 brew upgrade
 
-#sudo ln -s /usr/local/bin/gsha256sum /usr/local/bin/sha256sum
-#sudo mv /usr/bin/vim /usr/bin/system-compiled-vim
-
 brew bundle --file=- <<-EOS
 brew "coreutils"
 brew "findutils"
