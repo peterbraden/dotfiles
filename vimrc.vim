@@ -1,4 +1,4 @@
-set nocp
+set nocompatible    " Don't be compatible with vi
 
 "if !has('nvim')
   call pathogen#infect()
@@ -7,7 +7,6 @@ set nocp
 let mapleader = ","
 
 " Basic Settings -------------------- {{{
-set nocompatible    " Don't be compatible with vi
 set history=100         " 100 Lines of history
 set showfulltag         " Show more information while completing tags
 filetype on

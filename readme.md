@@ -1,31 +1,31 @@
 # Set Up a Vanilla Machine:
 
-## Install Xcode from app store
-Because Apple need a user account to give you a compiler...
 
-## Remove OSX's dumb app security
-```sh
-sudo spctl --master-disable
-```
+
+## OSX
 System Prefs > Security > Allow Apps from anywhere
 
-## Get Git
-[http://git-scm.com/download](http://git-scm.com/download)
+### Install apps from Safari
+- https://brew.sh
+- https://www.mozilla.org/en-US/firefox/new/
 
-## Get Keys from old Machine
+### Install apps from App Store
+- [ ] 1password
+- [ ] [Tailscale](https://apps.apple.com/ca/app/tailscale/id1475387142?mt=12)
 
-- SSH Keys
-- Private Key etc
+### Install Git
+`brew install git`
 
-## Setup Github keys:
-```sh
+### Login Github
+
+### Setup Github keys:
+```bash
 ssh-keygen -t rsa -C "peterbraden@peterbraden.co.uk"
 cat ~/.ssh/id_rsa.pub | pbcopy
 ```
-
 Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
 
-## Setup
+### Setup
 ```sh
 cd
 mkdir ~/repos
@@ -33,13 +33,19 @@ git clone git@github.com:peterbraden/dotfiles.git && cd dotfiles
 make
 ```
 
-# Pathogen add
+# Install Apps from Firefox
+- [iterm](http://www.iterm2.com/#/section/home)
+- [nextcloud](https://nextcloud.com/install/#install-clients)
 
-```
-git submodule add https://github.com/pathto/repo.git vim/bundle/repo.vim
-
-```
 
 - Set lock screen message with contact info
+
+# Playbook
+
+### Pathogen add module
+```
+git submodule add https://github.com/pathto/repo.git vim/bundle/repo.vim
+```
+
 
 
