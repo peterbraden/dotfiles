@@ -11,6 +11,7 @@ notes_stats () {
   first_sha=$(git log --format=format:%H --since="$since" | tail -1)
 
   echo "# -- Changes since $since -- "
+  echo ""
   git diff $first_sha --numstat | sort -nr | sed "s/Notebooks\///" | sed "s/.txt//" | awk '{s = ""; for (i = 3; i <= NF; i++) s = s $i " "; print s "," $1 "+ ," $2 "- " }' | column -t -s,
   echo ""
 
