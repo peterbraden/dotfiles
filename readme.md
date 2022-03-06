@@ -1,13 +1,8 @@
 # Set Up a Vanilla Machine:
-
-
-
 ## OSX
-System Prefs > Security > Allow Apps from anywhere
-
 ### Install apps from Safari
-- https://brew.sh
-- https://www.mozilla.org/en-US/firefox/new/
+- [homebrew](https://brew.sh)
+- [firefox](https://www.mozilla.org/en-US/firefox/new/)
 
 ### Install apps from App Store
 - [ ] 1password

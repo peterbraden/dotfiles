@@ -104,5 +104,7 @@ defaults write com.googlecode.iterm2 AlternateMouseScroll -bool true
 # Kill useless
 defaults write com.apple.gamed Disabled -bool true
 
+# Disable the “Are you sure you want to open this application?” dialog
+defaults write com.apple.LaunchServices LSQuarantine -bool false
 
 defaults write com.google.Chrome.plist AppleEnableSwipeNavigateWithScrolls -bool FALSE
