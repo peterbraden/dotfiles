@@ -1,14 +1,9 @@
-if [ -z "$NOTES_DIR" ]; then 
-  NOTES_DIR=~/Dropbox/Notebooks/
+#!/bin/bash
+if [ -z "$DOTPATH"  ]; then
+  echo "Missing DOTPATH"
+  exit 1
 fi
 
-notes () {
-  #ls $NOTES_DIR | grep -i 'month of' | grep --invert-match '.plist$' | sort -r
-  ls $NOTES_DIR | grep -i 'week of' | grep --invert-match '.plist$' | sort -r
-}
+source "$DOTPATH/scripts/todo.source.sh"
 
-first_note () {
-  echo "$NOTES_DIR$(notes | head -n 1)"
-}
-
-vi "$(first_note)"
+vi "$(abs_todo_file)"

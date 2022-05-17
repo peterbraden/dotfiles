@@ -1,5 +1,5 @@
 # vim:fdm=marker
-DOTPATH=~/repos/dotfiles
+export DOTPATH=~/repos/dotfiles
 
 # Environment -------------------  {{{
 export CLICOLOR=1
@@ -16,8 +16,14 @@ export LESS_TERMCAP_md="${yellow}";
 
 export PATH="/usr/local/sbin:$PATH"
 export PATH="/usr/local/bin:$PATH"
-#Go sucks for not respecting conventions:
+
+# GO
 export PATH=$PATH:/usr/local/go/bin
+
+# PYTHON
+PYTHON_BIN_PATH="$(python3 -m site --user-base)/bin"
+export PATH="$PATH:$PYTHON_BIN_PATH"
+
 # }}}
 
 # ALIASES ----------------------- {{{
