@@ -1,0 +1,9 @@
+#!/bin/bash
+if [ -z "$DOTPATH"  ]; then
+  echo "Missing DOTPATH"
+  exit 1
+fi
+
+source "$DOTPATH/scripts/todo.source.sh"
+
+todo_today

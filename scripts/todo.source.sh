@@ -21,5 +21,3 @@ todo_today() {
   EXIT_DELIMETER='0,/---/p'
   cat "$(abs_todo_file)" | sed $STRIP_DONE  | sed $STRIP_NOTES | sed -n $EXIT_DELIMETER | sed $STRIP_HEADERS | sed $STRIP_EMPTY | head -n 10
 }
-
-echo "$(todo_today)"
