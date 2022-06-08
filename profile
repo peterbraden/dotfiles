@@ -99,18 +99,24 @@ extract () {
      fi
 }
 # }}} 
+#
+#
+SSHAGENT=/usr/bin/ssh-agent
+SSHAGENTARGS="-s"
 
 # PATH Manipulation ---- {{{
 
 
 PATH=$PATH:$HOME/bin:./node_modules/.bin
 PATH=/opt/local/bin:/opt/local/sbin:$PATH
-PATH="$HOME/.cargo/bin:$PATH"
+
+if test -e "$HOME/.cargo/bin"; then
+  PATH="$HOME/.cargo/bin:$PATH"
+  . "$HOME/.cargo/env"
+fi
 
 # }}}
 
-SSHAGENT=/usr/bin/ssh-agent
-SSHAGENTARGS="-s"
 
 if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
 	eval `$SSHAGENT $SSHAGENTARGS`
@@ -128,4 +134,3 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 export GPG_TTY=$(tty)
-. "$HOME/.cargo/env"
