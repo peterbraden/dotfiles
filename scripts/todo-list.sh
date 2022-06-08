@@ -6,4 +6,4 @@ fi
 
 source "$DOTPATH/scripts/todo.source.sh"
 
-vi "$(abs_todo_file)"
+todo_today
