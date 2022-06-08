@@ -108,3 +108,7 @@ defaults write com.apple.gamed Disabled -bool true
 defaults write com.apple.LaunchServices LSQuarantine -bool false
 
 defaults write com.google.Chrome.plist AppleEnableSwipeNavigateWithScrolls -bool FALSE
+
+# Disable itunes / apple music
+launchctl unload -w /System/Library/LaunchAgents/com.apple.rcd.plist
+
