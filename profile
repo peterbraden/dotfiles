@@ -1,6 +1,10 @@
 # vim:fdm=marker
 export DOTPATH=~/repos/dotfiles
 
+if [ -f ~/.profile.local ]; then
+  source ~/.profile.local
+fi
+
 # Environment -------------------  {{{
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
@@ -130,9 +134,6 @@ if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
 fi
 
 
-if [ -f ~/.profile.local ]; then
-  source ~/.profile.local
-fi
 
 
 

@@ -1,6 +1,6 @@
 #set -g utf8
 #set-window-option -g utf8 on
-set -g default-terminal "screen-256color"
+#set -g default-terminal "screen-256color"
 
 set -g prefix C-a
 unbind C-b
