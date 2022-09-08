@@ -51,7 +51,12 @@ def todo_today(todofile):
     day = today.strftime("%a").lower()
     if day in lowerkeys:
         items = '\n'.join(sections[lowerkeys[day]])
-        return f'# {day}\n{items}'
+        return f'# {today}\n{items}'
+
+    if day == 'thu' and 'thurs' in lowerkeys:
+        items = '\n'.join(sections[lowerkeys['thurs']])
+        return f'# {today}\n{items}'
+
 
     return ">>" + day
 
