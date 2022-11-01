@@ -19,6 +19,7 @@ brew "tmux"
 brew "pass"
 brew "ripgrep"
 brew "mosh"
+brew "pyenv"
 EOS
 
 brew cleanup

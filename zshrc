@@ -85,9 +85,16 @@ PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
 
 ## --- Auto generated ---
 
-#eval "`npm completion`"
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '~/google-cloud-sdk/path.zsh.inc' ]; then . '~/google-cloud-sdk/path.zsh.inc'; fi
-# The next line enables shell command completion for gcloud.
+#eval "`npm completion`"# The next line enables shell command completion for gcloud.
 if [ -f '~/google-cloud-sdk/completion.zsh.inc' ]; then . '~/google-cloud-sdk/completion.zsh.inc'; fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/peterbraden/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/peterbraden/Downloads/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/peterbraden/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/peterbraden/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
+
+
+# The next line updates PATH for poetry
+export PATH="/Users/peterbraden/.local/bin:$PATH"
