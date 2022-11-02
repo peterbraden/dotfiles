@@ -80,10 +80,11 @@ source $HOME/.profile
 autoload -Uz compinit
 compinit
 
-PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
+
 
 
 ## --- Auto generated ---
+#PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
 
 #eval "`npm completion`"# The next line enables shell command completion for gcloud.
 if [ -f '~/google-cloud-sdk/completion.zsh.inc' ]; then . '~/google-cloud-sdk/completion.zsh.inc'; fi
@@ -98,7 +99,7 @@ if [ -f '/Users/peterbraden/Downloads/google-cloud-sdk/completion.zsh.inc' ]; th
 # The next line updates PATH for poetry
 export PATH="/Users/peterbraden/.local/bin:$PATH"
 
-# PYENV 
+# PYENV
 export PYENV_ROOT="$HOME/.pyenv"
 command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"

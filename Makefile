@@ -10,6 +10,7 @@ link_dotfiles:
 	git submodule init
 	git submodule update --init --recursive
 	echo "=== Linking Dotfiles ===\n"
+	ln -sf $(DOTPATH)/bashrc ~/.bashrc
 	ln -sf $(DOTPATH)/gitconfig ~/.gitconfig
 	ln -sf $(DOTPATH)/gitignore ~/.gitignore
 	ln -sf $(DOTPATH)/hgrc ~/.hgrc
