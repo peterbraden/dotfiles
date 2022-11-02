@@ -23,11 +23,6 @@ export PATH="/usr/local/bin:$PATH"
 
 # GO
 export PATH=$PATH:/usr/local/go/bin
-
-# PYTHON
-PYTHON_BIN_PATH="$(python3 -m site --user-base)/bin"
-export PATH="$PATH:$PYTHON_BIN_PATH"
-
 # }}}
 
 # ALIASES ----------------------- {{{
@@ -43,6 +38,7 @@ alias tdl='~/repos/dotfiles/scripts/todo-list.sh'
 alias note='~/repos/dotfiles/scripts/notes-edit.sh'
 alias diary='~/repos/dotfiles/scripts/diary.sh'
 alias imgcat="~/repos/dotfiles/scripts/imgcat.iterm.sh"
+alias mg=mv #disable mg editor
 
 # GIT
 alias gp='git pull'
@@ -133,11 +129,8 @@ if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
 	trap "kill $SSH_AGENT_PID" 0
 fi
 
-
-
-
-
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 export GPG_TTY=$(tty)
+

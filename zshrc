@@ -95,6 +95,10 @@ if [ -f '/Users/peterbraden/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '
 # The next line enables shell command completion for gcloud.
 if [ -f '/Users/peterbraden/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/peterbraden/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
 
-
 # The next line updates PATH for poetry
 export PATH="/Users/peterbraden/.local/bin:$PATH"
+
+# PYENV 
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
