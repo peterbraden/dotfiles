@@ -9,26 +9,9 @@ install: add_hosts change_shell link_dotfiles linux osx
 link_dotfiles:
 	git submodule init
 	git submodule update --init --recursive
-	echo "=== Linking Dotfiles ===\n"
-	ln -sf $(DOTPATH)/bashrc ~/.bashrc
-	ln -sf $(DOTPATH)/gitconfig ~/.gitconfig
-	ln -sf $(DOTPATH)/gitignore ~/.gitignore
-	ln -sf $(DOTPATH)/hgrc ~/.hgrc
-	ln -sf $(DOTPATH)/inputrc ~/.inputrc
-	ln -sf $(DOTPATH)/profile ~/.profile
-	ln -sf $(DOTPATH)/screenrc ~/.screenrc
-	ln -sf $(DOTPATH)/shortcuts.vim ~/shortcuts.vim
-	ln -sf $(DOTPATH)/tmuxrc ~/.tmux.conf
-	ln -sf $(DOTPATH)/vimrc.vim ~/.vimrc
-	ln -sf $(DOTPATH)/vim ~/.vim
-	ln -sf $(DOTPATH)/zshrc ~/.zshrc
-	ln -sf $(DOTPATH)/muttrc ~/.muttrc
+	chezmoi apply
 	mkdir -p ~/.vimundo
 	mkdir -p ~/.history
-	echo "=== Linking XDG ===\n"
-	mkdir -p ~/.config
-	ln -sf $(DOTPATH)/vim ~/.config/nvim
-	ln -sf $(DOTPATH)/neovim ~/.config/nvim/init.vim
 
 .PHONY: link_dotfiles
 
