@@ -66,7 +66,7 @@ zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 zstyle ':completion:*' insert-tab pending
 
 ################### History #############
-HISTFILE=$HOME/.history/$(date -u +%Y-%m-%d)._sh
+HISTFILE=$HOME/.history/history._sh
 HISTSIZE=2000
 SAVEHIST=2000
 setopt   appendhistory
@@ -101,3 +101,19 @@ export PATH="/Users/peterbraden/.local/bin:$PATH"
 export PYENV_ROOT="$HOME/.pyenv"
 command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/Users/peterbraden/opt/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/Users/peterbraden/opt/miniconda3/etc/profile.d/conda.sh" ]; then
+        . "/Users/peterbraden/opt/miniconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/Users/peterbraden/opt/miniconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+

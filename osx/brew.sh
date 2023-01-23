@@ -20,6 +20,7 @@ brew "pass"
 brew "ripgrep"
 brew "mosh"
 brew "pyenv"
+brew "bash"
 EOS
 
 brew cleanup
