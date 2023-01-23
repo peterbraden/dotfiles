@@ -26,6 +26,7 @@ brew "ripgrep"
 brew "mosh"
 brew "pyenv"
 brew "bash"
+brew "git"
 EOS
 
   brew cleanup
