@@ -1,14 +1,14 @@
 #!/bin/bash
 
+#sudo -v
+# Keep-alive: update existing `sudo` time stamp until the script has finished.
+#while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+
 if [ "$(uname -s)" == "Darwin" ]; then
-  echo "# - Setting up a mac"
+  echo "# - Installing packages on a mac"
 
   # Homebrew.
   # - inspired by https://github.com/mathiasbynens/dotfiles/blob/master/brew.sh
-
-  sudo -v
-  # Keep-alive: update existing `sudo` time stamp until the script has finished.
-  while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
   brew update
   brew upgrade
@@ -30,3 +30,17 @@ if [ "$(uname -s)" == "Darwin" ]; then
 
   brew cleanup
 fi
+
+if [ "$(uname -s)" == "Linux" ]; then
+  # Apt get stuff.
+  sudo apt-get -y update
+  sudo apt-get -y upgrade
+  sudo apt-get install -y build-essential
+  sudo apt-get install -y python python-pip python-setuptools python-dev
+  sudo apt-get install -y nodejs npm
+  sudo apt-get install -y rustc cargo
+  sudo apt-get install -y awscli zsh vim
+  sudo apt-get install -y mosh
+  # TODO tailscale
+fi
+
