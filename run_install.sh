@@ -8,14 +8,19 @@ fi
 
 DOTPATH=`pwd`
 
-if [ $(uname -s) == "Darwin" ]; then
+if [ "$(uname -s)" == "Darwin" ]; then
   echo "# - Setting up a mac"
-  sudo spctl --master-disable
+
+  if [ "$(spctl --status)" == "assessments enabled" ]; then
+    echo "# -- Disabling OSX Gatekeeper (spctl)"
+    sudo spctl --master-disable
+  fi
+
 	#$(DOTPATH)/osx/osx.sh
 	#$(DOTPATH)/osx/brew.sh
 fi
 
-if [ $(uname -s) == "Linux" ]; then
+if [ "$(uname -s)" == "Linux" ]; then
 	echo " -setting up linux"
 	#$(DOTPATH)/linux/apt.sh
 fi
