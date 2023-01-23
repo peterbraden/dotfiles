@@ -13,22 +13,23 @@ if [ "$(uname -s)" == "Darwin" ]; then
   brew update
   brew upgrade
 
-  brew bundle --file=- <<-EOS
-  brew "coreutils"
-  brew "findutils"
-  brew "gnu-sed"
-  brew "cmake"
-  brew "vim"
-  brew "reattach-to-user-namespace"# OSX SUCKS!!
-  brew "tmux"
-  brew "pass"
-  brew "ripgrep"
-  brew "mosh"
-  brew "pyenv"
-  brew "bash"
-  EOS
+brew bundle --file=- <<-EOS
+brew "coreutils"
+brew "findutils"
+brew "gnu-sed"
+brew "cmake"
+brew "vim"
+brew "reattach-to-user-namespace"
+brew "tmux"
+brew "pass"
+brew "ripgrep"
+brew "mosh"
+brew "pyenv"
+brew "bash"
+EOS
 
   brew cleanup
+
 fi
 
 if [ "$(uname -s)" == "Linux" ]; then
