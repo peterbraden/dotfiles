@@ -22,31 +22,3 @@ add_hosts:
 	#dscacheutil -flushcache
 	#sudo killall -HUP mDNSResponder
 .PHONY: add_hosts
-
-# Use ZSH
-change_shell: linux
-	if [ "$$SHELL" != "/bin/zsh" ]; then \
-		echo "# - Changing shell to zsh\n"; \
-		sudo chsh -s $(shell which zsh) $$USER; \
-	fi;
-.PHONY: change_shell
-
-# Setup Mac -> The last few versions have had _really_ crappy defaults
-osx:
-ifeq ($(UNAME_S), Darwin)
-	echo "- Setting up a mac"
-	$(DOTPATH)/osx/install.sh
-	$(DOTPATH)/osx/osx.sh
-	$(DOTPATH)/osx/apps.sh
-	$(DOTPATH)/osx/brew.sh
-endif
-.PHONY: osx
-
-
-linux:
-ifeq ($(UNAME_S), Linux)
-	echo " -setting up linux"
-	$(DOTPATH)/linux/apt.sh
-endif
-.PHONY: linux
-
