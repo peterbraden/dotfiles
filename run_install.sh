@@ -9,10 +9,9 @@ fi
 DOTPATH=`pwd`
 
 if [ $(uname -s) == "Darwin" ]; then
-	echo "# - Setting up a mac"
-	#$(DOTPATH)/osx/install.sh
+  echo "# - Setting up a mac"
+  sudo spctl --master-disable
 	#$(DOTPATH)/osx/osx.sh
-	#$(DOTPATH)/osx/apps.sh
 	#$(DOTPATH)/osx/brew.sh
 fi
 
