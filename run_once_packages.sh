@@ -27,6 +27,7 @@ brew "mosh"
 brew "pyenv"
 brew "bash"
 brew "git"
+brew "neovim"
 EOS
 
   brew cleanup
