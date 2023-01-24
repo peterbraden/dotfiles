@@ -22,10 +22,7 @@ Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
 
 ### Setup
 ```sh
-cd
-mkdir ~/repos && cd repos
-git clone git@github.com:peterbraden/dotfiles.git && cd dotfiles
-make
+chezmoi init peterbraden --branch=chezmoi
 ```
 
 # Install Apps from Firefox
