@@ -1,69 +1,69 @@
 [submodule "vim/bundle/ctrlp.vim"]
-	path = dot_vim/bundle/ctrlp.vim
+	path = home/dot_vim/bundle/ctrlp.vim
 	url = git@github.com:kien/ctrlp.vim.git
 [submodule "vim/bundle/dustjs.vim"]
 	path = vim/bundle/dustjs.vim
 	url = git@github.com:jimmyhchan/dustjs.vim.git
 [submodule "vim/bundle/editorconfig.vim"]
-	path = dot_vim/bundle/editorconfig.vim
+	path = home/dot_vim/bundle/editorconfig.vim
 	url = https://github.com/editorconfig/editorconfig-vim.git
 [submodule "vim/bundle/startify.vim"]
-	path = dot_vim/bundle/startify.vim
+	path = home/dot_vim/bundle/startify.vim
 	url = git@github.com:mhinz/vim-startify.git
 [submodule "vim/bundle/colors-solarized.vim"]
-	path = dot_vim/bundle/colors-solarized.vim
+	path = home/dot_vim/bundle/colors-solarized.vim
 	url = git@github.com:altercation/vim-colors-solarized.git
 [submodule "vim/bundle/json.vim"]
-	path = dot_vim/bundle/json.vim
+	path = home/dot_vim/bundle/json.vim
 	url = git@github.com:elzr/vim-json.git
 [submodule "vim/bundle/jshint2.vim"]
-	path = dot_vim/bundle/jshint2.vim
+	path = home/dot_vim/bundle/jshint2.vim
 	url = git@github.com:Shutnik/jshint2.vim.git
 [submodule "vim/bundle/fugitive.vim"]
-	path = dot_vim/bundle/fugitive.vim
+	path = home/dot_vim/bundle/fugitive.vim
 	url = git@github.com:tpope/vim-fugitive.git
 [submodule "vim/bundle/jade.vim"]
 	path = vim/bundle/jade.vim
 	url = git@github.com:digitaltoad/vim-jade.git
 [submodule "vim/bundle/arduino.vim"]
-	path = dot_vim/bundle/arduino.vim
+	path = home/dot_vim/bundle/arduino.vim
 	url = git@github.com:tclem/vim-arduino.git
 [submodule "vim/bundle/markdown.vim"]
-	path = dot_vim/bundle/markdown.vim
+	path = home/dot_vim/bundle/markdown.vim
 	url = git@github.com:plasticboy/vim-markdown.git
 [submodule "vim/bundle/javascript.vim"]
-	path = dot_vim/bundle/javascript.vim
+	path = home/dot_vim/bundle/javascript.vim
 	url = https://github.com/pangloss/vim-javascript.git
 [submodule "vim/bundle/scss-syntax.vim"]
-	path = dot_vim/bundle/scss-syntax.vim
+	path = home/dot_vim/bundle/scss-syntax.vim
 	url = https://github.com/cakebaker/scss-syntax.vim
 [submodule "vim/bundle/ack.vim"]
-	path = dot_vim/bundle/ack.vim
+	path = home/dot_vim/bundle/ack.vim
 	url = https://github.com/mileszs/ack.vim
 [submodule "vim/bundle/airline.vim"]
-	path = dot_vim/bundle/airline.vim
+	path = home/dot_vim/bundle/airline.vim
 	url = https://github.com/bling/vim-airline
 [submodule "vim/bundle/emmet-vim"]
 	path = vim/bundle/emmet-vim
 	url = https://github.com/mattn/emmet-vim.git
 [submodule "vim/bundle/typescript.vim"]
-	path = dot_vim/bundle/typescript.vim
+	path = home/dot_vim/bundle/typescript.vim
 	url = https://github.com/leafgarland/typescript-vim.git
 [submodule "vim/bundle/vim-go.vim"]
-	path = dot_vim/bundle/vim-go.vim
+	path = home/dot_vim/bundle/vim-go.vim
 	url = git@github.com:fatih/vim-go.git
 [submodule "vim/bundle/vimproc.vim"]
-	path = dot_vim/bundle/vimproc.vim
+	path = home/dot_vim/bundle/vimproc.vim
 	url = https://github.com/Shougo/vimproc.vim.git
 [submodule "vim/bundle/tsuquyomi"]
 	path = vim/bundle/tsuquyomi
 	url = https://github.com/Quramy/tsuquyomi.git
 [submodule "vim/bundle/tsuquyomi.vim"]
-	path = dot_vim/bundle/tsuquyomi.vim
+	path = home/dot_vim/bundle/tsuquyomi.vim
 	url = https://github.com/Quramy/tsuquyomi.git
 [submodule "vim/bundle/YouCompleteMe.vim"]
 	path = vim/bundle/YouCompleteMe.vim
 	url = git@github.com:Valloric/YouCompleteMe.git
 [submodule "vim/bundle/openscad.vim"]
-	path = dot_vim/bundle/openscad.vim
+	path = home/dot_vim/bundle/openscad.vim
 	url = git@github.com:sirtaj/vim-openscad.git
