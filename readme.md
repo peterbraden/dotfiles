@@ -8,7 +8,7 @@ Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
 
 ### Setup
 ```sh
-chezmoi init peterbraden --branch=chezmoi
+chezmoi init peterbraden --branch=chezmoi --apply
 ```
 
 ## OSX
