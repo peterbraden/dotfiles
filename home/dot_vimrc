@@ -10,13 +10,16 @@ let mapleader = ","
 set history=100         " 100 Lines of history
 set showfulltag         " Show more information while completing tags
 filetype on
-filetype plugin on      " Enable filetype plugins
-filetype plugin indent on           " Let filetype plugins indent for me
-" Use Mac clipboard
-set clipboard=unnamed
+filetype plugin on                  " Enable filetype plugins
+filetype plugin indent on           " Let filetype plugins indent
 
+set clipboard=unnamed   " Use Mac clipboard
+
+" Autoread
 set autoread " Reload files when they change on disk
 au CursorHold,CursorHoldI * checktime " Trigger the reload when the cursor stops moving
+
+" au FocusGained,BufEnter * :silent! ! " Trigger autoread when changing buffers or coming back to vim.
 
 
 "Disable Ex Mode
