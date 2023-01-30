@@ -49,9 +49,6 @@
 [submodule "vim/bundle/tsuquyomi"]
 	path = vim/bundle/tsuquyomi
 	url = https://github.com/Quramy/tsuquyomi.git
-[submodule "vim/bundle/tsuquyomi.vim"]
-	path = home/dot_vim/external_bundle/tsuquyomi.vim
-	url = https://github.com/Quramy/tsuquyomi.git
 [submodule "vim/bundle/YouCompleteMe.vim"]
 	path = vim/bundle/YouCompleteMe.vim
 	url = git@github.com:Valloric/YouCompleteMe.git
