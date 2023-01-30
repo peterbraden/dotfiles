@@ -16,9 +16,6 @@
 [submodule "vim/bundle/json.vim"]
 	path = home/dot_vim/external_bundle/json.vim
 	url = git@github.com:elzr/vim-json.git
-[submodule "vim/bundle/jshint2.vim"]
-	path = home/dot_vim/external_bundle/jshint2.vim
-	url = git@github.com:Shutnik/jshint2.vim.git
 [submodule "vim/bundle/fugitive.vim"]
 	path = home/dot_vim/external_bundle/fugitive.vim
 	url = git@github.com:tpope/vim-fugitive.git
@@ -34,12 +31,6 @@
 [submodule "vim/bundle/javascript.vim"]
 	path = home/dot_vim/external_bundle/javascript.vim
 	url = https://github.com/pangloss/vim-javascript.git
-[submodule "vim/bundle/scss-syntax.vim"]
-	path = home/dot_vim/external_bundle/scss-syntax.vim
-	url = https://github.com/cakebaker/scss-syntax.vim
-[submodule "vim/bundle/ack.vim"]
-	path = home/dot_vim/external_bundle/ack.vim
-	url = https://github.com/mileszs/ack.vim
 [submodule "vim/bundle/airline.vim"]
 	path = home/dot_vim/external_bundle/airline.vim
 	url = https://github.com/bling/vim-airline
