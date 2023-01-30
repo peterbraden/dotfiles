@@ -58,3 +58,6 @@
 [submodule "vim/bundle/openscad.vim"]
 	path = home/dot_vim/external_bundle/openscad.vim
 	url = git@github.com:sirtaj/vim-openscad.git
+[submodule "home/dot_vim/external_bundle/vim-airline-themes.vim"]
+	path = home/dot_vim/external_bundle/vim-airline-themes.vim
+	url = https://github.com/vim-airline/vim-airline-themes
