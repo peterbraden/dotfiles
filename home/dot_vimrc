@@ -82,14 +82,19 @@ set autoindent
 set encoding=utf-8
 set hidden
 
+" Wildmenu is the autocomplete menu that appears when you tab into files
+set wildmenu                  " Autocomplete features in the status bar
+set wildoptions=pum           " Use vertical menu
+if &wildoptions == "pum"      " Neovim has idiotic defaults
+  cnoremap <expr> <Up> wildmenumode() ? '<Left>' : '<Up>'
+  cnoremap <expr> <Down> wildmenumode() ? '<Right>' : '<Down>'
+  cnoremap <expr> <Left> wildmenumode() ? '<Up>' : '<Left>'
+  cnoremap <expr> <Right> wildmenumode() ? '<Down>' : '<Right>'
+endif
 
 " we don't want to edit these type of files
 set wildignore=*.o,*.obj,*.bak,*.exe,*.pyc,*.swp
 set wildignore+=*/.git/*,*/tmp/*,*.swp
-" }}}
-
-" Command Line {{{
-set wildmenu                                                    " Autocomplete features in the status bar
 " }}}
 
 " Windows  {{{
