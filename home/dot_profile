@@ -40,6 +40,8 @@ alias diary='~/repos/dotfiles/scripts/diary.sh'
 alias imgcat="~/repos/dotfiles/scripts/imgcat.iterm.sh"
 alias mg=mv #disable mg editor
 
+alias l="exa" # | ls
+
 # GIT
 alias gp='git pull'
 alias gd='git diff'

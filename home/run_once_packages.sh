@@ -9,6 +9,7 @@ if [ "$(uname -s)" == "Darwin" ]; then
 
   # Homebrew.
   # - inspired by https://github.com/mathiasbynens/dotfiles/blob/master/brew.sh
+  # - ref. https://gist.github.com/ChristopherA/a579274536aab36ea9966f301ff14f3f
 
   brew update
   brew upgrade
@@ -28,6 +29,11 @@ brew "pyenv"
 brew "bash"
 brew "git"
 brew "neovim"
+
+brew "exa"     # Ls replacement
+brew "atuin"   # Pretty history
+brew "fd"      # Find replacement
+brew "bat"     # Cat replacement
 EOS
 
   brew cleanup
@@ -45,5 +51,8 @@ if [ "$(uname -s)" == "Linux" ]; then
   sudo apt-get install -y awscli zsh vim
   sudo apt-get install -y mosh
   # TODO tailscale
+  #
+  
+  apt install bat
 fi
 
