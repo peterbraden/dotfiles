@@ -59,11 +59,14 @@
 	path = home/dot_vim/external_bundle/vim-airline-themes.vim
 	url = https://github.com/vim-airline/vim-airline-themes
 [submodule "home/dot_config/nvim/plugins/telescope.nvim"]
-	path = home/dot_config/nvim/plugins/telescope.nvim
+	path = home/dot_config/external_plugins/telescope.nvim
 	url = https://github.com/nvim-telescope/telescope.nvim.git
 [submodule "home/dot_config/nvim/plugins/vim-plug"]
 	path = home/dot_config/nvim/vim-plug
 	url = https://github.com/junegunn/vim-plug.git
 [submodule "home/dot_config/nvim/plugins/plenary.nvim"]
-	path = home/dot_config/nvim/plugins/plenary.nvim
+	path = home/dot_config/external_plugins/plenary.nvim
 	url = https://github.com/nvim-lua/plenary.nvim.git
+[submodule "home/dot_config/nvim/plugins/nvim-treesitter"]
+	path = home/dot_config/external_plugins/nvim-treesitter
+	url = https://github.com/nvim-treesitter/nvim-treesitter.git
