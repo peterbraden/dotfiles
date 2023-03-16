@@ -58,6 +58,3 @@
 [submodule "home/dot_vim/external_bundle/vim-airline-themes.vim"]
 	path = home/dot_vim/external_bundle/vim-airline-themes.vim
 	url = https://github.com/vim-airline/vim-airline-themes
-[submodule "home/dot_config/nvim/plugins/dein.vim"]
-	path = home/dot_config/nvim/plugins/dein.vim
-	url = https://github.com/Shougo/dein.vim.git
