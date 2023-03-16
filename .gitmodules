@@ -64,3 +64,6 @@
 [submodule "home/dot_config/nvim/plugins/vim-plug"]
 	path = home/dot_config/nvim/vim-plug
 	url = https://github.com/junegunn/vim-plug.git
+[submodule "home/dot_config/nvim/plugins/plenary.nvim"]
+	path = home/dot_config/nvim/plugins/plenary.nvim
+	url = https://github.com/nvim-lua/plenary.nvim.git
