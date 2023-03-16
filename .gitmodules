@@ -62,5 +62,5 @@
 	path = home/dot_config/nvim/plugins/telescope.nvim
 	url = https://github.com/nvim-telescope/telescope.nvim.git
 [submodule "home/dot_config/nvim/plugins/vim-plug"]
-	path = home/dot_config/nvim/plugins/vim-plug
+	path = home/dot_config/nvim/vim-plug
 	url = https://github.com/junegunn/vim-plug.git
