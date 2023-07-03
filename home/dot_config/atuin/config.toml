@@ -1,2 +1,5 @@
 style = "compact"
 inline_height = 10
+filter_mode = "session"
+filter_mode_shell_up_key_binding = "session"
+
