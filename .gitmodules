@@ -73,3 +73,6 @@
 [submodule "home/dot_vim/external_bundle/kotlin.vim"]
 	path = home/dot_vim/external_bundle/kotlin.vim
 	url = https://github.com/udalov/kotlin-vim.git
+[submodule "home/dot_zsh/zsh-autosuggestions"]
+	path = home/dot_zsh/zsh-autosuggestions
+	url = https://github.com/zsh-users/zsh-autosuggestions
