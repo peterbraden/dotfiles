@@ -6,8 +6,9 @@ My personal config files and shell scripts for a development machine.
 
 <details>
   <summary>Vim / neovim</summary>
-I use vim with a fair amount of [plugins](./home/dot_vim/external_bundle) and
-[customizations](./home/dot_vimrc).
+
+I use vim with a fair amount of [plugins]("./home/dot_vim/external_bundle") and
+[customizations]("./home/dot_vimrc").
 
 The most important are `,ee` to fuzzy open a file. `,et` and `,ev` to open files
 in tabs and vertical splits respectively.
@@ -15,6 +16,7 @@ in tabs and vertical splits respectively.
 
 <details>
   <summary>tmux</summary>
+
 tmux is a critical part of my workflow - I use a session per project, so I can
 switch between projects and have everything setup how I left it.
 
@@ -53,8 +55,8 @@ chezmoi init peterbraden --apply
 - [firefox](https://www.mozilla.org/en-US/firefox/new/)
 
 #### Install apps from App Store
-- [ ] 1password
-- [ ] [Tailscale](https://apps.apple.com/ca/app/tailscale/id1475387142?mt=12)
+- 1Password
+- [Tailscale](https://apps.apple.com/ca/app/tailscale/id1475387142?mt=12)
 
 #### Install Apps from Firefox
 - [iterm](http://www.iterm2.com/#/section/home)
