@@ -3,19 +3,33 @@
 My personal config files and shell scripts for a development machine.
 
 ## Tools
-#### Vim / neovim
+
+<details>
+  <summary>Vim / neovim</summary>
 I use vim with a fair amount of [plugins](./home/dot_vim/external_bundle) and
 [customizations](./home/dot_vimrc).
 
 The most important are `,ee` to fuzzy open a file. `,et` and `,ev` to open files
 in tabs and vertical splits respectively.
+</details>
 
-#### tmux
-TMUX is a critical part of my workflow - I use a session per project, so I can
-switch between projects and have everything setup how I left it. I combine it
-with a variety of shell scripts to keep everything setup comfortably.
+<details>
+  <summary>tmux</summary>
+tmux is a critical part of my workflow - I use a session per project, so I can
+switch between projects and have everything setup how I left it.
 
+`C-a s` Switches projects.
 
+I combine it with a variety of shell scripts to keep everything setup comfortably.
+
+```bash
+tmo PROJECT_NAME # Opens the 'current' session for a project, or creates one
+                 # with the windows setup how I like. It even attempts to clone
+                 # the project from github if it can't find it.
+
+tml # Lists currently open sessions.
+```
+</details>
 
 ## Setup a vanilla machine.
 <details>
@@ -54,11 +68,12 @@ chezmoi init peterbraden --apply
 
 
 ## Development in this module
-
-### Add vim plugin as submodule for pathogen
+<details>
+  <summary>Add vim plugin as submodule for pathogen</summary>
 ```
 git submodule add https://github.com/pathto/repo.git vim/bundle/repo.vim
 ```
+</details>
 
 
 
