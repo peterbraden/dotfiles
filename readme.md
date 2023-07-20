@@ -3,8 +3,17 @@
 My personal config files and shell scripts for a development machine.
 
 ## Tools
-- Vim / neovim
-- tmux
+#### Vim / neovim
+I use vim with a fair amount of [plugins](./home/dot_vim/external_bundle) and
+[customizations](./home/dot_vimrc).
+
+The most important are `,ee` to fuzzy open a file. `,et` and `,ev` to open files
+in tabs and vertical splits respectively.
+
+#### tmux
+TMUX is a critical part of my workflow - I use a session per project, so I can
+switch between projects and have everything setup how I left it. I combine it
+with a variety of shell scripts to keep everything setup comfortably.
 
 
 
