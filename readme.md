@@ -7,8 +7,8 @@ My personal config files and shell scripts for a development machine.
 <details>
   <summary>Vim / neovim</summary>
 
-I use vim with a fair amount of [plugins]("./home/dot_vim/external_bundle") and
-[customizations]("./home/dot_vimrc").
+I use vim with a fair amount of [plugins](home/dot_vim/external_bundle) and
+[customizations](home/dot_vimrc).
 
 The most important are `,ee` to fuzzy open a file. `,et` and `,ev` to open files
 in tabs and vertical splits respectively.
