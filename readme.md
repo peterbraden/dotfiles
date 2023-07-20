@@ -1,8 +1,18 @@
 # Dotfiles
 
-## Playbook
-### Bootstrapping on a Vanilla Machine:
-##### 1. Setup Github keys:
+My personal config files and shell scripts for a development machine.
+
+## Tools
+- Vim / neovim
+- tmux
+
+
+
+## Setup a vanilla machine.
+<details>
+  <summary>See steps</summary>
+
+##### 1. Setup new SSH key and use for github:
 ```sh
 ssh-keygen -t rsa -C "peterbraden@peterbraden.co.uk"
 cat ~/.ssh/id_rsa.pub | pbcopy
@@ -27,10 +37,16 @@ chezmoi init peterbraden --apply
 - [iterm](http://www.iterm2.com/#/section/home)
 - [nextcloud](https://nextcloud.com/install/#install-clients)
 
-#### Checklist
-- Set lock screen message with contact info
+</details>
 
-### Pathogen add module
+
+
+
+
+
+## Development in this module
+
+### Add vim plugin as submodule for pathogen
 ```
 git submodule add https://github.com/pathto/repo.git vim/bundle/repo.vim
 ```
