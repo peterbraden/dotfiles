@@ -2,10 +2,27 @@
 
 My personal config files and shell scripts for a development machine.
 
-## Tools
+I live in a terminal (usually iTerm on a mac), so my full development experience
+is defined in these files.
+
+My philosophy is that it's far better to invest in
+open source tools that have survived a while because the [Lindy
+effect](https://en.wikipedia.org/wiki/Lindy_effect) means that they are likely
+to continue to exist for a long time. This has served me well - some of these
+configs are almost two decades old, and the muscle memories I developed when
+learning them as a junior developer are now so ingrained that my conscious brain
+has forgotten a lot of the shortcuts.
+
+It also means I'm more likely to use old, stolid, vintage software where
+possible, even if there are some warts. Makefiles, sed, and bash scripts are
+more than capable of getting most of the places we need to go.
+
+
 
 <details>
   <summary>Vim / neovim</summary>
+
+### Vim
 
 I use vim with a fair amount of [plugins](home/dot_vim/external_bundle) and
 [customizations](home/dot_vimrc).
@@ -16,6 +33,8 @@ in tabs and vertical splits respectively.
 
 <details>
   <summary>tmux</summary>
+
+### TMUX
 
 tmux is a critical part of my workflow - I use a session per project, so I can
 switch between projects and have everything setup how I left it.
@@ -32,6 +51,20 @@ tmo PROJECT_NAME # Opens the 'current' session for a project, or creates one
 tml # Lists currently open sessions.
 ```
 </details>
+
+
+### [Chezmoi](https://www.chezmoi.io/)
+
+For many years, I managed my dotfiles by manually `curl` or `git clone`ing them
+onto a new machine, and moving them into place with a hand written makefile.
+This worked fine, but Tom, who created chezmoi, would hassle me at the pub about
+my suboptimal approach, until eventually I caved and tried it. He was right -
+using a tool for this makes everything a lot simpler.
+
+One line machine setups are pretty nice.
+
+
+
 
 ## Setup a vanilla machine.
 <details>
