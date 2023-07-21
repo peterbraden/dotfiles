@@ -19,8 +19,6 @@ more than capable of getting most of the places we need to go.
 
 
 
-<details>
-  <summary>Vim / neovim</summary>
 
 ### Vim
 
@@ -29,10 +27,6 @@ I use vim with a fair amount of [plugins](home/dot_vim/external_bundle) and
 
 The most important are `,ee` to fuzzy open a file. `,et` and `,ev` to open files
 in tabs and vertical splits respectively.
-</details>
-
-<details>
-  <summary>tmux</summary>
 
 ### TMUX
 
@@ -50,7 +44,6 @@ tmo PROJECT_NAME # Opens the 'current' session for a project, or creates one
 
 tml # Lists currently open sessions.
 ```
-</details>
 
 
 ### [Chezmoi](https://www.chezmoi.io/)
