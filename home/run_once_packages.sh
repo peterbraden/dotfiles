@@ -52,7 +52,6 @@ if [ "$(uname -s)" == "Linux" ]; then
   sudo apt-get install -y mosh
   # TODO tailscale
   #
-  
-  apt install bat
+  #apt install bat
 fi
 
