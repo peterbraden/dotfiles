@@ -18,12 +18,22 @@ export LANG=en_US.UTF-8
 export LESS_TERMCAP_md="${yellow}";
 
 
-export PATH="/usr/local/sbin:$PATH"
-export PATH="/usr/local/bin:$PATH"
-
-# GO
-export PATH=$PATH:/usr/local/go/bin
 # }}}
+# PATH Manipulation ---- {{{
+#
+export PATH="/usr/local/sbin:/usr/local/bin:/opt/local/bin:/opt/local/sbin:$HOME/.local/bin:$PATH"
+
+export PATH=$PATH:/usr/local/go/bin   # Add golang
+export PATH=$PATH:./node_modules/.bin # Add nodejs
+
+# Add cargo
+if test -e "$HOME/.cargo/bin"; then
+  PATH="$HOME/.cargo/bin:$PATH"
+  . "$HOME/.cargo/env"
+fi
+
+# }}}
+
 
 # ALIASES ----------------------- {{{
 alias vi="nvim -p"
@@ -112,27 +122,12 @@ extract () {
 SSHAGENT=/usr/bin/ssh-agent
 SSHAGENTARGS="-s"
 
-# PATH Manipulation ---- {{{
-
-
-PATH=$PATH:$HOME/bin:./node_modules/.bin
-PATH=/opt/local/bin:/opt/local/sbin:$PATH
-
-if test -e "$HOME/.cargo/bin"; then
-  PATH="$HOME/.cargo/bin:$PATH"
-  . "$HOME/.cargo/env"
-fi
-
-# }}}
 
 
 if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
 	eval `$SSHAGENT $SSHAGENTARGS`
 	trap "kill $SSH_AGENT_PID" 0
 fi
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 export GPG_TTY=$(tty)
 

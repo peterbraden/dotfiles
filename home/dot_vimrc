@@ -84,7 +84,7 @@ set hidden
 
 " Wildmenu is the autocomplete menu that appears when you tab into files
 set wildmenu                  " Autocomplete features in the status bar
-set wildoptions=pum           " Use vertical menu
+"set wildoptions=pum           " Use vertical menu
 if &wildoptions == "pum"      " Neovim has idiotic defaults
   cnoremap <expr> <Up> wildmenumode() ? '<Left>' : '<Up>'
   cnoremap <expr> <Down> wildmenumode() ? '<Right>' : '<Down>'
