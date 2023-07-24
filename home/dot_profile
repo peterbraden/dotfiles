@@ -111,6 +111,7 @@ extract () {
 #
 SSHAGENT=/usr/bin/ssh-agent
 SSHAGENTARGS="-s"
+eval `ssh-agent -s`
 
 # PATH Manipulation ---- {{{
 

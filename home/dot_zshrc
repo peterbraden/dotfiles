@@ -92,5 +92,7 @@ if [ -f '/Users/peterbraden/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '
 # The next line enables shell command completion for gcloud.
 if [ -f '/Users/peterbraden/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/peterbraden/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
 
+export GOOGLE_APPLICATION_CREDENTIALS=/Users/peterbraden/secrets/gcloud.json
+
 eval "$(atuin init zsh)"
 

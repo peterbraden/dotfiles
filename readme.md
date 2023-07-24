@@ -28,7 +28,7 @@ I use vim with a fair amount of [plugins](home/dot_vim/external_bundle) and
 The most important are `,ee` to fuzzy open a file. `,et` and `,ev` to open files
 in tabs and vertical splits respectively.
 
-### TMUX
+### tmux
 
 tmux is a critical part of my workflow - I use a session per project, so I can
 switch between projects and have everything setup how I left it.
@@ -46,7 +46,7 @@ tml # Lists currently open sessions.
 ```
 
 
-### [Chezmoi](https://www.chezmoi.io/)
+### [chezmoi](https://www.chezmoi.io/)
 
 For many years, I managed my dotfiles by manually `curl` or `git clone`ing them
 onto a new machine, and moving them into place with a hand written makefile.
@@ -57,6 +57,10 @@ using a tool for this makes everything a lot simpler.
 One line machine setups are pretty nice.
 
 
+
+
+
+---
 
 
 ## Setup a vanilla machine.
@@ -74,6 +78,13 @@ Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
 ```sh
 chezmoi init peterbraden --apply
 ```
+
+```sh
+# Setup / Ubuntu / from scratch
+# - Requires github authed ssh key - either forward in agent, or created as above
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
+```
+
 
 ### Setup OSX
 #### Install apps from Safari
@@ -98,9 +109,11 @@ chezmoi init peterbraden --apply
 ## Development in this module
 <details>
   <summary>Add vim plugin as submodule for pathogen</summary>
-```
+
+```sh
 git submodule add https://github.com/pathto/repo.git vim/bundle/repo.vim
 ```
+
 </details>
 
 
