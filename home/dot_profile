@@ -21,7 +21,7 @@ export LESS_TERMCAP_md="${yellow}";
 # }}}
 # PATH Manipulation ---- {{{
 #
-export PATH="/usr/local/sbin:/usr/local/bin:/opt/local/bin:/opt/local/sbin:$HOME/.local/bin:$PATH"
+export PATH="/usr/local/sbin:/usr/local/bin:/opt/local/bin:/opt/local/sbin:$HOME/.local/bin:$HOME/bin:$PATH"
 
 export PATH=$PATH:/usr/local/go/bin   # Add golang
 export PATH=$PATH:./node_modules/.bin # Add nodejs
@@ -43,11 +43,11 @@ alias motd=$DOTPATH/motd
 alias ack=rg
 alias s=rg
 alias ff='find . | egrep'
-alias td='~/repos/dotfiles/scripts/todo-edit.sh'
-alias tdl='~/repos/dotfiles/scripts/todo-list.sh'
-alias note='~/repos/dotfiles/scripts/notes-edit.sh'
-alias diary='~/repos/dotfiles/scripts/diary.sh'
-alias imgcat="~/repos/dotfiles/scripts/imgcat.iterm.sh"
+alias td='$DOTPATH/scripts/todo-edit.sh'
+alias tdl='$DOTPATH/scripts/todo-list.sh'
+alias note='$DOTPATH/scripts/notes-edit.sh'
+alias diary='$DOTPATH/scripts/diary.sh'
+alias imgcat="$DOTPATH/scripts/imgcat.iterm.sh"
 alias mg=mv #disable mg editor
 
 alias l="exa" # | ls
@@ -74,7 +74,7 @@ alias tmux-start-server='tmux new -d'
 # attach or create session - similar to `screen -dR foo`
 alias tm='tmux new-session -AD'
 alias tml='tmux list-sessions'
-alias tmo='~/repos/dotfiles/scripts/open-project.sh'
+alias tmo='$DOTPATH/scripts/open-project.sh'
 alias tmk='tmux kill-session -t'
 
 
