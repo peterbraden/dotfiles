@@ -65,7 +65,7 @@ One line machine setups are pretty nice.
 
 ## Setup a vanilla machine.
 <details>
-  <summary>See steps</summary>
+  <summary>Setup a new desktop machine (dedicated SSH key)</summary>
 
 ##### 1. Setup new SSH key and use for github:
 ```sh
@@ -78,13 +78,6 @@ Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
 ```sh
 chezmoi init peterbraden --apply
 ```
-
-```sh
-# Setup / Ubuntu / from scratch
-# - Requires github authed ssh key - either forward in agent, or created as above
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
-```
-
 
 ### Setup OSX
 #### Install apps from Safari
@@ -101,9 +94,16 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
 
 </details>
 
+<details>
+  <summary>Setup a new ephemeral dev machine in the cloud (SSH agent forwarded)</summary>
 
+```sh
+# Setup / Ubuntu / from scratch
+# - Requires github authed ssh key
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
+```
 
-
+</details>
 
 
 ## Development in this module
