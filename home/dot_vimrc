@@ -38,7 +38,7 @@ set hlsearch            " Highlight matches to the search
 set nobackup
 set nowritebackup
 set noswapfile
-set undofile
+set noundofile
 set undodir=~/.vimundo/
 " }}}
 
