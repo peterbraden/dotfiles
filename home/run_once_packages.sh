@@ -50,6 +50,7 @@ if [ "$(uname -s)" == "Linux" ]; then
   sudo apt-get install -y rustc cargo
   sudo apt-get install -y awscli zsh vim
   sudo apt-get install -y mosh
+  sudo apt-get install -y neovim
   # TODO tailscale
   #
   #apt install bat

@@ -117,14 +117,14 @@ extract () {
      fi
 }
 # }}} 
-#
-#
+
+
+
+# SSH Agent
 SSHAGENT=/usr/bin/ssh-agent
 SSHAGENTARGS="-s"
-eval `ssh-agent -s`
 
-
-
+# Only run ssh agent if not already in a forwarded session
 if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
 	eval `$SSHAGENT $SSHAGENTARGS`
 	trap "kill $SSH_AGENT_PID" 0
