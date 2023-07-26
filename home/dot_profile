@@ -124,11 +124,24 @@ extract () {
 SSHAGENT=/usr/bin/ssh-agent
 SSHAGENTARGS="-s"
 
-# Only run ssh agent if not already in a forwarded session
 if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
+  # Only run ssh agent if not already in a forwarded session
 	eval `$SSHAGENT $SSHAGENTARGS`
 	trap "kill $SSH_AGENT_PID" 0
+else
+  # We are in a forwarded session.
+  # If we are starting a shell in tmux, then we should refresh the socket
+  if [ -n "$TMUX" ]; then
+    export $(tmux show-environment | grep "^SSH_AUTH_SOCK")
+  fi
 fi
 
+
+
 export GPG_TTY=$(tty)
+
+
+
+# === Environment hackery
+export GOOGLE_APPLICATION_CREDENTIALS=/Users/peterbraden/secrets/gcloud.json
 
