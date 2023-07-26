@@ -116,6 +116,13 @@ extract () {
          echo "'$1' is not a valid file"
      fi
 }
+
+
+# When in tmux, and the ssh-agent env changes, we need to update it with this
+# function.
+function fix-ssh-in-tmux() {
+  export $(tmux show-environment | grep "^SSH_AUTH_SOCK")
+}
 # }}} 
 
 
@@ -131,10 +138,13 @@ if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
 else
   # We are in a forwarded session.
   # If we are starting a shell in tmux, then we should refresh the socket
+  # This only works for new shells.
   if [ -n "$TMUX" ]; then
-    export $(tmux show-environment | grep "^SSH_AUTH_SOCK")
+    fix-ssh-in-tmux
   fi
 fi
+
+
 
 
 
