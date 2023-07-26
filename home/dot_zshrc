@@ -101,5 +101,4 @@ if [ -x "$(command -v atuin)" ]; then
   eval "$(atuin init zsh)"
 fi
 
-export GOOGLE_APPLICATION_CREDENTIALS=/Users/peterbraden/secrets/gcloud.json
 
