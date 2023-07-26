@@ -1,5 +1,5 @@
 # nmvim:fdm=marker
-export DOTPATH=~/repos/dotfiles
+export DOTPATH=~/.local/share/chezmoi
 
 if [ -f ~/.profile.local ]; then
   source ~/.profile.local
