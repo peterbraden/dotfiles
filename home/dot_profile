@@ -9,6 +9,7 @@ fi
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
 export EDITOR=nvim
+export GIT_EDITOR=nvim
 export VISUAL=nvim
 export HISTSIZE=10000
 export HISTCONTROL='ignoreboth';
