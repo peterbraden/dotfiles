@@ -49,6 +49,7 @@ alias note='$DOTPATH/scripts/notes-edit.sh'
 alias diary='$DOTPATH/scripts/diary.sh'
 alias imgcat="$DOTPATH/scripts/imgcat.iterm.sh"
 alias mg=mv #disable mg editor
+alias mutt=neomutt
 
 alias l="exa" # | ls
 
