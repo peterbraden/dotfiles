@@ -41,19 +41,39 @@ EOS
 fi
 
 if [ "$(uname -s)" == "Linux" ]; then
-  # Apt get stuff.
-  sudo apt-get -y update
-  sudo apt-get -y upgrade
-  sudo apt-get install -y build-essential
-  sudo apt-get install -y python python-pip python-setuptools python-dev
-  sudo apt-get install -y nodejs npm
-  sudo apt-get install -y rustc cargo
-  sudo apt-get install -y awscli zsh vim
-  sudo apt-get install -y mosh
-  sudo apt-get install -y neovim ripgrep
-  sudo apt-get install -y pass
-  # TODO tailscale
-  #
-  #apt install bat
+
+  # Update Apt sources --------------------------------------------------------
+
+  # Tailscale
+  curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/focal.noarmor.gpg | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+  curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/focal.tailscale-keyring.list | sudo tee /etc/apt/sources.list.d/tailscale.list
+
+  # One Password
+  curl -sS https://downloads.1password.com/linux/keys/1password.asc | sudo gpg --dearmor --output /usr/share/keyrings/1password-archive-keyring.gpg
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/$(dpkg --print-architecture) stable main" | sudo tee /etc/apt/sources.list.d/1password.list
+  sudo mkdir -p /etc/debsig/policies/AC2D62742012EA22/
+  curl -sS https://downloads.1password.com/linux/debian/debsig/1password.pol | \
+  sudo tee /etc/debsig/policies/AC2D62742012EA22/1password.pol
+  sudo mkdir -p /usr/share/debsig/keyrings/AC2D62742012EA22
+  curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
+  sudo gpg --dearmor --output /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg
+
+
+  sudo apt -y update
+  #sudo apt -y upgrade
+
+  # Apt get stuff -------------------------------------------------------------
+  sudo apt install -y build-essential
+  sudo apt install -y python python-pip python-setuptools python-dev
+  sudo apt install -y nodejs npm
+  sudo apt install -y rustc cargo
+  sudo apt install -y zsh vim
+  sudo apt install -y neovim 
+  sudo apt install -y ripgrep
+  sudo apt install -y pass
+  sudo apt install -y mosh
+  sudo apt install -y tailscale
+  sudo apt install -y bat
+  sudo apt install -y 1password-cli
 fi
 
