@@ -42,6 +42,11 @@ alias mg=mv #disable mg editor
 
 alias l="exa" # | ls
 
+if [[ "$OSTYPE" == "darwin"* ]]; then
+# The sed installed in osx is horrible
+alias sed=gsed
+fi 
+
 # GIT
 alias gp='git pull'
 alias gd='git diff'
