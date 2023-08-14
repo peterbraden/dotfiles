@@ -1,5 +1,5 @@
 # nmvim:fdm=marker
-export DOTPATH=~/repos/dotfiles
+export DOTPATH=~/.local/share/chezmoi
 
 if [ -f ~/.profile.local ]; then
   source ~/.profile.local
@@ -9,6 +9,7 @@ fi
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
 export EDITOR=nvim
+export GIT_EDITOR=nvim
 export VISUAL=nvim
 export HISTSIZE=10000
 export HISTCONTROL='ignoreboth';
@@ -18,12 +19,22 @@ export LANG=en_US.UTF-8
 export LESS_TERMCAP_md="${yellow}";
 
 
-export PATH="/usr/local/sbin:$PATH"
-export PATH="/usr/local/bin:$PATH"
-
-# GO
-export PATH=$PATH:/usr/local/go/bin
 # }}}
+# PATH Manipulation ---- {{{
+#
+export PATH="/usr/local/sbin:/usr/local/bin:/opt/local/bin:/opt/local/sbin:$HOME/.local/bin:$HOME/bin:$PATH"
+
+export PATH=$PATH:/usr/local/go/bin   # Add golang
+export PATH=$PATH:./node_modules/.bin # Add nodejs
+
+# Add cargo
+if test -e "$HOME/.cargo/bin"; then
+  PATH="$HOME/.cargo/bin:$PATH"
+  . "$HOME/.cargo/env"
+fi
+
+# }}}
+
 
 # ALIASES ----------------------- {{{
 alias vi="nvim -p"
@@ -33,12 +44,13 @@ alias motd=$DOTPATH/motd
 alias ack=rg
 alias s=rg
 alias ff='find . | egrep'
-alias td='~/repos/dotfiles/scripts/todo-edit.sh'
-alias tdl='~/repos/dotfiles/scripts/todo-list.sh'
-alias note='~/repos/dotfiles/scripts/notes-edit.sh'
-alias diary='~/repos/dotfiles/scripts/diary.sh'
-alias imgcat="~/repos/dotfiles/scripts/imgcat.iterm.sh"
+alias td='$DOTPATH/scripts/todo-edit.sh'
+alias tdl='$DOTPATH/scripts/todo-list.sh'
+alias note='$DOTPATH/scripts/notes-edit.sh'
+alias diary='$DOTPATH/scripts/diary.sh'
+alias imgcat="$DOTPATH/scripts/imgcat.iterm.sh"
 alias mg=mv #disable mg editor
+alias mutt=neomutt
 
 alias l="exa" # | ls
 
@@ -69,7 +81,7 @@ alias tmux-start-server='tmux new -d'
 # attach or create session - similar to `screen -dR foo`
 alias tm='tmux new-session -AD'
 alias tml='tmux list-sessions'
-alias tmo='~/repos/dotfiles/scripts/open-project.sh'
+alias tmo='$DOTPATH/scripts/open-project.sh'
 alias tmk='tmux kill-session -t'
 
 
@@ -111,33 +123,42 @@ extract () {
          echo "'$1' is not a valid file"
      fi
 }
+
+
+# When in tmux, and the ssh-agent env changes, we need to update it with this
+# function.
+function fix-ssh-in-tmux() {
+  export $(tmux show-environment | grep "^SSH_AUTH_SOCK")
+}
 # }}} 
-#
-#
+
+
+
+# SSH Agent
 SSHAGENT=/usr/bin/ssh-agent
 SSHAGENTARGS="-s"
 
-# PATH Manipulation ---- {{{
-
-
-PATH=$PATH:$HOME/bin:./node_modules/.bin
-PATH=/opt/local/bin:/opt/local/sbin:$PATH
-
-if test -e "$HOME/.cargo/bin"; then
-  PATH="$HOME/.cargo/bin:$PATH"
-  . "$HOME/.cargo/env"
-fi
-
-# }}}
-
-
 if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
+  # Only run ssh agent if not already in a forwarded session
 	eval `$SSHAGENT $SSHAGENTARGS`
 	trap "kill $SSH_AGENT_PID" 0
+else
+  # We are in a forwarded session.
+  # If we are starting a shell in tmux, then we should refresh the socket
+  # This only works for new shells.
+  if [ -n "$TMUX" ]; then
+    fix-ssh-in-tmux
+  fi
 fi
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+
+
+
 
 export GPG_TTY=$(tty)
+
+
+
+# === Environment hackery
+export GOOGLE_APPLICATION_CREDENTIALS=/Users/peterbraden/secrets/gcloud.json
 
