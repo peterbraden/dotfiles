@@ -5,7 +5,7 @@ SESSION_NO_DOTS=${SESSION//\./-}
 
 # TODO first check session doesn't exist
 
-if tmux info &> /dev/null && tmux has-session -t $SESSION_NO_DOTS; then
+if tmux info &> /dev/null && tmux has-session -t "$SESSION_NO_DOTS"; then
   echo "reattaching to $SESSION_NO_DOTS"
   tmux attach -d -t $SESSION_NO_DOTS
   exit 2
