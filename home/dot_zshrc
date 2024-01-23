@@ -36,6 +36,10 @@ directory_name(){
   echo "%{$fg[green]%}%~%{${reset_color%}%}"
 }
 
+conda_env_info(){
+  echo "${CONDA_PROMPT_MODIFIER} "
+}
+
 function precmd() {
   # escape '%' chars in $1, make nonprintables visible
   a=${(V)1//\%/\%\%}
@@ -52,7 +56,7 @@ function precmd() {
     ;;
   esac
 
-export PROMPT="$(directory_name):$(git_dirty)$ "
+export PROMPT="$(conda_env_info)$(directory_name):$(git_dirty)$ "
 
 }
 
