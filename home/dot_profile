@@ -60,7 +60,7 @@ alias sed=gsed
 fi 
 
 # GIT
-alias gp='git push -u origin HEAD'
+alias gp='git push origin "$(git rev-parse --abbrev-ref HEAD)"' # Push current branch to origin
 alias gd='git diff'
 alias gs='git status'
 alias gca='git commit -a'
