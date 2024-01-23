@@ -102,3 +102,4 @@ if [ -x "$(command -v atuin)" ]; then
 fi
 
 
+
