@@ -55,8 +55,7 @@ function precmd() {
     ;;
   esac
 
-export PROMPT="$(directory_name):$(git_dirty)$ "
-
+  export PROMPT="$(directory_name):$(git_dirty)$ "
 }
 
 # matches case insensitive for lowercase
@@ -94,6 +93,9 @@ fi
 # On this laptop I develop primarily python with conda and poetry.
 export PATH="/Users/peterbraden/.local/bin:$PATH"
 
+# Set PATH, MANPATH, etc., for Homebrew.
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
 # Google cloud tools (((
 if [ -f '~/google-cloud-sdk/completion.zsh.inc' ]; then 
   . '~/google-cloud-sdk/completion.zsh.inc';
@@ -114,6 +116,9 @@ if command -v pyenv &> /dev/null; then
   export PYENV_ROOT="$HOME/.pyenv"
   export PATH="$PYENV_ROOT/bin:$PATH"
   eval "$(pyenv init -)"
+fi
+
+# --- Conda ---
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
@@ -130,7 +135,26 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
-fi
+
+function precmd() {
+  # escape '%' chars in $1, make nonprintables visible
+  a=${(V)1//\%/\%\%}
+
+  # Truncate command, and join lines.
+  a=$(print -Pn "%40>...>$a" | tr -d "\n")
+
+  case $TERM in
+  screen)
+    print -Pn "\ek$a:$3\e\\" # screen title (in ^A")
+    ;;
+  xterm*|rxvt)
+    print -Pn "\e]2;$2\a" # plain xterm title ($3 for pwd)
+    ;;
+  esac
+
+  export PROMPT="$CONDA_PROMPT_MODIFIER$(directory_name):$(git_dirty)$ "
+}
+
 {{- end }}
 #  )))
 
