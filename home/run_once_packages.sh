@@ -30,7 +30,6 @@ brew "bash"
 brew "git"
 brew "neovim"
 
-brew "exa"     # Ls replacement
 brew "atuin"   # Pretty history
 brew "fd"      # Find replacement
 brew "bat"     # Cat replacement
