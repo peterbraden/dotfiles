@@ -1,6 +1,7 @@
 # vim:foldmethod=marker:fmr=(((,)))
 #
 
+. ~/.profile # ZSH doesn't source profile by default
 
 export GIT="$(which git)"
 
@@ -74,7 +75,6 @@ setopt histignorealldups
 setopt EXTENDED_HISTORY
 setopt share_history
 
-source $HOME/.profile
 
 autoload -Uz compinit
 compinit
