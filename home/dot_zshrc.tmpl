@@ -152,7 +152,13 @@ function precmd() {
     ;;
   esac
 
-  export PROMPT="🌱$CONDA_PROMPT_MODIFIER$(directory_name):$(git_dirty)$ "
+  if [[ "$CONDA_PROMPT_MODIFIER" == '(arr-yield-estimates-dev) ' ]]; then
+    CONDA_PROMPT_PREFIX='[🌱arr]'
+  else
+    CONDA_PROMPT_PREFIX=$CONDA_PROMPT_MODIFIER
+  fi
+
+  export PROMPT="$CONDA_PROMPT_PREFIX$(directory_name):$(git_dirty)$ "
 }
 
 {{- end }}
