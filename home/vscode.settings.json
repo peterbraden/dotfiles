@@ -11,65 +11,13 @@
     "debugpy.debugJustMyCode": false,
     "vim.leader": ",",
     "vim.normalModeKeyBindingsNonRecursive": [
-        {"before": ["<leader>", "b", "d"],
-            "commands": [
-                "workbench.action.closeActiveEditor"
-            ]
-        },
-        {
-            "before": [
-                "<leader>",
-                "w",
-                "o"
-            ],
-            "commands": [
-                "workbench.action.moveEditorToNextGroup"
-            ]
-        },
-        {
-            "before": [
-                "<leader>",
-                "w",
-                "d"
-            ],
-            "commands": [
-                "workbench.action.closeEditorsInGroup"
-            ]
-        },
-        {
-            "before": [
-                "H"
-            ],
-            "commands": [
-                "workbench.action.previousEditorInGroup"
-            ]
-        },
-        {
-            "before": [
-                "L"
-            ],
-            "commands": [
-                "workbench.action.nextEditorInGroup"
-            ]
-        },
-        {
-            "before": [
-                "<leader>",
-                "z"
-            ],
-            "commands": [
-                "workbench.action.toggleZenMode"
-            ]
-        },
-        {
-            "before": [
-                "<leader>",
-                "t"
-            ],
-            "commands": [
-                "workbench.action.terminal.focus"
-            ]
-        },
+        // --- Testing ---
+        // Run test at cursor
+        { "before": ["<leader>", "r","c" ], "commands": ["testing.runAtCursor"] },
+        { "before": ["<leader>", "r","t" ], "commands": ["testing.reRunLastRun"]},
+
+        // -- Movement ---
+        { "before": [ "<leader>", "t"], "commands": ["workbench.action.terminal.focus" ] },
         {
             "before": [
                 "<leader>",
@@ -106,28 +54,6 @@
                 "workbench.action.closeSidebar",
                 "workbench.action.closeAuxiliaryBar",
                 "workbench.action.closePanel",
-            ]
-        },
-        {
-            "before": [
-                "<leader>",
-                "r",
-                "t"
-            ],
-            "commands": [
-                "testing.reRunLastRun"
-            ]
-        },
-        // Run test at cursor
-        { "before": ["<leader>", "r","c" ], "commands": ["testing.runAtCursor"] },
-        {
-            "before": [
-                "<leader>",
-                "d",
-                "d"
-            ],
-            "commands": [
-                "testing.debugLastRun"
             ]
         },
         {
