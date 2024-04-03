@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 echo "# Running peterbraden/dotfiles install.sh"
 
 if [ "$SHELL" != "/bin/zsh" ]; then 
@@ -36,9 +36,4 @@ if [ "$(uname -s)" == "Darwin" ]; then
   # launchctl unload -w /System/Library/LaunchAgents/com.apple.rcd.plist || true
   # Kill useless
   defaults write com.apple.gamed Disabled -bool true
-fi
-
-if [ "$(uname -s)" == "Linux" ]; then
-	echo " -setting up linux"
-	#$(DOTPATH)/linux/apt.sh
 fi

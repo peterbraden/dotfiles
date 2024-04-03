@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #sudo -v
 # Keep-alive: update existing `sudo` time stamp until the script has finished.
@@ -40,19 +40,21 @@ EOS
 fi
 
 if [ "$(uname -s)" == "Linux" ]; then
-  # Apt get stuff.
-  sudo apt-get -y update
-  sudo apt-get -y upgrade
-  sudo apt-get install -y build-essential
-  sudo apt-get install -y python python-pip python-setuptools python-dev
-  sudo apt-get install -y nodejs npm
-  sudo apt-get install -y rustc cargo
-  sudo apt-get install -y awscli zsh vim
-  sudo apt-get install -y mosh
-  sudo apt-get install -y neovim ripgrep
-  sudo apt-get install -y pass
-  # TODO tailscale
-  #
-  #apt install bat
+  if [ -n "$(command -v apt-get)" ]; then
+    # Apt get stuff.
+    sudo apt-get -y update
+    sudo apt-get -y upgrade
+    sudo apt-get install -y build-essential
+    sudo apt-get install -y python python-pip python-setuptools python-dev
+    sudo apt-get install -y nodejs npm
+    sudo apt-get install -y rustc cargo
+    sudo apt-get install -y awscli zsh vim
+    sudo apt-get install -y mosh
+    sudo apt-get install -y neovim ripgrep
+    sudo apt-get install -y pass
+    # TODO tailscale
+    #
+    #apt install bat
+  fi
 fi
 
