@@ -3,15 +3,18 @@ color normal green black
 set from = "peterbraden@peterbraden.co.uk"
 set realname = "Peter Braden"
 
-source ~/.mutt/fastmail
+source ~/.mutt/fastmail.account
+
+set header_cache=~/.mutt/cache-headers
+set message_cachedir=~/.mutt/cache-bodies
+set certificate_file=~/.mutt/certificates
+
+
 
 set imap_check_subscribed
 set mail_check = 120
 set timeout = 300
 set imap_keepalive = 300
-set header_cache=~/.mutt/cache/headers
-set message_cachedir=~/.mutt/cache/bodies
-set certificate_file=~/.mutt/certificates
 set move = no
 set include
 set sort = 'threads'
