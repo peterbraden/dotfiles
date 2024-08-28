@@ -2,7 +2,7 @@
 # TODO move to dofiles repo
 
 notes_stats () {
-  NOTES_DIR="/home/peterbraden/Dropbox"
+  NOTES_DIR=~/nextcloud/Notes/Notebooks/
   cd $NOTES_DIR
 
   total=0
