@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 SESSION=$1
 DIRECTORY=~/repos/$SESSION
 SESSION_NO_DOTS=${SESSION//\./-}
