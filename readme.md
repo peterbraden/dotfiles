@@ -117,4 +117,19 @@ git submodule add https://github.com/pathto/repo.git vim/bundle/repo.vim
 </details>
 
 
+# Credit
+
+The config and tools in this repository represent a patchwork of learnings that
+have been borrowed or stolen over a long career. While I don't think that things
+like this can or should be licensed, (although I may have included whole tools
+or repositories, which obviously retain their licenses) I nonetheless want to
+credit some of the progenitors of this information. Sadly most of this has been
+lost to the sands of time, but in an effort to improve going forward, here is a
+list of credits:
+
+
+
+- [auto generated git commit messages with LLM](https://harper.blog/2024/03/11/use-an-llm-to-automagically-generate-meaningful-git-commit-messages/)
+
+
 

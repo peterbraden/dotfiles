@@ -5,6 +5,11 @@
 #while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 if [ "$(uname -s)" == "Darwin" ]; then
+
+  # Installing brew
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+
   echo "# - Installing packages on a mac"
 
   # Homebrew.
