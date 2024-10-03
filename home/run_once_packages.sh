@@ -4,6 +4,8 @@
 # Keep-alive: update existing `sudo` time stamp until the script has finished.
 #while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
+
+# OSX {{{
 if [ "$(uname -s)" == "Darwin" ]; then
 
   # Installing brew
@@ -44,6 +46,9 @@ EOS
 
 fi
 
+# }}}
+
+# Linux {{{
 if [ "$(uname -s)" == "Linux" ]; then
   if [ -n "$(command -v apt-get)" ]; then
     # Apt get stuff.
@@ -62,4 +67,4 @@ if [ "$(uname -s)" == "Linux" ]; then
     #apt install bat
   fi
 fi
-
+# }}}
