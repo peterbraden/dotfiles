@@ -11,5 +11,8 @@ if [ -n "$CODESPACES" ]; then
   git config --global url."https://github.com/".insteadOf git@github.com:
 
   sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
+
+  sudo chsh "$USERNAME" --shell /usr/bin/zsh
+  export SHELL=/usr/bin/zsh
 fi
 # }}}
