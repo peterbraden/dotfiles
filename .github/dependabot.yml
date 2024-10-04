@@ -1,6 +1,6 @@
 version: 2
 updates:
   - package-ecosystem: "gitsubmodule"
-    directory: "/home/dot_vim/external_bundle" 
+    directory: "/" 
     schedule:
       interval: "weekly"
