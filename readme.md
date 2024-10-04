@@ -107,11 +107,18 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
 
 
 ## Development in this module
+
+
+#### Dependencies
+I use git submodules because it means I have all tools vendored on each machine,
+which means I am unlikely to have a rug pulled. Dependabot should keep them all
+up to date.
+
 <details>
   <summary>Add vim plugin as submodule for pathogen</summary>
 
 ```sh
-git submodule add https://github.com/pathto/repo.git vim/bundle/repo.vim
+git submodule add https://github.com/pathto/repo.git home/dot_vim/external_bundle/repo.vim
 ```
 
 </details>
