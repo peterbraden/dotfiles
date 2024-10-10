@@ -97,6 +97,8 @@ alias docker-nuke='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q
 
 # }}}
 
+alias ssh-gh-codespaces="gh cs ssh --server-port 2222"
+
 # Functions ----- {{{
 function psgrep() {
 EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
