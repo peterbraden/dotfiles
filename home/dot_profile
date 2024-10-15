@@ -56,11 +56,15 @@ alias imgcat="$DOTPATH/scripts/imgcat.iterm.sh"
 alias mg=mv #disable mg editor
 alias mutt=neomutt
 
-alias l="exa" # | ls
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
 # The sed installed in osx is horrible
 alias sed=gsed
+
+alias ls="eza" # | ls
+alias find="fd"
+alias cat="bat"
+
 fi 
 
 # GIT

@@ -8,11 +8,12 @@
 # OSX {{{
 if [ "$(uname -s)" == "Darwin" ]; then
 
-  # Installing brew
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  echo "# Installing packages on a mac" >&2
 
-
-  echo "# - Installing packages on a mac"
+  if ! [ -x "$(command -v brew)" ]; then
+    echo "# - Installing brew" >&2
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
 
   # Homebrew.
   # - inspired by https://github.com/mathiasbynens/dotfiles/blob/master/brew.sh
@@ -37,12 +38,18 @@ brew "bash"
 brew "git"
 brew "neovim"
 
+brew "fzf"     # Fuzzy find
 brew "atuin"   # Pretty history
 brew "fd"      # Find replacement
 brew "bat"     # Cat replacement
+brew "eza"     # ls replacement
 EOS
 
   brew cleanup
+
+#pip install llm
+# TODO 1password
+# TODO rclone
 
 fi
 
@@ -59,7 +66,6 @@ if [ "$(uname -s)" == "Linux" ]; then
     sudo apt-get install -y nodejs npm
     sudo apt-get install -y rustc cargo
     sudo apt-get install -y awscli zsh vim
-    sudo apt-get install -y tmux
     sudo apt-get install -y mosh
     sudo apt-get install -y neovim ripgrep
     sudo apt-get install -y pass
