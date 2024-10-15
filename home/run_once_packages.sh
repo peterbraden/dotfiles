@@ -43,6 +43,9 @@ brew "atuin"   # Pretty history
 brew "fd"      # Find replacement
 brew "bat"     # Cat replacement
 brew "eza"     # ls replacement
+brew "zoxide"  # cd replacement
+brew "git-delta"
+
 EOS
 
   brew cleanup

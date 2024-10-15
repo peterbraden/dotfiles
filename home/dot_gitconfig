@@ -30,7 +30,7 @@
 [core]
   editor = vim
   excludesfile = ~/.gitignore
-  pager = less -FRSX
+  pager = delta # less -FRSX
   whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
 
 [push]
