@@ -31,6 +31,13 @@ export PATH=$PATH:/usr/local/go/bin   # Add golang
 export PATH=$PATH:./node_modules/.bin # Add nodejs
 export PATH=$PATH:/opt/homebrew/bin   # Homebrew
 
+# Pyenv
+if command -v pyenv &> /dev/null; then
+  # pyenv exists
+  export PATH=$(pyenv root)/shims:$PATH $
+  eval "$(pyenv init -)"
+fi
+ 
 # Add cargo
 if test -e "$HOME/.cargo/bin"; then
   export PATH="$HOME/.cargo/bin:$PATH"
@@ -166,9 +173,4 @@ fi
 
 
 export GPG_TTY=$(tty)
-
-
-
-# === Environment hackery
-export GOOGLE_APPLICATION_CREDENTIALS=/Users/peterbraden/secrets/gcloud.json
 
