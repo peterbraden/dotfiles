@@ -79,6 +79,12 @@ Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
 chezmoi init peterbraden --apply
 ```
 
+Or without chezmoi previously installed:
+
+```sh
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
+```
+
 ### Setup OSX
 #### Install apps from Safari
 - [homebrew](https://brew.sh)
