@@ -1,11 +1,11 @@
-# nmvim:fdm=marker
+# vim:foldmethod=marker:fmr=(((,)))
 export DOTPATH=~/.local/share/chezmoi
 
 if [ -f ~/.profile.local ]; then
   source ~/.profile.local
 fi
 
-# Environment -------------------  {{{
+# Environment -------------------  (((
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
 export EDITOR=nvim
@@ -17,11 +17,10 @@ export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 # Highlight section titles in manual pages.
 export LESS_TERMCAP_md="${yellow}";
+# )))
 
+# PATH Manipulation ----  (((
 
-# }}}
-# PATH Manipulation ---- {{{
-#
 export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
 export PATH=$PATH:/opt/local/bin
 export PATH=$PATH:/opt/local/sbin
@@ -44,10 +43,10 @@ if test -e "$HOME/.cargo/bin"; then
   . "$HOME/.cargo/env"
 fi
 
-# }}}
+# )))
 
 
-# ALIASES ----------------------- {{{
+# ALIASES ----------------------- (((
 alias vi="nvim -p"
 alias vim="nvim -p"
 alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
@@ -106,11 +105,13 @@ alias docker-cleanup='docker system prune'
 alias docker-killall='docker ps -a -q'
 alias docker-nuke='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) && docker volume rm $(docker volume ls -f dangling=true -q)' 
 
-# }}}
-
 alias ssh-gh-codespaces="gh cs ssh --server-port 2222"
 
-# Functions ----- {{{
+
+
+# )))
+
+
 function psgrep() {
 EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
 ps aux | grep $EXP
@@ -142,18 +143,22 @@ extract () {
 }
 
 
+
+
+# --- SSH Agent --- (((
+# Run SSH agent for SSH Agent forwarding
+SSHAGENT=/usr/bin/ssh-agent
+SSHAGENTARGS="-s"
+
+# TODO: Check identity is added with `ssh-add -L` and ensure identity exists.
+#
+#
 # When in tmux, and the ssh-agent env changes, we need to update it with this
 # function.
 function fix-ssh-in-tmux() {
   export $(tmux show-environment | grep "^SSH_AUTH_SOCK")
 }
-# }}} 
 
-
-
-# SSH Agent
-SSHAGENT=/usr/bin/ssh-agent
-SSHAGENTARGS="-s"
 
 if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
   # Only run ssh agent if not already in a forwarded session
@@ -168,7 +173,7 @@ else
   fi
 fi
 
-
+# )))
 
 
 
