@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # A smart install script
 
+set -eu
 
 # Github codespaces {{{
 if [ -n "$CODESPACES" ]; then
@@ -13,9 +14,31 @@ if [ -n "$CODESPACES" ]; then
   # Codespaces clones to /workspaces/.codespaces/.persistedshare/dotfiles, but we want 
   # to install the binary to the ~/.local/bin directory
   bin_dir="$HOME/.local/bin"
-  sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$bin_dir" init --apply peterbraden
+ 
+  if ! chezmoi="$(command -v chezmoi)"; then
+        chezmoi="${bin_dir}/chezmoi"
+        echo "Installing chezmoi to '${chezmoi}'" >&2
+        if command -v curl >/dev/null; then
+                chezmoi_install_script="$(curl -fsSL get.chezmoi.io)"
+        elif command -v wget >/dev/null; then
+                chezmoi_install_script="$(wget -qO- get.chezmoi.io)"
+        else
+                echo "To install chezmoi, you must have curl or wget installed." >&2
+                exit 1
+        fi
+        sh -c "${chezmoi_install_script}" -- -b "${bin_dir}"
+        unset chezmoi_install_script bin_dir
+  fi
 
+  # POSIX way to get script's dir: https://stackoverflow.com/a/29834779/12156188
+  script_dir="$(cd -P -- "$(dirname -- "$(command -v -- "$0")")" && pwd -P)"
+
+
+
+  chezmoi init --source="${script_dir}" --apply peterbraden
   sudo chsh "$(whoami)" --shell /usr/bin/zsh
   export SHELL=/usr/bin/zsh
 fi
 # }}}
+
+
