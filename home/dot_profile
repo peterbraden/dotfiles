@@ -22,7 +22,7 @@ export LESS_TERMCAP_md="${yellow}";
 # }}}
 # PATH Manipulation ---- {{{
 #
-export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+export PATH="$HOME/bin:$HOME/.local/bin:$HOME/bin:$PATH"
 export PATH=$PATH:/opt/local/bin
 export PATH=$PATH:/opt/local/sbin
 export PATH=$PATH:/usr/local/sbin
