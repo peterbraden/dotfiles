@@ -1,7 +1,8 @@
 # nmvim:fdm=marker
 #
 # .profile is executed by login shells as the login shell $SHELL
-# 
+# But NB. it's not executed by zsh (we need to source it manually in .zprofile)
+# Because of this we stick to /bin/sh syntax
 #
 
 export DOTPATH=~/.local/share/chezmoi
@@ -22,11 +23,9 @@ export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 # Highlight section titles in manual pages.
 export LESS_TERMCAP_md="${yellow}";
-
-
 # }}}
+
 # PATH Manipulation ---- {{{
-#
 export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
 
 export PATH=$PATH:/opt/local/bin
