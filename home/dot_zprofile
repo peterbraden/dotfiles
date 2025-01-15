@@ -1,0 +1,4 @@
+emulate sh
+# ZSH doesn't load .profile (it sources .zprofile), therefore we source it here.
+. ~/.profile 
+emulate zsh
