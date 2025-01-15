@@ -1,21 +1,25 @@
 
+# ALIASES ----------------------- {{{
 # NB: Sourced from bash and zsh, so should be cross compatible.
 
-# ALIASES ----------------------- {{{
-alias vi="nvim -p"
-alias vim="nvim -p"
-alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
-alias motd=$DOTPATH/motd
+
+
 alias ack=rg
-alias s=rg
-alias ff='find . | egrep'
-alias td='$DOTPATH/scripts/todo-edit.sh'
-alias tdl='$DOTPATH/scripts/todo-list.sh'
-alias note='$DOTPATH/scripts/notes-edit.sh'
 alias diary='$DOTPATH/scripts/diary.sh'
-alias imgcat="$DOTPATH/scripts/imgcat.iterm.sh"
+alias ff='find . | egrep'
+alias motd=$DOTPATH/home/dot_motd
 alias mg=mv #disable mg editor
 alias mutt=neomutt
+alias note='$DOTPATH/scripts/notes-edit.sh'
+alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
+alias s=rg
+alias ssh-gh-codespaces="gh cs ssh --server-port 2222"
+alias td='$DOTPATH/scripts/todo-edit.sh'
+alias tdl='$DOTPATH/scripts/todo-list.sh'
+alias imgcat="$DOTPATH/scripts/imgcat.iterm.sh"
+alias vi="nvim -p"
+alias vim="nvim -p"
+
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # The sed installed in osx is horrible
@@ -57,6 +61,5 @@ alias docker-cleanup='docker system prune'
 alias docker-killall='docker ps -a -q'
 alias docker-nuke='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) && docker volume rm $(docker volume ls -f dangling=true -q)' 
 
-# }}}
 
-alias ssh-gh-codespaces="gh cs ssh --server-port 2222"
+# }}}

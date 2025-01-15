@@ -47,6 +47,9 @@ EOS
 
   brew cleanup
 
+git config --global core.pager delta
+
+
 #pip install llm
 # TODO 1password
 # TODO rclone

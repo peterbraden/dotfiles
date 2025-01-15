@@ -4,6 +4,7 @@
 # But NB. it's not executed by zsh (we need to source it manually in .zprofile)
 # Because of this we stick to /bin/sh syntax
 #
+# It's also not sourced by bashrc or zshrc - we'll do this manually though
 
 export DOTPATH=~/.local/share/chezmoi
 

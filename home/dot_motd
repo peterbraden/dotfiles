@@ -9,13 +9,14 @@ X="\033[0m"
 
 IPADDR=$(ifconfig | awk '($1 == "inet") && ($2 !~ /127.0.0.1/) { print $2 }' | sed 's/addr\://' | tail -1)
 
-echo  "$B              $Y        $USER@$(uname -n)      $R            $IPADDR        $X"
+echo  "$B              $Y $USER@$(uname -n) $R $IPADDR $X"
 echo ""
 echo "# $(uname -srvm)"
 echo "#$(uptime)"
 
-echo "$BB# --- TMUX sessions: --- $X"
-echo "$(tmux list-sessions)"
+if command -v tmux; then
+echo "$BB# TMUX sessions: - $X $(tmux list-sessions)"
+fi
 
 echo "$BB# --- SSH Logins --- $X"
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -23,3 +24,5 @@ last
 else
 last --since "2 days ago"  --dns --fullnames -x | grep -v "0.0.0.0" | grep -v "begins" | grep -v tmux |  head -20
 fi
+
+
