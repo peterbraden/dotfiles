@@ -1,5 +1,6 @@
 # vim:foldmethod=marker:fmr=(((,)))
 
+
 emulate sh
 # ZSH doesn't load .profile (it sources .zprofile), therefore we source it here.
 . ~/.profile 
@@ -79,31 +80,18 @@ setopt histignorealldups
 setopt EXTENDED_HISTORY
 setopt share_history
 
-
+# ZSH Completions
 autoload -Uz compinit
 compinit
 
 # Plugins
 source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 
+
 if [ -x "$(command -v atuin)" ]; then
   eval "$(atuin init zsh)"
 fi
 
-# -------- Machine specific configuration -------------------------------------
-
-
-# PeterJUA (Work laptop) (((
-{{- if eq .chezmoi.hostname "peter-jua" }} 
-# On this laptop I develop primarily python with conda and poetry.
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/peterbraden/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/peterbraden/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/peterbraden/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/peterbraden/google-cloud-sdk/completion.zsh.inc'; fi
-
-eval "$(/Users/peterbraden/miniconda3/bin/conda shell.zsh hook)" 
-
-# )))
-{{- end }}
+{{- if .work -}}
+{{-  template "work_profile.tmpl" . -}}
+{{- end -}}

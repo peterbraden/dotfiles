@@ -1,0 +1,15 @@
+{{/* ------ boolean feature tags -------- */}}
+
+{{- $work := false -}}{{/* true if this machine is a work machine */}}
+
+
+{{/* ------ Machine specific config ---- */}}
+{{- if eq .chezmoi.hostname "thor" }}
+{{- else if eq .chezmoi.hostname "peter-jua" }} 
+{{ $work = true }}
+{{- end -}}
+
+
+
+[data]
+    work = {{ $work }}

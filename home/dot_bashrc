@@ -1,3 +1,7 @@
 # Source aliases
 . ~/.profile
 . ~/.alias
+
+{{- if .work -}}
+{{-  template "work_profile.tmpl" . -}}
+{{- end -}}

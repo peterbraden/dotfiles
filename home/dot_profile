@@ -5,6 +5,9 @@
 # Because of this we stick to /bin/sh syntax
 #
 # It's also not sourced by bashrc or zshrc - we'll do this manually though
+# NB: Sourced from bash and zsh, so should be cross compatible.
+#
+# .profile is a good place for environment variables
 
 export DOTPATH=~/.local/share/chezmoi
 
@@ -29,11 +32,8 @@ export LESS_TERMCAP_md="${yellow}";
 # PATH Manipulation ---- {{{
 export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
 
-export PATH=$PATH:/opt/local/bin
-export PATH=$PATH:/opt/local/sbin
-
-export PATH=$PATH:/usr/local/bin
-export PATH=$PATH:/usr/local/sbin
+export PATH=$PATH:/opt/local/bin:/opt/local/sbin
+export PATH=$PATH:/usr/local/bin:/usr/local/sbin
 
 export PATH=$PATH:/usr/local/go/bin   # Add golang
 export PATH=$PATH:./node_modules/.bin # Add nodejs
