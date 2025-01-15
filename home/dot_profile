@@ -54,69 +54,6 @@ fi
 # }}}
 
 
-# ALIASES ----------------------- {{{
-alias vi="nvim -p"
-alias vim="nvim -p"
-alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
-alias motd=$DOTPATH/motd
-alias ack=rg
-alias s=rg
-alias ff='find . | egrep'
-alias td='$DOTPATH/scripts/todo-edit.sh'
-alias tdl='$DOTPATH/scripts/todo-list.sh'
-alias note='$DOTPATH/scripts/notes-edit.sh'
-alias diary='$DOTPATH/scripts/diary.sh'
-alias imgcat="$DOTPATH/scripts/imgcat.iterm.sh"
-alias mg=mv #disable mg editor
-alias mutt=neomutt
-
-
-if [[ "$OSTYPE" == "darwin"* ]]; then
-# The sed installed in osx is horrible
-alias sed=gsed
-
-alias ls="eza" # | ls
-alias find="fd"
-alias cat="bat"
-
-fi 
-
-# GIT
-alias gp='git push origin "$(git rev-parse --abbrev-ref HEAD)"' # Push current branch to origin
-alias gd='git diff'
-alias gs='git status'
-alias gca='git commit -a'
-alias gl='git log -p'
-alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
-alias git-cleanup='git branch --merged | grep -v "\*" | xargs -n 1 git branch -d'
-alias git-fix-merges='~/repos/dotfiles/scripts/git-fix-merges.sh'
-alias gfm='git-fix-merges'
-
-# Shortcuts
-alias d='date --rfc-3339=seconds'
-alias genpwd="openssl rand -base64 20"
-
-# TMUX
-# - supports 256 colors
-alias tmux='tmux -2'
-alias tmux-start-server='tmux new -d'
-# attach or create session - similar to `screen -dR foo`
-alias tm='tmux new-session -AD'
-alias tml='tmux list-sessions'
-alias tmo='$DOTPATH/scripts/open-project.sh'
-alias tmk='tmux kill-session -t'
-
-
-# Docker
-alias docker-init='eval "$(docker-machine env)"'
-alias docker-cleanup='docker system prune'
-alias docker-killall='docker ps -a -q'
-alias docker-nuke='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) && docker volume rm $(docker volume ls -f dangling=true -q)' 
-
-# }}}
-
-alias ssh-gh-codespaces="gh cs ssh --server-port 2222"
-
 # Functions ----- {{{
 function psgrep() {
 EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
@@ -148,7 +85,6 @@ extract () {
      fi
 }
 
-
 # When in tmux, and the ssh-agent env changes, we need to update it with this
 # function.
 function fix-ssh-in-tmux() {
@@ -175,9 +111,4 @@ else
   fi
 fi
 
-
-
-
-
 export GPG_TTY=$(tty)
-
