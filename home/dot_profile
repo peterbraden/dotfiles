@@ -1,8 +1,13 @@
 # nmvim:fdm=marker
+#
+# .profile is executed by login shells as the login shell $SHELL
+# 
+#
+
 export DOTPATH=~/.local/share/chezmoi
 
 if [ -f ~/.profile.local ]; then
-  source ~/.profile.local
+  . ~/.profile.local
 fi
 
 # Environment -------------------  {{{
@@ -22,11 +27,14 @@ export LESS_TERMCAP_md="${yellow}";
 # }}}
 # PATH Manipulation ---- {{{
 #
-export PATH="$HOME/bin:$HOME/.local/bin:$HOME/bin:$PATH"
+export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+
 export PATH=$PATH:/opt/local/bin
 export PATH=$PATH:/opt/local/sbin
-export PATH=$PATH:/usr/local/sbin
+
 export PATH=$PATH:/usr/local/bin
+export PATH=$PATH:/usr/local/sbin
+
 export PATH=$PATH:/usr/local/go/bin   # Add golang
 export PATH=$PATH:./node_modules/.bin # Add nodejs
 export PATH=$PATH:/opt/homebrew/bin   # Homebrew

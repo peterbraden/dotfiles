@@ -1,7 +1,9 @@
 # vim:foldmethod=marker:fmr=(((,)))
-#
 
-. ~/.profile # ZSH doesn't source profile by default
+emulate bash
+# ZSH doesn't load .profile (it sources .zprofile), therefore we source it here.
+. ~/.profile 
+emulate zsh
 
 export GIT="$(which git)"
 
