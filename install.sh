@@ -3,7 +3,7 @@
 
 set -eu
 
-# ---- Github codespaces ---- {{{
+# ---- Github codespaces ----
 # Codespaces was the original motivation behind this script as it does
 # some things 'strangely' and doesn't play nicely with chezmoi out of the
 # box.
@@ -36,6 +36,9 @@ if [ -n "$CODESPACES" ]; then
   # POSIX way to get script's dir: https://stackoverflow.com/a/29834779/12156188
   script_dir="$(cd -P -- "$(dirname -- "$(command -v -- "$0")")" && pwd -P)"
 
+  # The home folder you get given in codespaces isn't exactly clean to begin with. Let's clean up.
+  rm -rf ~/.oh-my-zsh ~/.ruby ~/.rbenv ~/.php ~/.maven ~/.hugo ~/.conda ~/.rvmrc ~/.screenrc ~/.minikube ~/.nvs ~/.jupyter ~/.dotnet ~/.nvm ~/.java 
+
   # We are separately initing chezmoi - this means a _second_ clone of the dotfiles repo, outside of codespaces control
   chezmoi init --apply peterbraden
 
@@ -43,7 +46,5 @@ if [ -n "$CODESPACES" ]; then
   export SHELL=/usr/bin/zsh
 fi
 
-
-# }}}
 
 
