@@ -15,27 +15,28 @@ if [ -f ~/.profile.local ]; then
   . ~/.profile.local
 fi
 
-# Environment -------------------  {{{
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
+
 export EDITOR=nvim
 export GIT_EDITOR=nvim
 export VISUAL=nvim
-export HISTSIZE=10000
-export HISTCONTROL='ignoreboth';
+
+
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 # Highlight section titles in manual pages.
 export LESS_TERMCAP_md="${yellow}";
-# }}}
 
-# PATH Manipulation ---- {{{
+# PATH Manipulation ---- 
 export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
 
 export PATH=$PATH:/opt/local/bin:/opt/local/sbin
 export PATH=$PATH:/usr/local/bin:/usr/local/sbin
 
+{{- if .golang -}}
 export PATH=$PATH:/usr/local/go/bin   # Add golang
+{{- end -}}
 export PATH=$PATH:./node_modules/.bin # Add nodejs
 export PATH=$PATH:/opt/homebrew/bin   # Homebrew
 
@@ -52,10 +53,9 @@ if test -e "$HOME/.cargo/bin"; then
   . "$HOME/.cargo/env"
 fi
 
-# }}}
 
 
-# Functions ----- {{{
+# Functions ----- 
 function psgrep() {
 EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
 ps aux | grep $EXP
@@ -91,7 +91,6 @@ extract () {
 function fix-ssh-in-tmux() {
   export $(tmux show-environment | grep "^SSH_AUTH_SOCK")
 }
-# }}} 
 
 
 

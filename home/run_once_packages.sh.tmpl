@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-
-
-# OSX {{{
+# OSX
 if [ "$(uname -s)" == "Darwin" ]; then
 
   echo "# Installing packages on a mac" >&2
@@ -56,9 +54,8 @@ git config --global core.pager delta
 
 fi
 
-# }}}
 
-# Linux {{{
+# Linux 
 
 
 
@@ -85,4 +82,3 @@ if sudo true; then
     fi
   fi
 fi
-# }}}

@@ -14,7 +14,8 @@ echo ""
 echo "# $(uname -srvm)"
 echo "#$(uptime)"
 
-if command -v tmux; then
+if command -v tmux 2>&1 > /dev/null 
+then
 echo "$BB# TMUX sessions: - $X $(tmux list-sessions)"
 fi
 

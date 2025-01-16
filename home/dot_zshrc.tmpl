@@ -80,6 +80,12 @@ setopt histignorealldups
 setopt EXTENDED_HISTORY
 setopt share_history
 
+# Atuin is a tool for interacting with history
+if [ -x "$(command -v atuin)" ]; then
+  eval "$(atuin init zsh)"
+fi
+
+
 # ZSH Completions
 autoload -Uz compinit
 compinit
@@ -88,9 +94,7 @@ compinit
 source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 
-if [ -x "$(command -v atuin)" ]; then
-  eval "$(atuin init zsh)"
-fi
+
 
 {{- if .work -}}
 {{-  template "work_profile.tmpl" . -}}
