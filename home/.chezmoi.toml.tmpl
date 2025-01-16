@@ -2,11 +2,18 @@
 
 {{- $work := false -}}{{/* true if this machine is a work machine */}}
 
+{{- $golang := false -}}{{/* include golang tooling? */}}
+{{- $nodejs := false -}}{{/* include nodejs tooling? */}}
+{{- $rust := false -}}{{/* include rust tooling? */}}
+{{- $python := false -}}{{/* include python tooling? */}}
 
 {{/* ------ Machine specific config ---- */}}
 {{- if eq .chezmoi.hostname "thor" }}
+
 {{- else if eq .chezmoi.hostname "peter-jua" }} 
 {{ $work = true }}
+{{ $python = true }}
+
 {{- end -}}
 
 
