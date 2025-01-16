@@ -1,7 +1,12 @@
 # vim:foldmethod=marker:fmr=(((,)))
-#
 
-. ~/.profile # ZSH doesn't source profile by default
+
+emulate sh
+# ZSH doesn't load .profile (it sources .zprofile), therefore we source it here.
+. ~/.profile 
+# Source aliases
+. ~/.alias
+emulate zsh
 
 export GIT="$(which git)"
 
@@ -75,34 +80,19 @@ setopt histignorealldups
 setopt EXTENDED_HISTORY
 setopt share_history
 
+# Atuin is a tool for interacting with history
+if [ -x "$(command -v atuin)" ]; then
+  eval "$(atuin init zsh)"
+fi
 
+
+# ZSH Completions
 autoload -Uz compinit
 compinit
 
 # Plugins
 source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 
-if [ -x "$(command -v atuin)" ]; then
-  eval "$(atuin init zsh)"
-fi
-
-# -------- Machine specific configuration -------------------------------------
-
-
-# PeterJUA (Work laptop) (((
-{{- if eq .chezmoi.hostname "peter-jua" }} 
-# On this laptop I develop primarily python with conda and poetry.
-
-eval $(ssh-agent -s)
-ssh-add /Users/peterbraden/.ssh/id_rsa
-
-export PATH="/Users/peterbraden/.local/bin:$PATH"
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/peterbraden/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/peterbraden/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/peterbraden/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/peterbraden/google-cloud-sdk/completion.zsh.inc'; fi
-
-# )))
-{{- end }}
+{{- if .work -}}
+{{-  template "work_profile.tmpl" . -}}
+{{- end -}}

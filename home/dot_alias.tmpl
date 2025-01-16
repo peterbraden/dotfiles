@@ -1,0 +1,46 @@
+# ALIASES -----------------------
+# NB: Sourced from bash and zsh, so should be cross compatible.
+
+alias ack=rg
+alias d='date --rfc-3339=seconds'
+alias diary='$DOTPATH/scripts/diary.sh'
+alias docker-init='eval "$(docker-machine env)"'
+alias docker-cleanup='docker system prune'
+alias docker-killall='docker ps -a -q'
+alias docker-nuke='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) && docker volume rm $(docker volume ls -f dangling=true -q)' 
+alias ff='find . | egrep'
+alias genpwd="openssl rand -base64 20"
+alias gp='git push origin "$(git rev-parse --abbrev-ref HEAD)"' # Push current branch to origin
+alias gd='git diff'
+alias gs='git status'
+alias gca='git commit -a'
+alias gl='git log -p'
+alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
+alias git-cleanup='git branch --merged | grep -v "\*" | xargs -n 1 git branch -d'
+alias git-fix-merges='~/repos/dotfiles/scripts/git-fix-merges.sh'
+alias gfm='git-fix-merges'
+alias imgcat="$DOTPATH/scripts/imgcat.iterm.sh"
+alias motd=$DOTPATH/home/dot_motd
+alias mg=mv #disable mg editor
+alias mutt=neomutt
+alias note='$DOTPATH/scripts/notes-edit.sh'
+alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
+alias s=rg
+alias ssh-gh-codespaces="gh cs ssh --server-port 2222"
+alias tm='tmux new-session -AD' # attach or create session - similar to `screen -dR foo`
+alias tml='tmux list-sessions'
+alias tmo='$DOTPATH/scripts/open-project.sh'
+alias tmk='tmux kill-session -t'
+alias tmux-start-server='tmux new -d'
+alias td='$DOTPATH/scripts/todo-edit.sh'
+alias tdl='$DOTPATH/scripts/todo-list.sh'
+alias vi="nvim -p"
+alias vim="nvim -p"
+
+{{- if eq .chezmoi.os "darwin" -}}
+    # The sed installed in osx is horrible
+    alias sed=gsed
+    alias ls="eza" # | ls
+    alias find="fd"
+    alias cat="bat"
+{{- end -}}

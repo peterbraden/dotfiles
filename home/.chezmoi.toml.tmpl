@@ -1,0 +1,37 @@
+#------ boolean feature tags --------
+
+# work: true if this machine is a work machine
+{{- $work := false -}} 
+
+# golang: include golang tooling?
+{{- $golang := false -}}
+
+# nodejs: include nodejs tooling?
+{{- $nodejs := false -}}
+
+# rust: include rust tooling?
+{{- $rust := false -}}{{/*  */}}
+
+# python: include python tooling?
+{{- $python := false -}}
+
+
+
+
+# ------ Machine specific config ----
+{{- if eq .chezmoi.hostname "thor" }}
+
+{{- else if eq .chezmoi.hostname "peter-jua" }} 
+{{ $work = true }}
+{{ $python = true }}
+
+{{- end }}
+
+{{ "" }}{{/* newline */}}
+
+[data]
+    work = {{ $work }}
+    golang = {{ $golang }}
+    nodejs = {{ $nodejs }}
+    rust = {{ $rust }}
+    python = {{ $python }}

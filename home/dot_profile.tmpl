@@ -1,0 +1,118 @@
+# nmvim:fdm=marker
+#
+# .profile is executed by login shells as the login shell $SHELL
+# But NB. it's not executed by zsh (we need to source it manually in .zprofile)
+# Because of this we stick to /bin/sh syntax
+#
+# It's also not sourced by bashrc or zshrc - we'll do this manually though
+# NB: Sourced from bash and zsh, so should be cross compatible.
+#
+# .profile is a good place for environment variables
+
+export DOTPATH=~/.local/share/chezmoi
+
+if [ -f ~/.profile.local ]; then
+  . ~/.profile.local
+fi
+
+export CLICOLOR=1
+export LSCOLORS=ExFxCxDxBxegedabagacad
+
+export EDITOR=nvim
+export GIT_EDITOR=nvim
+export VISUAL=nvim
+
+
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+# Highlight section titles in manual pages.
+export LESS_TERMCAP_md="${yellow}";
+
+# PATH Manipulation ---- 
+export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+
+export PATH=$PATH:/opt/local/bin:/opt/local/sbin
+export PATH=$PATH:/usr/local/bin:/usr/local/sbin
+
+{{- if .golang -}}
+export PATH=$PATH:/usr/local/go/bin   # Add golang
+{{- end -}}
+export PATH=$PATH:./node_modules/.bin # Add nodejs
+export PATH=$PATH:/opt/homebrew/bin   # Homebrew
+
+# Pyenv
+if command -v pyenv &> /dev/null; then
+  # pyenv exists
+  export PATH=$(pyenv root)/shims:$PATH $
+  eval "$(pyenv init -)"
+fi
+ 
+# Add cargo
+if test -e "$HOME/.cargo/bin"; then
+  export PATH="$HOME/.cargo/bin:$PATH"
+  . "$HOME/.cargo/env"
+fi
+
+
+
+# Functions ----- 
+function psgrep() {
+EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
+ps aux | grep $EXP
+}
+
+function oldip(){
+ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
+}
+
+extract () {
+    if [ -f $1 ] ; then
+      case $1 in
+        *.tar.bz2)   tar xjf $1     ;;
+        *.tar.gz)    tar xzf $1     ;;
+        *.bz2)       bunzip2 $1     ;;
+        *.rar)       unrar e $1     ;;
+        *.gz)        gunzip $1      ;;
+        *.tar)       tar xf $1      ;;
+        *.tbz2)      tar xjf $1     ;;
+        *.tgz)       tar xzf $1     ;;
+        *.zip)       unzip $1       ;;
+        *.Z)         uncompress $1  ;;
+        *.7z)        7z x $1        ;;
+        *)     echo "'$1' cannot be extracted via extract()" ;;
+         esac
+     else
+         echo "'$1' is not a valid file"
+     fi
+}
+
+# When in tmux, and the ssh-agent env changes, we need to update it with this
+# function.
+function fix-ssh-in-tmux() {
+  export $(tmux show-environment | grep "^SSH_AUTH_SOCK")
+}
+
+
+
+# SSH Agent
+SSHAGENT=/usr/bin/ssh-agent
+SSHAGENTARGS="-s"
+
+if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
+  # Only run ssh agent if not already in a forwarded session
+	eval `$SSHAGENT $SSHAGENTARGS`
+	trap "kill $SSH_AGENT_PID" 0
+else
+  # We are in a forwarded session.
+  # If we are starting a shell in tmux, then we should refresh the socket
+  # This only works for new shells.
+  if [ -n "$TMUX" ]; then
+    fix-ssh-in-tmux
+  fi
+fi
+
+export GPG_TTY=$(tty)
+
+eval $(ssh-agent -s)
+ssh-add /Users/peterbraden/.ssh/id_rsa
+
