@@ -60,3 +60,6 @@
 [submodule "home/dot_zsh/zsh-autosuggestions"]
 	path = home/dot_zsh/zsh-autosuggestions
 	url = https://github.com/zsh-users/zsh-autosuggestions
+[submodule "home/dot_config/external_plugins/nvim-lspconfig.vim"]
+	path = home/dot_config/external_plugins/nvim-lspconfig.vim
+	url = https://github.com/neovim/nvim-lspconfig
