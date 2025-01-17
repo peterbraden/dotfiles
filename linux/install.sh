@@ -1,4 +1,4 @@
-
+#!/usr/bin/env bash
 
 # 1 Password
 curl https://cache.agilebits.com/dist/1P/op/pkg/v0.5.5/op_linux_amd64_v0.5.5.zip > 1p.zip
