@@ -1,7 +1,8 @@
+#!/usr/bin/env bash
+
 if [ -z "$NOTES_DIR" ]; then 
   NOTES_DIR=~/Dropbox/Notebooks/
 fi
-
 
 # $@ join to see name
 find_most_likely_note() {
@@ -15,7 +16,6 @@ find_most_likely_note() {
   fi
   echo $FILE
 }
-
 
 edit_most_likely() {
   if [ -z "$@" ]; then 

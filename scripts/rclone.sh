@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 # Tested with rclone v1.56.2
 
