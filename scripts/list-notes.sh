@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 if [ -z "$NOTES_DIR" ]; then 
   NOTES_DIR=~/Dropbox/Notebooks/
 fi

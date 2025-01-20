@@ -5,13 +5,11 @@ if [ -z "$NOTES_DIR" ]; then
 fi
 
 todo_files() {
-  #ls $NOTES_DIR | grep -i 'month of' | grep --invert-match '.plist$' | sort -r
-  ls $NOTES_DIR | grep -i 'week of' | grep --invert-match '.plist$' | sort --ignore-case -r 
+  grep -i 'week of' $NOTES_DIR/* | grep --invert-match '.plist$' | sort --ignore-case -r 
 }
 
 todo_file() {
-  #ls $NOTES_DIR | grep -i 'month of' | grep --invert-match '.plist$' | sort -r
-  ls $NOTES_DIR | grep -i 'week of' | grep --invert-match '.plist$' | sort --ignore-case -r | head -n 1
+  grep -i 'week of' $NOTES_DIR/* | grep --invert-match '.plist$' | sort --ignore-case -r | head -n 1
 }
 
 abs_todo_file(){
