@@ -6,7 +6,7 @@ fi
 
 # $@ join to see name
 find_most_likely_note() {
-  QUERY="$@"
+  QUERY="$*"
   # TODO use agrep or similar to do fuzzy matching
   FILE=$(find $NOTES_DIR -type f -printf '%T@ %p\n' | grep -i "$QUERY" | sort -r | head -1 | cut -d " " -f 2- )
 
@@ -18,11 +18,11 @@ find_most_likely_note() {
 }
 
 edit_most_likely() {
-  if [ -z "$@" ]; then 
+  if [ -z "$*" ]; then 
     echo "Needs a query."
     exit 1
   fi
-  vi "$(find_most_likely_note $@)"
+  vi "$(find_most_likely_note $*)"
 }
 
 edit_most_likely $@

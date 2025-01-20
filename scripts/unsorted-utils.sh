@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Functions ----- 
 function psgrep() {
 EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
