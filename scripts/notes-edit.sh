@@ -22,7 +22,8 @@ edit_most_likely() {
     echo "Needs a query."
     exit 1
   fi
-  vi "$(find_most_likely_note $@)"
+  file=find_most_likely_note "$@"
+  vi "$file"
 }
 
 edit_most_likely "$@"
