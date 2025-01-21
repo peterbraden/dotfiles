@@ -5,13 +5,11 @@ if [ -z "$NOTES_DIR" ]; then
 fi
 
 todo_files() {
-  #ls $NOTES_DIR | grep -i 'month of' | grep --invert-match '.plist$' | sort -r
-  ls $NOTES_DIR | grep -i 'week of' | grep --invert-match '.plist$' | sort --ignore-case -r 
+  grep -i 'week of' $NOTES_DIR/* | grep --invert-match '.plist$' | sort --ignore-case -r 
 }
 
 todo_file() {
-  #ls $NOTES_DIR | grep -i 'month of' | grep --invert-match '.plist$' | sort -r
-  ls $NOTES_DIR | grep -i 'week of' | grep --invert-match '.plist$' | sort --ignore-case -r | head -n 1
+  grep -i 'week of' $NOTES_DIR/* | grep --invert-match '.plist$' | sort --ignore-case -r | head -n 1
 }
 
 abs_todo_file(){
@@ -20,10 +18,10 @@ abs_todo_file(){
 
 
 todo_today() {
-  STRIP_EMPTY='/^[[:space:]]*$/d'
-  STRIP_DONE='s/\[[xX]\].*//g'
-  STRIP_HEADERS='s/^#.*//g'
-  STRIP_NOTES='s/^:.*//g'
+  # STRIP_EMPTY='/^[[:space:]]*$/d'
+  # STRIP_DONE='s/\[[xX]\].*//g'
+  # STRIP_HEADERS='s/^#.*//g'
+  # STRIP_NOTES='s/^:.*//g'
   # EXIT_DELIMETER='0,/---/p' # Quit after first '---' (| sed -n $EXIT_DELIMETER)
   #cat "$(abs_todo_file)" | head -n 10
   #cat "$(abs_todo_file)" | sed $STRIP_DONE  | sed $STRIP_NOTES  | sed $STRIP_HEADERS | sed $STRIP_EMPTY | head -n 15

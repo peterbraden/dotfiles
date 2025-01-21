@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Open all changed files as tabs in vim.
-vim -p  $(git diff --name-only | uniq | sed 's/ /\\ /g' ) 
-#realpath --relative-base=.)
+read -a files < <(git diff --name-only | uniq | sed 's/ /\\ /g')
+vim -p "${files[@]}"

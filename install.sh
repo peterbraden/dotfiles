@@ -39,8 +39,7 @@ if [ -n "$CODESPACES" ]; then
   # The home folder you get given in codespaces isn't exactly clean to begin with. Let's clean up.
   rm -rf ~/.oh-my-zsh ~/.ruby ~/.rbenv ~/.php ~/.maven ~/.hugo ~/.conda ~/.rvmrc ~/.screenrc ~/.minikube ~/.nvs ~/.jupyter ~/.dotnet ~/.nvm ~/.java 
 
-  # We are separately initing chezmoi - this means a _second_ clone of the dotfiles repo, outside of codespaces control
-  chezmoi init --apply peterbraden
+  chezmoi init --apply peterbraden --source $script_dir
 
   sudo chsh "$(whoami)" --shell /usr/bin/zsh
   export SHELL=/usr/bin/zsh

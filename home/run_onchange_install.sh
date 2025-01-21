@@ -6,9 +6,6 @@ if [ "$SHELL" != "/bin/zsh" ]; then
   sudo chsh -s $(which zsh) $USER;
 fi
 
-DOTPATH=`pwd`
-
-
 if [ "$(uname -s)" == "Darwin" ]; then
   echo "# - Setting up a mac"
 

@@ -22,6 +22,7 @@ export EDITOR=nvim
 export GIT_EDITOR=nvim
 export VISUAL=nvim
 
+export GPG_TTY=$(tty)
 
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
@@ -37,6 +38,7 @@ export PATH=$PATH:/usr/local/bin:/usr/local/sbin
 {{- if .golang -}}
 export PATH=$PATH:/usr/local/go/bin   # Add golang
 {{- end -}}
+
 export PATH=$PATH:./node_modules/.bin # Add nodejs
 export PATH=$PATH:/opt/homebrew/bin   # Homebrew
 
@@ -53,66 +55,17 @@ if test -e "$HOME/.cargo/bin"; then
   . "$HOME/.cargo/env"
 fi
 
-
-
-# Functions ----- 
-function psgrep() {
-EXP=`echo $1 | sed -e 's/^\(.\)/\[\1\]/'`
-ps aux | grep $EXP
-}
-
-function oldip(){
-ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
-}
-
-extract () {
-    if [ -f $1 ] ; then
-      case $1 in
-        *.tar.bz2)   tar xjf $1     ;;
-        *.tar.gz)    tar xzf $1     ;;
-        *.bz2)       bunzip2 $1     ;;
-        *.rar)       unrar e $1     ;;
-        *.gz)        gunzip $1      ;;
-        *.tar)       tar xf $1      ;;
-        *.tbz2)      tar xjf $1     ;;
-        *.tgz)       tar xzf $1     ;;
-        *.zip)       unzip $1       ;;
-        *.Z)         uncompress $1  ;;
-        *.7z)        7z x $1        ;;
-        *)     echo "'$1' cannot be extracted via extract()" ;;
-         esac
-     else
-         echo "'$1' is not a valid file"
-     fi
-}
-
-# When in tmux, and the ssh-agent env changes, we need to update it with this
-# function.
-function fix-ssh-in-tmux() {
-  export $(tmux show-environment | grep "^SSH_AUTH_SOCK")
-}
-
-
-
-# SSH Agent
-SSHAGENT=/usr/bin/ssh-agent
-SSHAGENTARGS="-s"
-
-if [ -z "$SSH_AUTH_SOCK" -a -x "$SSHAGENT" ]; then
+# -- SSH Agent --
+if [ -z "$SSH_AUTH_SOCK" -a -x "/usr/bin/ssh-agent" ]; then
   # Only run ssh agent if not already in a forwarded session
-	eval `$SSHAGENT $SSHAGENTARGS`
+	eval `ssh-agent -s`
+  ssh-add $HOME/.ssh/id_rsa
 	trap "kill $SSH_AGENT_PID" 0
 else
   # We are in a forwarded session.
   # If we are starting a shell in tmux, then we should refresh the socket
   # This only works for new shells.
   if [ -n "$TMUX" ]; then
-    fix-ssh-in-tmux
+    export $(tmux show-environment | grep "^SSH_AUTH_SOCK")
   fi
 fi
-
-export GPG_TTY=$(tty)
-
-eval $(ssh-agent -s)
-ssh-add /Users/peterbraden/.ssh/id_rsa
-

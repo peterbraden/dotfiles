@@ -8,7 +8,7 @@ fi
 DIRECTORY=~/repos
 
 function update_repo {
-  cd $1
+  cd $1 || exit 1
   git fetch --all
 }
 
@@ -22,7 +22,7 @@ function clone_or_update {
     else
       if [ -n "$CLONE" ]; then
         echo "# --- Cloning $REPODIR"
-        cd $DIRECTORY
+        cd $DIRECTORY || exit 1
         git clone $REPO
       fi
     fi
