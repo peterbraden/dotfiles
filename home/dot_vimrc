@@ -1,8 +1,6 @@
 set nocompatible    " Don't be compatible with vi
 
-"if !has('nvim')
-  call pathogen#infect()
-"endif
+call pathogen#infect()
 
 let mapleader = ","
 

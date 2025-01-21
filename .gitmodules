@@ -61,5 +61,8 @@
 	path = home/dot_zsh/zsh-autosuggestions
 	url = https://github.com/zsh-users/zsh-autosuggestions
 [submodule "home/dot_config/external_plugins/nvim-lspconfig.vim"]
-	path = home/dot_config/nvim/external_plug/nvim-lspconfig.vim
+	path = home/dot_config/nvim/external_plug/start/nvim-lspconfig
 	url = https://github.com/neovim/nvim-lspconfig
+[submodule "home/dot_config/external_zsh_plugins/zsh-autosuggestions"]
+	path = home/dot_config/external_zsh_plugins/zsh-autosuggestions
+	url = https://github.com/zsh-users/zsh-autosuggestions
