@@ -322,6 +322,18 @@ nnoremap <leader>fi :YcmCompleter FixIt<CR>
 " }}}
 
 
+" LSP {{{
+if executable('ruff')
+    au User lsp_setup call lsp#register_server({
+        \ 'name': 'ruff',
+        \ 'cmd': {server_info->['ruff', 'server']},
+        \ 'allowlist': ['python'],
+        \ 'workspace_config': {},
+        \ })
+endif
+" }}}
+
+
 " Editing VIM {{{
 " Shortcuts.vim
 source $HOME/shortcuts.vim
