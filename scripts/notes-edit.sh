@@ -22,6 +22,7 @@ edit_most_likely() {
     echo "Needs a query."
     exit 1
   fi
+  # shellcheck disable=SC2046
   vi $(find_most_likely_note "$@")
 }
 
