@@ -3,7 +3,7 @@ echo "# Running peterbraden/dotfiles install.sh"
 
 if [ "$SHELL" != "/bin/zsh" ]; then 
   echo "# - Changing shell to zsh\n"
-  sudo chsh -s $(which zsh) $USER;
+  sudo chsh -s "$(which zsh)" $USER;
 fi
 
 if [ "$(uname -s)" == "Darwin" ]; then
