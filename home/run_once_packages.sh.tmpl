@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-
-
-# OSX {{{
+# OSX
 if [ "$(uname -s)" == "Darwin" ]; then
 
   echo "# Installing packages on a mac" >&2
@@ -47,15 +45,17 @@ EOS
 
   brew cleanup
 
+git config --global core.pager delta
+
+
 #pip install llm
 # TODO 1password
 # TODO rclone
 
 fi
 
-# }}}
 
-# Linux {{{
+# Linux 
 
 
 
@@ -82,4 +82,3 @@ if sudo true; then
     fi
   fi
 fi
-# }}}

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Tested with rclone v1.56.2
 
 # Creates remote 'aws' for s3
@@ -27,7 +28,6 @@ create_encrypted_s3_bucket(){
   create_bucket $NAME
   echo "Creating crypt $NAME"
   rclone config create "$NAME" crypt --crypt-remote=aws:$NAME
-
 }
 
 
