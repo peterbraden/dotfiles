@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 echo "# Running peterbraden/dotfiles install.sh"
 
-if [ "$SHELL" != "/bin/zsh" ]; then 
-  echo "# - Changing shell to zsh\n"
-  sudo chsh -s "$(which zsh)" $USER;
-fi
+if [ -x "$(command -v zsh)" ]; then
+  if [ "$SHELL" != "/bin/zsh" ]; then 
+    echo "# - Changing shell to zsh\n"
+    sudo chsh -s "$(which zsh)" $USER;
+  fi
+elif [ -x "$(command -v bash)" ]; then
+  if [ "$SHELL" != "/bin/bash" ]; then 
+    echo "# - Changing shell to bashh\n"
+    sudo chsh -s "$(which bash)" $USER;
+  fi
+fi 
 
 if [ "$(uname -s)" == "Darwin" ]; then
   echo "# - Setting up a mac"
