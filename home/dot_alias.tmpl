@@ -34,10 +34,9 @@ alias tmk='tmux kill-session -t'
 alias tmux-start-server='tmux new -d'
 alias td='$DOTPATH/scripts/todo-edit.sh'
 alias tdl='$DOTPATH/scripts/todo-list.sh'
-alias vi="nvim -p"
-alias vim="nvim -p"
+alias vi="vim"
 
-{{- if eq .chezmoi.os "darwin" -}}
+{{ if eq .chezmoi.os "darwin" -}}
     # The sed installed in osx is horrible
     alias sed=gsed
     alias ls="eza" # | ls
