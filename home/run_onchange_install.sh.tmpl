@@ -13,6 +13,7 @@ elif [ -x "$(command -v bash)" ]; then
   fi
 fi 
 
+# OSX
 if [ "$(uname -s)" == "Darwin" ]; then
   echo "# - Setting up a mac"
 
@@ -40,13 +41,9 @@ if [ "$(uname -s)" == "Darwin" ]; then
   # launchctl unload -w /System/Library/LaunchAgents/com.apple.rcd.plist || true
   # Kill useless
   defaults write com.apple.gamed Disabled -bool true
-fi
 
-# OSX
-if [ "$(uname -s)" == "Darwin" ]; then
 
   echo "# Installing packages on a mac" >&2
-
   if ! [ -x "$(command -v brew)" ]; then
     echo "# - Installing brew" >&2
     bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
