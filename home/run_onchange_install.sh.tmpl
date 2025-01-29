@@ -3,12 +3,12 @@ echo "# Running peterbraden/dotfiles install.sh"
 
 if [ -x "$(command -v zsh)" ]; then
   if [ "$SHELL" != "/bin/zsh" ]; then 
-    echo "# - Changing shell to zsh\n"
+    echo "# - Changing shell to zsh"
     sudo chsh -s "$(which zsh)" $USER;
   fi
 elif [ -x "$(command -v bash)" ]; then
   if [ "$SHELL" != "/bin/bash" ]; then 
-    echo "# - Changing shell to bashh\n"
+    echo "# - Changing shell to bash"
     sudo chsh -s "$(which bash)" $USER;
   fi
 fi 
@@ -100,24 +100,38 @@ fi
 
 
 # Linux
-if [  -n "$(uname -a | grep Ubuntu)" ]; then
+if [ "$(uname -s)" == "Linux" ]; then
   if sudo true; then
+
     #sudo -v
     # Keep-alive: update existing `sudo` time stamp until the script has finished.
     #while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
-    if [ "$(uname -s)" == "Linux" ]; then
+
+    if [  -n "$(uname -a | grep Ubuntu)" ]; then
       if [ -n "$(command -v apt-get)" ]; then
+        echo "# Installing packages on Linux[apt]" >&2
         # Apt get stuff.
         sudo apt-get -y update
         sudo apt-get -y upgrade
         sudo apt-get install -y build-essential
-        sudo apt-get install -y python python-pip python-setuptools python-dev
-        sudo apt-get install -y nodejs npm
-        sudo apt-get install -y rustc cargo
-        sudo apt-get install -y awscli zsh vim
+
+        sudo apt-get install -y zsh vim
         sudo apt-get install -y mosh
         sudo apt-get install -y neovim ripgrep
         sudo apt-get install -y pass
+
+        {{ if .python }}
+        sudo apt-get install -y python python-pip python-setuptools python-dev
+        {{ end }}
+
+        {{ if .rust }}
+        sudo apt-get install -y rustup
+        {{ end }}
+
+        {{ if .nodejs }}
+        sudo apt-get install -y nodejs npm
+        {{ end }}
+
         # TODO tailscale
         #
         #apt install bat
