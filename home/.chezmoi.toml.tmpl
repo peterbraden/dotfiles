@@ -20,11 +20,15 @@
 
 # ------ Machine specific config ----
 {{- if eq .chezmoi.hostname "thor" }}
-
-{{- else if eq .chezmoi.hostname "peter-jua" }} 
-{{ $work = true }}
 {{ $python = true }}
 {{ $rust = true }}
+{{ $nodejs = true }}
+
+{{- else if eq .chezmoi.hostname "Vidar" }} 
+{{ $python = true }}
+{{ $rust = true }}
+{{ $nodejs = true }}
+{{ $golang = true }}
 
 {{- end }}
 

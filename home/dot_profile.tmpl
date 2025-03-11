@@ -34,25 +34,34 @@ export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
 export PATH=$PATH:/opt/local/bin:/opt/local/sbin
 export PATH=$PATH:/usr/local/bin:/usr/local/sbin
 
-{{- if .golang -}}
-export PATH=$PATH:/usr/local/go/bin   # Add golang
-{{- end -}}
-
-export PATH=$PATH:./node_modules/.bin # Add nodejs
 export PATH=$PATH:/opt/homebrew/bin   # Homebrew
 
+{{ if .golang }}
+export PATH=$PATH:/usr/local/go/bin   # Add golang
+{{ end }}
+{{ if .nodejs }}
+export PATH=$PATH:./node_modules/.bin # Add nodejs
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+# [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+{{ end }}
+{{ if .python }}
 # Pyenv
 if command -v pyenv &> /dev/null; then
   # pyenv exists
   export PATH=$(pyenv root)/shims:$PATH $
   eval "$(pyenv init -)"
 fi
- 
+{{ end }}
+
+{{ if .rust }}
 # Add cargo
 if test -e "$HOME/.cargo/bin"; then
   export PATH="$HOME/.cargo/bin:$PATH"
   . "$HOME/.cargo/env"
 fi
+{{ end }}
 
 # -- SSH Agent --
 if [ -z "$SSH_AUTH_SOCK" -a -x "/usr/bin/ssh-agent" ]; then
