@@ -1,5 +1,5 @@
 if [ -z "$NOTES_DIR" ]; then 
-  NOTES_DIR=~/Dropbox/Notebooks/
+  NOTES_DIR=~/nextcloud/Notes/Notebooks/
 fi
 
 

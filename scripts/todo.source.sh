@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z "$NOTES_DIR" ]; then 
+if [ -z "$NOTES_DIR" ]; then
   NOTES_DIR=~/nextcloud/Notes/Notebooks/
 fi
 

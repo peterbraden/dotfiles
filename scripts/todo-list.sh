@@ -5,5 +5,6 @@ if [ -z "$DOTPATH"  ]; then
 fi
 
 source "$DOTPATH/scripts/todo.source.sh"
+abs_todo_file
 
 todo_today
