@@ -1,19 +1,19 @@
 #!/bin/bash
 
 if [ -z "$NOTES_DIR" ]; then
-  NOTES_DIR=~/nextcloud/Notes/Notebooks/
+  NOTES_DIR=/home/peterbraden/nextcloud/Notes/Notebooks
 fi
 
 todo_files() {
-  grep -i 'week of' $NOTES_DIR/* | grep --invert-match '.plist$' | sort --ignore-case -r 
+  fdfind 'month[ -]of' $NOTES_DIR --max-depth 1 | grep --invert-match '.plist$' | sort --ignore-case -r 
 }
 
 todo_file() {
-  grep -i 'week of' $NOTES_DIR/* | grep --invert-match '.plist$' | sort --ignore-case -r | head -n 1
+  fdfind 'month[ -]of' $NOTES_DIR --max-depth 1 | grep --invert-match '.plist$' | sort --ignore-case -r | head -n 1
 }
 
 abs_todo_file(){
-  echo "$NOTES_DIR$(todo_file)"
+  echo "$(todo_file)"
 }
 
 
