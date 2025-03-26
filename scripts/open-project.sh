@@ -1,19 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 SESSION=$1
 DIRECTORY=~/repos/$SESSION
 SESSION_NO_DOTS=${SESSION//\./-}
 
 # TODO first check session doesn't exist
 
-if tmux info &> /dev/null && tmux has-session -t $SESSION_NO_DOTS; then
+if tmux info &> /dev/null && tmux has-session -t "$SESSION_NO_DOTS"; then
   echo "reattaching to $SESSION_NO_DOTS"
   tmux attach -d -t $SESSION_NO_DOTS
   exit 2
 fi
 
-
 if [ ! -d "$DIRECTORY" ]; then
-  cd ~/repos
+  cd $HOME/repos || exit 1
   git clone git@github.com:peterbraden/$SESSION
 fi
 
@@ -23,7 +22,7 @@ tmux new-session -A -s $SESSION_NO_DOTS -c $DIRECTORY -d
 tmux new-window -t $SESSION_NO_DOTS:1 -c $DIRECTORY
 tmux new-window -t $SESSION_NO_DOTS:2 -c $DIRECTORY
 tmux select-window -t $SESSION_NO_DOTS:0
-tmux send-keys "~/repos/dotfiles/motd" C-m
+tmux send-keys "$HOME/repos/dotfiles/motd" C-m
 
 tmux attach-session -t $SESSION_NO_DOTS
 

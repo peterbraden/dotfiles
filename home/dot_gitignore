@@ -39,4 +39,4 @@ pids
 *.seed
 *.pid.lock
 
-
+.ipynb_checkpoints

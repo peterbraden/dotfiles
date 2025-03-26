@@ -1,0 +1,25 @@
+# Source aliases
+. ~/.alias
+
+
+# --- Bash History ---
+# Goes to ~/.bash_history
+
+export HISTSIZE=10000
+export HISTCONTROL='ignorespace'; # Ignore commands prefixed with a space
+export HISTTIMEFORMAT="%F %T "
+
+# The contents of this variable are executed as a regular Bash command just before Bash displays a prompt. 
+export PROMPT_COMMAND='history -a' # Immediately append to the history file
+
+# Atuin is a tool for interacting with history
+if [ -x "$(command -v atuin)" ]; then
+  eval "$(atuin init bash)"
+fi
+
+# --- Prompt ---
+PROMPT_COMMAND='PS1_CMD1=$(git branch --show-current 2>/dev/null)'; PS1='\[\e[38;5;32m\]bash:\[\e[38;5;140m\]\w\[\e[0m\]:\[\e[38;5;35m\]${PS1_CMD1}\[\e[0m\] '
+
+{{- if .work -}}
+{{-  template "work_profile.tmpl" . -}}
+{{- end -}}

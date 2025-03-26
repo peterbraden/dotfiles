@@ -1,0 +1,20 @@
+name: ShellCheck
+
+on:
+  pull_request:
+
+jobs:
+  shellcheck:
+    name: Run ShellCheck
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install ShellCheck
+      run: sudo apt-get install -y shellcheck
+    
+    - name: Find and check shell scripts
+      working-directory: ${{ github.workspace }}
+      run: |
+        find "$GITHUB_WORKSPACE" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.ksh" -o -name "*.dash" \) -exec shellcheck --severity=warning --format=gcc {} + 
