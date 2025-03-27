@@ -4,4 +4,4 @@ read -a docker_images < <(docker images --all -q)
 docker stop "${docker_processes[@]}"
 docker rm --force "${docker_processes[@]}"
 docker rmi --force "${docker_images[@]}"
-docker volume rm $(docker volume ls -f dangling=true -q)' 
+docker volume rm "$(docker volume ls -f dangling=true -q)"
