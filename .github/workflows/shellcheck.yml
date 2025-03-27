@@ -18,5 +18,5 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: |
         find "$GITHUB_WORKSPACE" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.ksh" -o -name "*.dash" \) -exec shellcheck --severity=warning --format=gcc {} + 
-        find "$GITHUB_WORKSPACE/home/bin" -exec shellcheck --severity=warning --format=gcc {} + 
+        find "$GITHUB_WORKSPACE/home/bin" -type f ! -name '*.py*' -exec shellcheck --severity=warning --format=gcc {} + 
 
