@@ -2,7 +2,7 @@
 echo "# Running peterbraden/dotfiles install.sh"
 
 if [ -x "$(command -v zsh)" ]; then
-  if [ "$SHELL" != "/bin/zsh" ]; then 
+  if [ "$SHELL" != "$(command -v zsh)" ]; then 
     echo "# - Changing shell to zsh"
     sudo chsh -s "$(which zsh)" $USER;
   fi
