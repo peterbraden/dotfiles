@@ -2,7 +2,6 @@
 
 notes_stats () {
   NOTES_DIR=~/nextcloud/Notes/Notebooks/
-  cd $NOTES_DIR
   cd $NOTES_DIR || exit 1
 
   total=0
