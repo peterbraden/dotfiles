@@ -1,10 +1,8 @@
 #!/bin/bash
 
-W="\e[01;37m"
 B="\e[30;44m"
 BB="\e[34m"
 Y="\e[30;43m"
-YY="\e[33m"
 R="\e[30;41m"
 X="\e[0m"
 
@@ -15,7 +13,7 @@ echo ""
 echo "# $(uname -srvm)"
 echo "#$(uptime)"
 
-if command -v tmux 2>&1 > /dev/null 
+if command -v tmux > /dev/null 2>&1 
 then
 echo -e "$BB# TMUX sessions: - $X $(tmux list-sessions)"
 fi
