@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 echo "# Running peterbraden/dotfiles install.sh"
 
+mkdir -p ~/.local/bin
+
 if [ -x "$(command -v zsh)" ]; then
   if [ "$SHELL" != "$(command -v zsh)" ]; then 
     echo "# - Changing shell to zsh"

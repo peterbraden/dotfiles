@@ -7,7 +7,6 @@ alias diary='$DOTPATH/scripts/diary.sh'
 alias docker-init='eval "$(docker-machine env)"'
 alias docker-cleanup='docker system prune'
 alias docker-killall='docker ps -a -q'
-alias docker-nuke='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) && docker volume rm $(docker volume ls -f dangling=true -q)' 
 alias ff='find . | egrep'
 alias genpwd="openssl rand -base64 20"
 alias gp='git push origin "$(git rev-parse --abbrev-ref HEAD)"' # Push current branch to origin
