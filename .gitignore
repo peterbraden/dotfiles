@@ -3,3 +3,4 @@ vim/vim
 home/dot_mutt/*.account
 home-network
 
+.aider*
