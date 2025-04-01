@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+echo "# Running peterbraden/dotfiles install.sh"
+
+mkdir -p ~/.local/bin
+
+if [ -x "$(command -v zsh)" ]; then
+  if [ "$SHELL" != "$(command -v zsh)" ]; then 
+    echo "# - Changing shell to zsh"
+    sudo chsh -s "$(which zsh)" $USER;
+  fi
+elif [ -x "$(command -v bash)" ]; then
+  if [ "$SHELL" != "/bin/bash" ]; then 
+    echo "# - Changing shell to bash"
+    sudo chsh -s "$(which bash)" $USER;
+  fi
+fi 
+
+# OSX
+if [ "$(uname -s)" == "Darwin" ]; then
+  echo "# - Setting up a mac"
+
+  # Link repos on desktop
+  #ln -s ~/repos ~/Desktop/repos
+
+  #if [ "$(spctl --status)" == "assessments enabled" ]; then
+  #  echo "# -- Disabling OSX Gatekeeper (spctl)"
+  #  sudo spctl --master-disable
+  #fi
+
+  # Top left screen corner → Mission Control [2]
+  defaults write com.apple.dock wvous-tl-corner -int 2
+  defaults write com.apple.dock wvous-tl-modifier -int 0
+  # Top right screen corner → Desktop [4]
+  defaults write com.apple.dock wvous-tr-corner -int 4
+  defaults write com.apple.dock wvous-tr-modifier -int 0
+  # Automatically hide and show the Dock
+  defaults write com.apple.dock autohide -bool true
+  # Disable touch-style scrolling
+  defaults write NSGlobalDomain com.apple.swipescrolldirection -bool false
+  # Disable the “Are you sure you want to open this application?” dialog
+  defaults write com.apple.LaunchServices LSQuarantine -bool false
+  # Disable itunes / apple music
+  # launchctl unload -w /System/Library/LaunchAgents/com.apple.rcd.plist || true
+  # Kill useless
+  defaults write com.apple.gamed Disabled -bool true
+
+
+  echo "# Installing packages on a mac" >&2
+  if ! [ -x "$(command -v brew)" ]; then
+    echo "# - Installing brew" >&2
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+
+  # Homebrew.
+  # - inspired by https://github.com/mathiasbynens/dotfiles/blob/master/brew.sh
+  # - ref. https://gist.github.com/ChristopherA/a579274536aab36ea9966f301ff14f3f
+
+  brew update
+  brew upgrade
+
+brew bundle --file=- <<-EOS
+brew "coreutils"
+brew "findutils"
+brew "gnu-sed"
+brew "cmake"
+brew "vim"
+brew "reattach-to-user-namespace"
+brew "tmux"
+brew "pass"
+brew "ripgrep"
+brew "mosh"
+brew "pyenv"
+brew "bash"
+brew "git"
+brew "neovim"
+brew "htop"
+
+
+brew "fzf"     # Fuzzy find
+brew "atuin"   # Pretty history
+brew "fd"      # Find replacement
+brew "bat"     # Cat replacement
+brew "eza"     # ls replacement
+brew "zoxide"  # cd replacement
+brew "git-delta"
+
+cask "hammerspoon"
+
+{{ if .rust }}
+brew "rustup"
+{{- end }}
+
+EOS
+
+  brew cleanup
+
+  git config --global core.pager delta
+
+
+  #pip install llm
+  # TODO 1password
+  # TODO rclone
+
+fi
+
+
+
+# Linux
+if [ "$(uname -s)" == "Linux" ]; then
+  if sudo true; then
+
+    #sudo -v
+    # Keep-alive: update existing `sudo` time stamp until the script has finished.
+    #while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+
+    if [  -n "$(uname -a | grep Ubuntu)" ]; then
+      if [ -n "$(command -v apt-get)" ]; then
+        echo "# Installing packages on Linux[apt]" >&2
+        # Apt get stuff.
+        sudo apt-get -y update
+        sudo apt-get -y upgrade
+        sudo apt-get install -y build-essential
+
+        sudo apt-get install -y zsh vim
+        sudo apt-get install -y mosh
+        sudo apt-get install -y neovim ripgrep
+        sudo apt-get install fd-find
+        sudo apt-get install -y pass
+
+        {{ if .python }}
+        sudo apt-get install -y python python-pip python-setuptools python-dev
+        {{ end }}
+
+        {{ if .rust }}
+        sudo apt-get install -y rustup
+        {{ end }}
+
+        {{ if .nodejs }}
+        sudo apt-get install -y nodejs npm
+        {{ end }}
+
+        # TODO tailscale
+        #
+        #apt install bat
+      fi
+    fi
+  fi
+fi
+

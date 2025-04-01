@@ -79,6 +79,12 @@ Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
 chezmoi init peterbraden --apply
 ```
 
+Or without chezmoi previously installed:
+
+```sh
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
+```
+
 ### Setup OSX
 #### Install apps from Safari
 - [homebrew](https://brew.sh)
@@ -137,6 +143,6 @@ list of credits:
 
 
 - [auto generated git commit messages with LLM](https://harper.blog/2024/03/11/use-an-llm-to-automagically-generate-meaningful-git-commit-messages/)
-
+- [Why "alias" is my last resort for aliases](https://evanhahn.com/why-alias-is-my-last-resort-for-aliases/)
 
 

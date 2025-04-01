@@ -1,8 +1,6 @@
 set nocompatible    " Don't be compatible with vi
 
-"if !has('nvim')
-  call pathogen#infect()
-"endif
+call pathogen#infect()
 
 let mapleader = ","
 
@@ -319,6 +317,18 @@ let g:ycm_key_list_previous_completion = ['<S-TAB>']
 
 nnoremap <leader>gd :tab split \| :YcmCompleter GoToDefinition<CR>
 nnoremap <leader>fi :YcmCompleter FixIt<CR>
+" }}}
+
+
+" LSP {{{
+if executable('ruff')
+    au User lsp_setup call lsp#register_server({
+        \ 'name': 'ruff',
+        \ 'cmd': {server_info->['ruff', 'server']},
+        \ 'allowlist': ['python'],
+        \ 'workspace_config': {},
+        \ })
+endif
 " }}}
 
 

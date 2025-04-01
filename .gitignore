@@ -4,3 +4,4 @@ home/dot_mutt/*.account
 home-network
 
 .aider*
+__pycache__

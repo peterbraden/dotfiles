@@ -1,25 +1,28 @@
-#!/bin/zsh
-W="\033[01;37m"
-B="\033[30;44m"
-BB="\033[34m"
-Y="\033[30;43m"
-YY="\033[33m"
-R="\033[30;41m"
-X="\033[0m"
+#!/bin/bash
+
+B="\e[30;44m"
+BB="\e[34m"
+Y="\e[30;43m"
+R="\e[30;41m"
+X="\e[0m"
 
 IPADDR=$(ifconfig | awk '($1 == "inet") && ($2 !~ /127.0.0.1/) { print $2 }' | sed 's/addr\://' | tail -1)
 
-echo  "$B              $Y        $USER@$(uname -n)      $R            $IPADDR        $X"
+echo -e "$B             $Y $USER@$(uname -n) $R $IPADDR $X"
 echo ""
 echo "# $(uname -srvm)"
 echo "#$(uptime)"
 
-echo "$BB# --- TMUX sessions: --- $X"
-echo "$(tmux list-sessions)"
+if command -v tmux > /dev/null 2>&1 
+then
+echo -e "$BB# TMUX sessions: - $X $(tmux list-sessions)"
+fi
 
-echo "$BB# --- SSH Logins --- $X"
+echo -e "$BB# --- SSH Logins --- $X"
 if [[ "$OSTYPE" == "darwin"* ]]; then
 last
 else
 last --since "2 days ago"  --dns --fullnames -x | grep -v "0.0.0.0" | grep -v "begins" | grep -v tmux |  head -20
 fi
+
+

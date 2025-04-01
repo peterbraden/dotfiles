@@ -1,0 +1,38 @@
+# ALIASES -----------------------
+# NB: Sourced from bash and zsh, so should be cross compatible.
+# Consider using a shell script in bin instead
+# ref: https://evanhahn.com/why-alias-is-my-last-resort-for-aliases/
+
+alias ack=rg
+alias d='date --rfc-3339=seconds'
+alias docker-init='eval "$(docker-machine env)"'
+alias docker-cleanup='docker system prune'
+alias docker-killall='docker ps -a -q'
+alias ff='find . | egrep'
+alias genpwd="openssl rand -base64 20"
+alias gp='git push origin "$(git rev-parse --abbrev-ref HEAD)"' # Push current branch to origin
+alias gd='git diff'
+alias gs='git status'
+alias gca='git commit -a'
+alias gl='git log -p'
+alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
+alias git-cleanup='git branch --merged | grep -v "\*" | xargs -n 1 git branch -d'
+alias gfm='git-fix-merges'
+alias mg=mv #disable mg editor
+alias mutt=neomutt
+alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
+alias s=rg
+alias ssh-gh-codespaces="gh cs ssh --server-port 2222"
+alias tm='tmux new-session -AD' # attach or create session - similar to `screen -dR foo`
+alias tml='tmux list-sessions'
+alias tmk='tmux kill-session -t'
+alias tmux-start-server='tmux new -d'
+alias vi="vim"
+
+{{ if eq .chezmoi.os "darwin" -}}
+    # The sed installed in osx is horrible
+    alias sed=gsed
+    alias ls="eza" # | ls
+    alias find="fd"
+    alias cat="bat"
+{{- end -}}
