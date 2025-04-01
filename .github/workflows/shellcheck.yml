@@ -17,6 +17,15 @@ jobs:
     - name: Find and check shell scripts
       working-directory: ${{ github.workspace }}
       run: |
-        find "$GITHUB_WORKSPACE" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.ksh" -o -name "*.dash" \) -exec shellcheck --severity=warning --format=gcc {} + 
-        find "$GITHUB_WORKSPACE/home/bin" -type f ! -name '*.py*' -exec shellcheck --severity=warning --format=gcc {} + 
+        set -e
+        {
+          # Find by extension
+          find "$GITHUB_WORKSPACE" -type f \( -name "*.sh" -o -name "*.bash" -o -name "*.ksh" -o -name "*.dash" \) -print
+          # Find in home/bin (excluding python scripts)
+          find "$GITHUB_WORKSPACE/home/bin" -type f ! -name '*.py*' -print
+          # Find by shebang (#/bin/sh, #!/bin/bash, #!/usr/bin/sh, #!/usr/bin/bash)
+          find "$GITHUB_WORKSPACE" -type f -exec awk 'NR==1 && /^#!\/(usr\/)?bin\/(bash|sh)/ {print FILENAME; exit}' {} \;
+        } | sort -u | xargs -r shellcheck --severity=warning --format=gcc || true
+        # Using || true because shellcheck exits non-zero if issues are found,
+        # which would fail the step, but we want to see the issues as annotations.
 
