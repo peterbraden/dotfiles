@@ -1,0 +1,56 @@
+#!/bin/bash
+# Usage: ./keep-trying [--sleep SECONDS] <command...>
+
+SLEEP_DURATION=1  # Default sleep duration
+POSITIONAL=()
+
+# Parse optional --sleep argument
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --sleep)
+            SLEEP_DURATION="$2"
+            shift 2
+            ;;
+        --sleep=*)
+            SLEEP_DURATION="${1#*=}"
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)
+            POSITIONAL+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Remaining args are the command
+CMD=("${POSITIONAL[@]}")
+
+# Validate command presence
+if [ "${#CMD[@]}" -eq 0 ]; then
+    echo "Usage: $0 [--sleep SECONDS] <command...>" >&2
+    exit 1
+fi
+
+# Loop until success
+while true; do
+    "${CMD[@]}"
+    EXIT_CODE=$?
+
+    if [ $EXIT_CODE -eq 0 ]; then
+        echo "Command succeeded with exit code 0." >&2
+        break
+    fi
+
+    TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$TIMESTAMP] Command failed with exit code $EXIT_CODE" >&2
+
+    sleep "$SLEEP_DURATION"
+done
