@@ -22,7 +22,7 @@ tmux new-session -A -s $SESSION_NO_DOTS -c $DIRECTORY -d
 tmux new-window -t $SESSION_NO_DOTS:1 -c $DIRECTORY
 tmux new-window -t $SESSION_NO_DOTS:2 -c $DIRECTORY
 tmux select-window -t $SESSION_NO_DOTS:0
-tmux send-keys "$HOME/repos/dotfiles/motd" C-m
+tmux send-keys "$HOME/bin/.motd" C-m
 
 tmux attach-session -t $SESSION_NO_DOTS
 

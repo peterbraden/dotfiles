@@ -34,7 +34,7 @@ export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
 export PATH=$PATH:/opt/local/bin:/opt/local/sbin
 export PATH=$PATH:/usr/local/bin:/usr/local/sbin
 
-export PATH=$PATH:/opt/homebrew/bin   # Homebrew
+export PATH=/opt/homebrew/bin:$PATH  # Homebrew
 
 {{ if .golang }}
 export PATH=$PATH:/usr/local/go/bin   # Add golang
@@ -50,7 +50,7 @@ export NVM_DIR="$HOME/.nvm"
 # Pyenv
 if command -v pyenv &> /dev/null; then
   # pyenv exists
-  export PATH=$(pyenv root)/shims:$PATH $
+  export PATH=$(pyenv root)/shims:$PATH
   eval "$(pyenv init -)"
 fi
 {{ end }}

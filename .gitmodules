@@ -46,23 +46,26 @@
 
 
 [submodule "home/dot_config/nvim/plugins/telescope.nvim"]
-	path = home/dot_config/nvim/external_plug/telescope.nvim
+	path = home/dot_config/nvim/external_pack/plugins/start/telescope.nvim
 	url = https://github.com/nvim-telescope/telescope.nvim.git
 [submodule "home/dot_config/nvim/plugins/vim-plug"]
 	path = home/dot_config/nvim/vim-plug
 	url = https://github.com/junegunn/vim-plug.git
 [submodule "home/dot_config/nvim/plugins/plenary.nvim"]
-	path = home/dot_config/nvim/external_plug/plenary.nvim
+	path = home/dot_config/nvim/external_pack/plugins/start/plenary.nvim
 	url = https://github.com/nvim-lua/plenary.nvim.git
 [submodule "home/dot_config/nvim/plugins/nvim-treesitter"]
-	path = home/dot_config/nvim/external_plug/nvim-treesitter
+	path = home/dot_config/nvim/external_pack/plugins/start/nvim-treesitter
 	url = https://github.com/nvim-treesitter/nvim-treesitter.git
 [submodule "home/dot_zsh/zsh-autosuggestions"]
 	path = home/dot_zsh/zsh-autosuggestions
 	url = https://github.com/zsh-users/zsh-autosuggestions
 [submodule "home/dot_config/external_plugins/nvim-lspconfig.vim"]
-	path = home/dot_config/nvim/external_plug/start/nvim-lspconfig
+	path = home/dot_config/nvim/external_pack/plugins/start/nvim-lspconfig
 	url = https://github.com/neovim/nvim-lspconfig
 [submodule "home/dot_config/external_zsh_plugins/zsh-autosuggestions"]
 	path = home/dot_config/external_zsh_plugins/zsh-autosuggestions
 	url = https://github.com/zsh-users/zsh-autosuggestions
+[submodule "home/dot_config/nvim/external_pack/plugins/start/solarized8.vim"]
+	path = home/dot_config/nvim/external_pack/plugins/start/solarized8.vim
+	url = git@github.com:lifepillar/vim-solarized8.git

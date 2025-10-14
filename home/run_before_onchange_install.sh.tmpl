@@ -49,6 +49,7 @@ if [ "$(uname -s)" == "Darwin" ]; then
   if ! [ -x "$(command -v brew)" ]; then
     echo "# - Installing brew" >&2
     bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/opt/homebrew/bin/brew shellenv)"
   fi
 
   # Homebrew.
@@ -74,8 +75,6 @@ brew "bash"
 brew "git"
 brew "neovim"
 brew "htop"
-
-
 brew "fzf"     # Fuzzy find
 brew "atuin"   # Pretty history
 brew "fd"      # Find replacement
@@ -83,8 +82,11 @@ brew "bat"     # Cat replacement
 brew "eza"     # ls replacement
 brew "zoxide"  # cd replacement
 brew "git-delta"
+brew "f2"
+brew "gh"
 
 cask "hammerspoon"
+
 
 {{ if .rust }}
 brew "rustup"
@@ -92,15 +94,13 @@ brew "rustup"
 
 EOS
 
+  brew install 1password-cli
+
   brew cleanup
 
-  git config --global core.pager delta
-
-
+  #git config --global core.pager delta
   #pip install llm
-  # TODO 1password
   # TODO rclone
-
 fi
 
 
