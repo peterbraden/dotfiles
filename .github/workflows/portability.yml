@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-linux:
-    name: Test on ${{ matrix.os }}
+  test:
+    name: ${{ matrix.os }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -19,6 +19,8 @@ jobs:
             runner: ubuntu-22.04
           - os: Ubuntu 24.04
             runner: ubuntu-24.04
+          - os: macOS
+            runner: macos-latest
     
     steps:
       - name: Checkout repository
@@ -27,35 +29,7 @@ jobs:
           submodules: recursive
       
       - name: Install dependencies
-        run: .github/scripts/install-dependencies.sh linux
-      
-      - name: Test script syntax
-        run: .github/scripts/test-scripts-syntax.sh
-      
-      - name: Apply dotfiles with chezmoi
-        run: .github/scripts/test-chezmoi-apply.sh
-      
-      - name: Test rendered configurations
-        run: .github/scripts/test-rendered-configs.sh
-      
-      - name: Test bash startup
-        run: .github/scripts/test-shell-startup.sh bash
-      
-      - name: Test zsh startup
-        run: .github/scripts/test-shell-startup.sh zsh
-  
-  test-macos:
-    name: Test on macOS
-    runs-on: macos-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      
-      - name: Install dependencies
-        run: .github/scripts/install-dependencies.sh macos
+        run: .github/scripts/install-dependencies.sh
       
       - name: Test script syntax
         run: .github/scripts/test-scripts-syntax.sh

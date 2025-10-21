@@ -10,7 +10,7 @@ Installs required dependencies for testing:
 - bash and zsh shells
 - Basic development tools (git, tmux, vim)
 
-Usage: `./install-dependencies.sh [linux|macos]`
+Auto-detects OS via `$OSTYPE` and installs appropriate packages.
 
 ### `test-chezmoi-apply.sh`
 Tests that `chezmoi apply` works without errors. Creates a minimal test configuration and applies the dotfiles.
@@ -31,14 +31,16 @@ Verifies that chezmoi has correctly rendered configuration files:
 
 ## GitHub Actions Workflow
 
-The `portability.yml` workflow runs these tests on:
+The `portability.yml` workflow uses a matrix strategy to test on:
 - Ubuntu 22.04
 - Ubuntu 24.04
 - macOS latest
 
-Each job:
+Adding new test environments is straightforward - just add to the matrix.
+
+Each test run:
 1. Checks out the repository with submodules
-2. Installs dependencies
+2. Auto-detects OS and installs dependencies
 3. Validates script syntax
 4. Applies dotfiles with chezmoi
 5. Tests rendered configurations
@@ -54,7 +56,7 @@ To test locally before pushing:
 
 # On a test machine or container, run full suite:
 export GITHUB_WORKSPACE=$PWD
-.github/scripts/install-dependencies.sh linux
+.github/scripts/install-dependencies.sh  # Auto-detects OS
 .github/scripts/test-chezmoi-apply.sh
 .github/scripts/test-rendered-configs.sh
 .github/scripts/test-shell-startup.sh bash

@@ -5,7 +5,17 @@ set -euo pipefail
 
 echo "::group::Installing dependencies"
 
-OS_TYPE="${1:-linux}"
+# Auto-detect OS if not specified
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    OS_TYPE="linux"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    OS_TYPE="macos"
+else
+    echo "Warning: Unknown OS type: $OSTYPE, assuming linux"
+    OS_TYPE="linux"
+fi
+
+echo "Detected OS: $OS_TYPE"
 
 case "$OS_TYPE" in
     linux)
@@ -42,7 +52,7 @@ case "$OS_TYPE" in
         ;;
     
     *)
-        echo "Unknown OS type: $OS_TYPE"
+        echo "Error: Unsupported OS type: $OS_TYPE"
         exit 1
         ;;
 esac
