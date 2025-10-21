@@ -20,6 +20,15 @@ Tests that shells start without critical errors. Checks both bash and zsh startu
 
 Usage: `./test-shell-startup.sh [bash|zsh]`
 
+### `test-tmux-config.sh`
+Validates tmux configuration loads without errors. Creates a test session and sources the config file.
+
+### `test-vim-config.sh`
+Tests vim and neovim configurations:
+- Verifies vim/nvim start with configs loaded
+- Checks for critical syntax errors
+- Validates plugin directories exist (submodules)
+
 ### `test-scripts-syntax.sh`
 Validates shell script syntax for all scripts in `home/bin/` using `bash -n`. Skips Python scripts.
 
@@ -45,6 +54,8 @@ Each test run:
 4. Applies dotfiles with chezmoi
 5. Tests rendered configurations
 6. Tests bash and zsh shell startup
+7. Tests tmux configuration loads
+8. Tests vim/neovim configuration loads
 
 ## Running Tests Locally
 
@@ -61,6 +72,8 @@ export GITHUB_WORKSPACE=$PWD
 .github/scripts/test-rendered-configs.sh
 .github/scripts/test-shell-startup.sh bash
 .github/scripts/test-shell-startup.sh zsh
+.github/scripts/test-tmux-config.sh
+.github/scripts/test-vim-config.sh
 ```
 
 ## Notes

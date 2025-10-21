@@ -45,3 +45,9 @@ jobs:
       
       - name: Test zsh startup
         run: .github/scripts/test-shell-startup.sh zsh
+      
+      - name: Test tmux configuration
+        run: .github/scripts/test-tmux-config.sh
+      
+      - name: Test vim/neovim configuration
+        run: .github/scripts/test-vim-config.sh
