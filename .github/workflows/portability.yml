@@ -11,6 +11,7 @@ jobs:
   test:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
@@ -21,6 +22,9 @@ jobs:
             runner: ubuntu-24.04
           - os: macOS
             runner: macos-latest
+          - os: Alpine
+            runner: ubuntu-latest
+            container: alpine:latest
     
     steps:
       - name: Checkout repository
@@ -45,6 +49,12 @@ jobs:
       
       - name: Test zsh startup
         run: .github/scripts/test-shell-startup.sh zsh
+      
+      - name: Test git configuration
+        run: .github/scripts/test-git-config.sh
+      
+      - name: Test file permissions
+        run: .github/scripts/test-file-permissions.sh
       
       - name: Test tmux configuration
         run: .github/scripts/test-tmux-config.sh

@@ -7,7 +7,12 @@ echo "::group::Installing dependencies"
 
 # Auto-detect OS if not specified
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    OS_TYPE="linux"
+    # Check if we're in Alpine (uses apk instead of apt)
+    if [ -f /etc/alpine-release ]; then
+        OS_TYPE="alpine"
+    else
+        OS_TYPE="linux"
+    fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     OS_TYPE="macos"
 else
@@ -34,6 +39,28 @@ case "$OS_TYPE" in
             vim \
             make \
             ca-certificates
+        
+        # Install chezmoi
+        sh -c "$(curl -fsLS https://get.chezmoi.io)" -- -b /usr/local/bin
+        ;;
+    
+    alpine)
+        echo "Installing Alpine dependencies..."
+        # Update package lists
+        apk update
+        
+        # Install shells (bash and zsh)
+        apk add bash zsh
+        
+        # Install basic tools
+        apk add \
+            git \
+            curl \
+            tmux \
+            vim \
+            make \
+            ca-certificates \
+            sudo
         
         # Install chezmoi
         sh -c "$(curl -fsLS https://get.chezmoi.io)" -- -b /usr/local/bin
