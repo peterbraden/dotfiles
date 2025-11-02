@@ -5,7 +5,7 @@ This directory contains shell scripts for testing dotfiles portability across di
 ## Test Scripts
 
 ### `install-dependencies.sh`
-Installs required dependencies for testing:
+Installs required dependencies for testing, including but not limited to:
 - chezmoi
 - bash and zsh shells
 - Basic development tools (git, tmux, vim)
