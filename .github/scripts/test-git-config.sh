@@ -29,9 +29,10 @@ if [ -f ~/.gitconfig ]; then
     fi
     
     # Check for accidentally committed sensitive data patterns
-    if grep -iE '(password|token|secret|key).*=' ~/.gitconfig 2>/dev/null | grep -v 'signingkey'; then
+    SENSITIVE_LINES=$(grep -iE '(password|token|secret|key).*=' ~/.gitconfig 2>/dev/null | grep -v 'signingkey' || true)
+    if [ -n "$SENSITIVE_LINES" ]; then
         echo "⚠ Warning: Potential sensitive data in gitconfig:"
-        grep -iE '(password|token|secret|key).*=' ~/.gitconfig | grep -v 'signingkey'
+        echo "$SENSITIVE_LINES"
     fi
 else
     echo "⚠ ~/.gitconfig not found"
