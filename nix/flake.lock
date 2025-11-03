@@ -74,7 +74,20 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "nixos-generators": "nixos-generators",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "ssh-keys": "ssh-keys"
+      }
+    },
+    "ssh-keys": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-lWh90GLDISwHW9p6fvTHozTAPhA/A2lXYRhyhGiEQ7Q=",
+        "type": "file",
+        "url": "https://github.com/peterbraden.keys"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/peterbraden.keys"
       }
     },
     "systems": {

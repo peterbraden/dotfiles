@@ -1,4 +1,10 @@
 { config, pkgs, lib, ... }: {
+  imports = [
+    ../common/packages.nix
+    ../common/users.nix
+    ../common/ssh.nix
+  ];
+
   nix.settings.system-features = [ "nix-command" "flakes"];                
   nix.extraOptions = "experimental-features = nix-command flakes"; 
 
@@ -37,4 +43,6 @@
       ExecStart = "${pkgs.systemd}/bin/loginctl enable-linger peterbraden";
     };
   };
+
+  system.stateVersion = "24.11";
 }

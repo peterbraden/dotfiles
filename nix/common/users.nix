@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }: {
+{ inputs, config, pkgs, lib,  ... }:{
 
   programs.zsh.enable = true;
 
@@ -7,20 +7,15 @@
 
     createHome = true;
 
-    # Load SSH keys from github.
-    openssh.authorizedKeys.keys = let
-      authorizedKeys = pkgs.fetchurl {
-        url = "https://github.com/peterbraden.keys";
-        sha256 = "sha256-i1y8OAUaifKB6LpknKrT2W2yxy3UK4wh4w4yKlPSW9E=";
-      };
-
-    in pkgs.lib.splitString "\n" (builtins.readFile authorizedKeys);
+    openssh.authorizedKeys.keyFiles = [ inputs.ssh-keys.outPath ];
 
     isNormalUser = true;
     extraGroups = [ "networkmanager" "wheel" ];
+
     # Generate w' podman run -it --rm alpine mkpasswd -m sha512 'PASSWORD'
     # temporary password from ali-baba
     initialHashedPassword =  "$6$MLmnUA9WQN5ez1yh$YMACqIQIQmkXVeGKOCMDo9TPoqYiuGBTiVP/zcQYM6ToLUWpcUyku0f69VZPwA0mN5NOV5EKfC4riwKVYarwl.";
+
     shell = pkgs.zsh;
     packages = with pkgs; [];
   };
