@@ -18,18 +18,24 @@
 
     shell = pkgs.zsh;
     packages = with pkgs; [];
+    linger = true;
   };
 
-  # Run chezmoi init to setup dotfiles as a system service.
-  systemd.services.chezmoi-init-peterbraden = {
-    description = "Initialize chezmoi for peterbraden";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
+  systemd.user.services.chezmoi-init-peterbraden = {
+    unitConfig = {
+      Description = "Initialize chezmoi for peterbraden";
+      After = [
+        "network-online.target"
+        "ssh-agent.service"
+      ];
+    };
+    wantedBy = [ "default.target" ];
     serviceConfig = {
       Type = "oneshot";
-      User = "peterbraden";
+      Environment = "SSH_AUTH_SOCK=%t/ssh-agent.socket";
       ExecStart = "${pkgs.chezmoi}/bin/chezmoi init peterbraden --apply";
+      Restart = "on-failure";
+      RestartSec = 5;
     };
   };
 }
