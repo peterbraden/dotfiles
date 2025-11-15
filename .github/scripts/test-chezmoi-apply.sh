@@ -6,7 +6,7 @@ set -euo pipefail
 echo "::group::Testing chezmoi apply"
 
 # Initialise chezmoi with test data
-export HOME="${HOME:-/tmp/test-home}"
+# Use actual HOME in CI - the runner HOME is ephemeral and safe to use
 mkdir -p "$HOME"
 
 # Create minimal config to avoid interactive prompts
@@ -21,7 +21,11 @@ cat > "$HOME/.config/chezmoi/chezmoi.toml" <<EOF
 EOF
 
 echo "Initializing chezmoi..."
-chezmoi init --source="$GITHUB_WORKSPACE"
+# Create the source directory and copy the repository there
+mkdir -p "$HOME/.local/share/chezmoi"
+cp -r "$GITHUB_WORKSPACE/home/." "$HOME/.local/share/chezmoi/"
+# Copy metadata files
+cp "$GITHUB_WORKSPACE/.chezmoiroot" "$HOME/.local/share/chezmoi/" 2>/dev/null || true
 
 echo "Applying dotfiles..."
 if chezmoi apply --verbose 2>&1 | tee /tmp/chezmoi-apply.log; then

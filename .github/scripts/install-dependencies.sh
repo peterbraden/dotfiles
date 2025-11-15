@@ -40,8 +40,11 @@ case "$OS_TYPE" in
             make \
             ca-certificates
         
-        # Install chezmoi
-        sh -c "$(curl -fsLS https://get.chezmoi.io)" -- -b /usr/local/bin
+        # Install chezmoi - download binary directly from GitHub releases
+        CHEZMOI_VERSION=$(curl -sL https://github.com/twpayne/chezmoi/releases/latest | grep -o 'tag/v[0-9.]*' | head -1 | cut -d'/' -f2 | tr -d 'v')
+        curl -sL "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/chezmoi_${CHEZMOI_VERSION}_linux_amd64.tar.gz" | tar -xz -C /tmp
+        sudo mv /tmp/chezmoi /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chezmoi
         ;;
     
     alpine)
@@ -62,8 +65,11 @@ case "$OS_TYPE" in
             ca-certificates \
             sudo
         
-        # Install chezmoi
-        sh -c "$(curl -fsLS https://get.chezmoi.io)" -- -b /usr/local/bin
+        # Install chezmoi - download binary directly from GitHub releases
+        CHEZMOI_VERSION=$(curl -sL https://github.com/twpayne/chezmoi/releases/latest | grep -o 'tag/v[0-9.]*' | head -1 | cut -d'/' -f2 | tr -d 'v')
+        curl -sL "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/chezmoi_${CHEZMOI_VERSION}_linux_amd64.tar.gz" | tar -xz -C /tmp
+        sudo mv /tmp/chezmoi /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chezmoi
         ;;
     
     macos)
