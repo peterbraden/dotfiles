@@ -47,6 +47,8 @@
 
     nixosModules = {
       apps = import ./common/apps.nix;
+      ssh = import ./common/ssh.nix;
+      users = import ./common/users.nix;
     };
   };
 }
