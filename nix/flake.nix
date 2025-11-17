@@ -46,7 +46,7 @@
 
 
     nixosModules = {
-      apps = import ./common/apps;
+      apps = import ./common/apps.nix;
     };
   };
 }
