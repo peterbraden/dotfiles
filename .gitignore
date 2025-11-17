@@ -2,6 +2,6 @@ vim/.netrwhist
 vim/vim
 home/dot_mutt/*.account
 home-network
-
 .aider*
 __pycache__
+nix/result
