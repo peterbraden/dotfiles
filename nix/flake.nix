@@ -43,5 +43,10 @@
       ];
     };
     */
+
+
+    nixosModules.common = {
+      packages = import ./common/packages;
+    };
   };
 }
