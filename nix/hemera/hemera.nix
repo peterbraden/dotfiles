@@ -1,6 +1,6 @@
 { config, pkgs, lib, ... }: {
   imports = [
-    ../common/packages.nix
+    ../common/apps.nix
     ../common/users.nix
     ../common/ssh.nix
   ];

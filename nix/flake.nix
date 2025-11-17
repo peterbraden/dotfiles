@@ -37,7 +37,7 @@
       system = "aarch64-linux";
       format = "install-iso";
       modules = [
-        ./common/packages.nix
+        ./common/apps.nix
         ./common/users.nix
         ./common/ssh.nix
       ];
@@ -46,7 +46,7 @@
 
 
     nixosModules = {
-      packages = import ./common/packages;
+      apps = import ./common/apps;
     };
   };
 }
