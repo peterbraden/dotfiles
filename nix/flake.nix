@@ -45,7 +45,7 @@
     */
 
 
-    nixosModules.common = {
+    nixosModules = {
       packages = import ./common/packages;
     };
   };
