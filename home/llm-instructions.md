@@ -8,6 +8,24 @@
     wasted cycles on assumption.
 
 
+## Testing
+
+Testing is critical - if a user reports a bug, then we need to ask ourself why
+that bug wasn't caught by the existing tests - are we missing a test? Are there
+mistaken assumptions in our existing tests that prevented that case from being
+caught?
+
+If we could revert the code changes we made, and the tests still pass, then we
+are missing some coverage.
+
+Not everything needs tests - if we are simply asserting that a library function
+was called, then the test is useless - we can rely on type checking for
+assertions of code path integrity.
+
+But branching, and the interaction of our business logic with downstream code
+needs a test.
+
+
 ## Documentation
 
 When writing documentation:
