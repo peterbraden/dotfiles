@@ -7,7 +7,7 @@ set -eu
 # Codespaces was the original motivation behind this script as it does
 # some things 'strangely' and doesn't play nicely with chezmoi out of the
 # box.
-if [ -n "$CODESPACES" ]; then
+if [ -n "${CODESPACES:-}" ]; then
   echo "Setting up a dev environment inside github codespaces..."
   
   # Github auth in codespaces defaults to http
