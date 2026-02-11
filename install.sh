@@ -79,6 +79,11 @@ if [ -n "${GITPOD_API_URL:-}" ]; then
   git -C "${script_dir}" submodule update --init --recursive
   apply_chezmoi "${script_dir}"
   use_zsh
+  
+  # Ensure welcome-claude.sh is sourced (sets up Claude Code proxy auth)
+  if command -v welcome-claude.sh >/dev/null && ! grep -q 'welcome-claude.sh' "$HOME/.zshrc" 2>/dev/null; then
+    echo 'source welcome-claude.sh' >> "$HOME/.zshrc"
+  fi
 
 fi
 # }}}
