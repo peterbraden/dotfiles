@@ -31,7 +31,7 @@ get_script_dir() {
 
 apply_chezmoi() {
   local source_dir="$1"
-  "${chezmoi}" init --apply peterbraden --source "${source_dir}"
+  "${chezmoi}" init --apply --force peterbraden --source "${source_dir}"
 }
 
 
@@ -70,9 +70,13 @@ fi
 #  ---- Gitpod / Ona ---- {{{
 if [ -n "${GITPOD_API_URL:-}" ]; then
   echo "Setting up a dev environment inside Gitpod/Ona..."
+  
+  # Submodules using git@github.com: URLs need HTTPS rewrite without SSH keys
+  git config --global url."https://github.com/".insteadOf git@github.com:
 
   ensure_chezmoi
   script_dir="$(get_script_dir)"
+  git -C "${script_dir}" submodule update --init --recursive
   apply_chezmoi "${script_dir}"
   use_zsh
 fi
