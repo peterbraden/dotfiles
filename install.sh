@@ -79,5 +79,19 @@ if [ -n "${GITPOD_API_URL:-}" ]; then
   git -C "${script_dir}" submodule update --init --recursive
   apply_chezmoi "${script_dir}"
   use_zsh
+
+  # Ensure interactive claude works without login prompt.
+  # The proxy authenticates via custom headers; claude just needs any API key set.
+  if [ -f "$HOME/.claude/settings.json" ]; then
+    python3 -c "
+import json, sys
+with open(sys.argv[1], 'r') as f:
+    d = json.load(f)
+d.setdefault('env', {}).setdefault('ANTHROPIC_API_KEY', 'ona-proxy')
+with open(sys.argv[1], 'w') as f:
+   json.dump(d, f, indent=2)
+   f.write('\n')
+" "$HOME/.claude/settings.json"
+  fi
 fi
 # }}}
