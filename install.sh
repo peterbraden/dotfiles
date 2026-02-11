@@ -3,7 +3,7 @@
 
 set -eu
 
-# ---- Github codespaces ----
+# ---- Github codespaces ---- {{{
 # Codespaces was the original motivation behind this script as it does
 # some things 'strangely' and doesn't play nicely with chezmoi out of the
 # box.
@@ -45,6 +45,38 @@ if [ -n "${CODESPACES:-}" ]; then
   sudo chsh "$(whoami)" --shell /usr/bin/zsh
   export SHELL=/usr/bin/zsh
 fi
+# }}}
 
 
+#  ---- Gitpod / Ona ---- {{{
+if [ -n "${GITPOD_API_URL:-}" ]; then
+  echo "Setting up a dev environment inside Gitpod/Ona..."
+ 
+  bin_dir="$HOME/.local/bin"
+  mkdir -p "${bin_dir}"
 
+  if ! chezmoi="$(command -v chezmoi)"; then
+        chezmoi="${bin_dir}/chezmoi"
+        echo "Installing chezmoi to '${chezmoi}'" >&2
+        if command -v curl >/dev/null; then
+                chezmoi_install_script="$(curl -fsSL get.chezmoi.io)"
+        elif command -v wget >/dev/null; then
+                chezmoi_install_script="$(wget -qO- get.chezmoi.io)"
+        else
+                echo "To install chezmoi, you must have curl or wget installed." >&2
+                exit 1
+        fi
+        sh -c "${chezmoi_install_script}" -- -b "${bin_dir}"
+        unset chezmoi_install_script bin_dir
+  fi
+
+  script_dir="$(cd -P -- "$(dirname -- "$(command -v -- "$0")")" && pwd -P)"
+
+  "${chezmoi}" init --apply peterbraden --source "${script_dir}"
+
+  if [ -x "$(command -v zsh)" ]; then
+    sudo chsh "$(whoami)" --shell "$(command -v zsh)"
+    export SHELL=/usr/bin/zsh
+  fi
+fi
+# }}}
