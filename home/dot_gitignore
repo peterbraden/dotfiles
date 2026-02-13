@@ -40,3 +40,6 @@ pids
 *.pid.lock
 
 .ipynb_checkpoints
+
+### LLM tool artifacts
+.claude/
