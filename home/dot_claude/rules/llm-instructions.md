@@ -1,1 +1,0 @@
-../../.config/prompts/llm-instructions.md
