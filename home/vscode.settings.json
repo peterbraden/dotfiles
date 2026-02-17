@@ -1,0 +1,91 @@
+{
+    "editor.renderWhitespace": "trailing",
+    "editor.hover.enabled": false,
+    "workbench.colorTheme": "Solarized Dark",
+    "workbench.settings.applyToAllProfiles": [],
+    "python.analysis.addImport.heuristics": true,
+    "python.analysis.autoFormatStrings": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "standard",
+    "python.envFile": "${workspaceFolder}/dev.env",
+    "debugpy.debugJustMyCode": false,
+    "vim.leader": ",",
+    "vim.normalModeKeyBindingsNonRecursive": [
+        // --- Testing ---
+        // Run test at cursor
+        { "before": ["<leader>", "r","c" ], "commands": ["testing.runAtCursor"] },
+        { "before": ["<leader>", "r","t" ], "commands": ["testing.reRunLastRun"]},
+
+        // -- Movement ---
+        { "before": [ "<leader>", "t"], "commands": ["workbench.action.terminal.focus" ] },
+        {
+            "before": [
+                "<leader>",
+                "e"
+            ],
+            "commands": [
+                "workbench.view.explorer"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "/"
+            ],
+            "commands": [
+                "workbench.action.findInFiles"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "<leader>"
+            ],
+            "commands": [
+                "workbench.action.quickOpen"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "h"
+            ],
+            "commands": [
+                "workbench.action.closeSidebar",
+                "workbench.action.closeAuxiliaryBar",
+                "workbench.action.closePanel",
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "d",
+                "c"
+            ],
+            "commands": [
+                "testing.debugAtCursor"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "d",
+                "b"
+            ],
+            "commands": [
+                "editor.debug.action.toggleInlineBreakpoint"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "d",
+                "s"
+            ],
+            "commands": [
+                "workbench.action.debug.stop"
+            ]
+        },
+    ],
+    "editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?_",
+}
