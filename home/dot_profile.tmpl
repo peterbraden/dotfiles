@@ -83,3 +83,7 @@ if [ "$SHELL" == "/bin/zsh" ]; then
 else
   source ~/.bashrc
 fi
+
+if [ -f "$HOME/repos/utils/source.sh" ]; then
+  . "$HOME/repos/utils/source.sh"
+fi
