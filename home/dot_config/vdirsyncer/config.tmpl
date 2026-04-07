@@ -1,0 +1,16 @@
+[general]
+status_path = "~/.local/share/vdirsyncer/status/"
+
+[pair khal_pair_1]
+a = "khal_roche_local"
+b = "khal_roche_remote"
+collections = null
+
+[storage khal_roche_local]
+type = "filesystem"
+path = "{{ .chezmoi.homeDir }}/.local/share/khal/roche"
+fileext = ".ics"
+
+[storage khal_roche_remote]
+type = "http"
+url = {{ onepasswordRead  "op://Personal/Roche/cal-url" }} 

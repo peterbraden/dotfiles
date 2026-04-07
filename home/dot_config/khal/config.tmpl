@@ -1,0 +1,25 @@
+[calendars]
+
+[[home]]
+path = {{ .chezmoi.homeDir }}/.local/share/khal/home
+type = calendar
+
+
+[[roche]]
+path = {{ .chezmoi.homeDir }}/.local/share/khal/roche
+type = calendar
+# readonly = True
+
+
+[locale]
+timeformat = %H:%M
+dateformat = %Y-%m-%d
+longdateformat = %Y-%m-%d
+datetimeformat = %Y-%m-%d %H:%M
+longdatetimeformat = %Y-%m-%d %H:%M
+
+[view]
+agenda_event_format = "{calendar-color}{cancelled}{start}-{end} {title}{repeat-symbol}{alarm-symbol}{reset}"
+
+[default]
+default_calendar = roche
