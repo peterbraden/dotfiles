@@ -9,18 +9,28 @@ alias k=kubectl
 
 # --- ENV ---
 export TEST_POSTGRES_IMAGE=postgres:17.5-alpine3.21 # Control Plane API tests requires
-export GITLAB_TOKEN=$(op read op://Personal/Roche/gitlab-token)
 export FOXOPS_ACCESS_TOKEN=$(op read op://Personal/Roche/foxops-access-token)
+
+export GITLAB_TOKEN=$(op read op://Personal/Roche/gitlab-token)
+export GITLAB_USER=bradenp1
+
+export GITHUB_USER=peterbraden
+export GITHUB_TOKEN=$(op read op://Personal/Roche/github-token)
+export GITHUB_TOKEN_PERSONAL=$(op read op://Personal/github/github-token)
 
 export OPENAI_API_BASE=https://api.githubcopilot.com
 export OPENAI_API_KEY=$(op read op://Personal/Roche/github-copilot-token)
 
-export GITHUB_TOKEN=$(op read op://Personal/Roche/github-token)
-
 export COPILOT_API_BASE_URL=https://api.githubcopilot.com
 export COPILOT_API_KEY=$(op read op://Personal/Roche/github-copilot-token-no-prefix)
 
+
 export AWS_PROFILE='kaiser'
+
+# Autogen from ona-cloud-tunnel
+export ANTHROPIC_BASE_URL='http://localhost:34431/proxy'
+export ANTHROPIC_AUTH_TOKEN='dummy'
+export ANTHROPIC_CUSTOM_HEADERS='x-portkey-metadata: {"_user":"peter.braden@roche.com","ona_user_id":"019b9da5-5da1-7d6b-8990-48b4f883c2e3","tool":"claude"}'
 
 # --- Functions and scripts ---
 
