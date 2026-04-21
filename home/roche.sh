@@ -24,6 +24,7 @@ export OPENAI_API_KEY=$(op read op://Personal/Roche/github-copilot-token)
 export COPILOT_API_BASE_URL=https://api.githubcopilot.com
 export COPILOT_API_KEY=$(op read op://Personal/Roche/github-copilot-token-no-prefix)
 
+export LINEAR_API_KEY=$(op read op://Personal/Roche/linear-api)
 
 export AWS_PROFILE='kaiser'
 
