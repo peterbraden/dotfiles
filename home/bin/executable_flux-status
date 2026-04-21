@@ -1,0 +1,191 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "rich",
+# ]
+# ///
+"""
+flux-status - show reconciling Flux Kustomizations in a table.
+
+Usage:
+    flux-status              Show reconciling kustomizations
+    flux-status -w           Watch (refresh every 5s)
+    flux-status -w -i 10     Watch with custom interval
+    flux-status -n flux      Filter by namespace
+    flux-status -a           Show all (including ready)
+"""
+
+import argparse
+import json
+import signal
+import subprocess
+import sys
+import time
+
+from rich.console import Console
+from rich.live import Live
+from rich.table import Table
+from rich.text import Text
+
+
+def get_kustomizations(namespace: str | None) -> list[dict]:
+    cmd = [
+        "kubectl", "get",
+        "kustomizations.kustomize.toolkit.fluxcd.io",
+        "-o", "json",
+    ]
+    if namespace:
+        cmd += ["-n", namespace]
+    else:
+        cmd.append("--all-namespaces")
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        return []
+
+    data = json.loads(result.stdout)
+    return data.get("items", [])
+
+
+def parse_item(item: dict) -> dict:
+    conditions = {
+        c["type"]: c for c in item.get("status", {}).get("conditions", [])
+    }
+
+    ready_cond = conditions.get("Ready", {})
+    ready = ready_cond.get("status", "Unknown")
+    reason = ready_cond.get("reason", "")
+    message = ready_cond.get("message", "")
+    reconciling = conditions.get("Reconciling", {}).get("status", "") == "True"
+
+    if reconciling:
+        status = "Reconciling"
+    elif ready == "True":
+        status = "Ready"
+    elif ready == "False":
+        status = reason or "NotReady"
+    else:
+        status = "Unknown"
+
+    if len(message) > 60:
+        message = message[:57] + "..."
+
+    return {
+        "namespace": item["metadata"].get("namespace", "-"),
+        "name": item["metadata"]["name"],
+        "ready": ready == "True" and not reconciling,
+        "status": status,
+        "message": message,
+    }
+
+
+def build_table(items: list[dict], show_all: bool) -> Table | Text:
+    parsed = [parse_item(item) for item in items]
+    ready_count = sum(1 for p in parsed if p["ready"])
+    pending_count = len(parsed) - ready_count
+    total = len(parsed)
+
+    # Get current kube context and last applied revision
+    import re
+    try:
+        ctx = subprocess.run(
+            ["kubectl", "config", "current-context"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        # Shorten AWS EKS ARNs: arn:aws:eks:...:cluster/name -> aws:name
+        m = re.match(r"arn:aws:eks:[^:]+:[^:]+:cluster/(.+)", ctx)
+        if m:
+            ctx = f"aws:{m.group(1)}"
+    except Exception:
+        ctx = "unknown"
+
+    last_rev = ""
+    for p in parsed:
+        # Find most recent revision from any item
+        break
+    # Get from raw items instead
+    for item in items:
+        rev = item.get("status", {}).get("lastAppliedRevision", "")
+        if rev:
+            # Take just the short hash
+            if "/" in rev:
+                rev = rev.rsplit("/", 1)[-1]
+            if len(rev) > 7:
+                rev = rev[:7]
+            last_rev = rev
+            break
+
+    ctx_str = f" | {ctx}" if ctx else ""
+    rev_str = f" | {last_rev}" if last_rev else ""
+    summary = f"{ready_count} ready, {pending_count} pending ({total} total){ctx_str}{rev_str}"
+    summary_style = "green" if pending_count == 0 else "yellow"
+
+    rows = parsed if show_all else [p for p in parsed if not p["ready"]]
+
+    if not rows:
+        return Text(summary, style=summary_style)
+
+    table = Table(
+        caption=summary,
+        caption_style=summary_style,
+        show_edge=False,
+        pad_edge=False,
+    )
+    table.add_column("NAMESPACE", style="dim")
+    table.add_column("NAME")
+    table.add_column("READY")
+    table.add_column("STATUS")
+    table.add_column("MESSAGE", style="dim")
+
+    for row in rows:
+        if row["status"] == "Reconciling":
+            style = "yellow"
+        elif row["status"] == "Ready":
+            style = "green"
+        else:
+            style = "red"
+
+        ready_text = Text("True" if row["ready"] else "False", style=style)
+        status_text = Text(row["status"], style=style)
+
+        table.add_row(
+            row["namespace"],
+            Text(row["name"], style=style),
+            ready_text,
+            status_text,
+            row["message"],
+        )
+
+    return table
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Show reconciling Flux Kustomizations")
+    parser.add_argument("-w", "--watch", action="store_true", help="Watch mode")
+    parser.add_argument("-i", "--interval", type=int, default=5, help="Refresh interval (seconds)")
+    parser.add_argument("-n", "--namespace", help="Filter by namespace")
+    parser.add_argument("-a", "--all", action="store_true", dest="show_all", help="Show all including ready")
+    args = parser.parse_args()
+
+    console = Console()
+
+    if args.watch:
+        with Live(console=console, refresh_per_second=1) as live:
+            while True:
+                items = get_kustomizations(args.namespace)
+                table = build_table(items, args.show_all)
+                live.update(table)
+                time.sleep(args.interval)
+    else:
+        items = get_kustomizations(args.namespace)
+        if not items:
+            console.print("[red]Failed to get kustomizations. Is kubectl configured?[/]")
+            sys.exit(1)
+        table = build_table(items, args.show_all)
+        console.print(table)
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+    main()
