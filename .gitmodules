@@ -67,3 +67,12 @@
 [submodule "home/dot_config/nvim/pack/plugins/start/external_external_solarized8.vim"]
 	path = home/dot_config/nvim/pack/plugins/start/external_solarized8.vim
 	url = git@github.com:lifepillar/vim-solarized8.git
+[submodule "home/dot_config/nvim/vim-plug"]
+	path = home/dot_config/nvim/vim-plug
+	url = https://github.com/junegunn/vim-plug.git
+[submodule "home/dot_config/nvim/pack/plugins/start/external_nvim-lspconfig"]
+	path = home/dot_config/nvim/pack/plugins/start/external_nvim-lspconfig
+	url = https://github.com/neovim/nvim-lspconfig
+[submodule "home/dot_config/nvim/pack/plugins/start/external_solarized8.vim"]
+	path = home/dot_config/nvim/pack/plugins/start/external_solarized8.vim
+	url = git@github.com:lifepillar/vim-solarized8.git
