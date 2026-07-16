@@ -38,7 +38,9 @@ if [ "$(uname -s)" == "Darwin" ]; then
   # Disable touch-style scrolling
   defaults write NSGlobalDomain com.apple.swipescrolldirection -bool false
   # Disable the “Are you sure you want to open this application?” dialog
-  defaults write com.apple.LaunchServices LSQuarantine -bool false
+  # corp laptop rule :(
+  #defaults write com.apple.LaunchServices LSQuarantine -bool false || true 
+
   # Disable itunes / apple music
   # launchctl unload -w /System/Library/LaunchAgents/com.apple.rcd.plist || true
   # Kill useless
