@@ -1,0 +1,811 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "rich",
+# ]
+# ///
+"""
+my-issues - show your open Linear issues, GitLab MRs, and GitHub PRs.
+
+Requires:
+    LINEAR_API_KEY   - Linear personal API key
+    GITLAB_TOKEN     - GitLab personal access token (optional)
+    GITLAB_HOST      - GitLab host (default: code.roche.com)
+    GITHUB_TOKEN     - GitHub personal access token (optional)
+                       (also reads GITHUB_TOKEN_PERSONAL)
+
+Usage:
+    my-issues                Show all open issues + MRs/PRs
+    my-issues -t TEAM        Filter by team name or key
+    my-issues -w             Watch mode (refresh every 60s)
+    my-issues -w -i 30       Watch with custom interval
+"""
+
+import argparse
+import json
+import os
+import signal
+import sys
+import time
+import urllib.request
+import urllib.error
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from rich.console import Console
+from rich.live import Live
+from rich.table import Table
+
+signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+
+LINEAR_API = "https://api.linear.app/graphql"
+
+# Status types in display order
+STATUS_ORDER = {
+    "urgent": 0,
+    "started": 1,
+    "unstarted": 2,
+    "triage": 3,
+    "backlog": 4,
+}
+
+STATUS_COLORS = {
+    "urgent": "red bold",
+    "started": "yellow",
+    "unstarted": "blue",
+    "triage": "magenta",
+    "backlog": "dim",
+}
+
+PRIORITY_LABELS = {
+    0: "",
+    1: "[red]Urgent[/]",
+    2: "[yellow]High[/]",
+    3: "Medium",
+    4: "[dim]Low[/]",
+}
+
+STATUS_NAME_ORDER = {
+    "In Progress": 0,
+    "In Review": 1,
+}
+
+QUERY = """
+query($after: String) {
+  viewer {
+    assignedIssues(
+      filter: {
+        state: { type: { nin: ["completed", "canceled"] } }
+      }
+      first: 100
+      after: $after
+      orderBy: updatedAt
+    ) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        identifier
+        title
+        priority
+        branchName
+        state { name type }
+        team { name key }
+        labels { nodes { name } }
+        project { name }
+        updatedAt
+        url
+      }
+    }
+  }
+}
+"""
+
+
+# --- Linear ---
+
+def query_linear(api_key: str, query: str, variables: dict | None = None) -> dict:
+    payload = json.dumps({"query": query, "variables": variables or {}}).encode()
+    req = urllib.request.Request(
+        LINEAR_API,
+        data=payload,
+        headers={
+            "Authorization": api_key,
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        print(f"Linear API error: {e.code} {body}", file=sys.stderr)
+        sys.exit(1)
+
+
+def fetch_all_issues(api_key: str) -> list[dict]:
+    issues = []
+    cursor = None
+    while True:
+        variables = {}
+        if cursor:
+            variables["after"] = cursor
+        data = query_linear(api_key, QUERY, variables)
+        assigned = data["data"]["viewer"]["assignedIssues"]
+        issues.extend(assigned["nodes"])
+        if assigned["pageInfo"]["hasNextPage"]:
+            cursor = assigned["pageInfo"]["endCursor"]
+        else:
+            break
+    return issues
+
+
+# --- GitLab ---
+
+def gitlab_request(host: str, token: str, path: str, params: dict | None = None) -> list | dict:
+    url = f"https://{host}/api/v4{path}"
+    if params:
+        qs = "&".join(f"{k}={urllib.request.quote(str(v))}" for k, v in params.items())
+        url = f"{url}?{qs}"
+
+    req = urllib.request.Request(url, headers={"PRIVATE-TOKEN": token})
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            print("GitLab auth failed. Check GITLAB_TOKEN.", file=sys.stderr)
+        return []
+
+
+def _fetch_gitlab_mrs(host: str, token: str, scope: str) -> list[dict]:
+    mrs = []
+    page = 1
+    while True:
+        data = gitlab_request(host, token, "/merge_requests", {
+            "state": "opened",
+            "scope": scope,
+            "per_page": 100,
+            "page": page,
+        })
+        if not data:
+            break
+        mrs.extend(data)
+        if len(data) < 100:
+            break
+        page += 1
+    return mrs
+
+
+def fetch_my_mrs(host: str, token: str) -> list[dict]:
+    authored = _fetch_gitlab_mrs(host, token, "created_by_me")
+    reviewing = _fetch_gitlab_mrs(host, token, "assigned_to_me")
+    seen = {mr["id"] for mr in authored}
+    for mr in reviewing:
+        if mr["id"] not in seen:
+            authored.append(mr)
+            seen.add(mr["id"])
+    return authored
+
+
+def fetch_mr_approvals(host: str, token: str, project_id: int, mr_iid: int) -> dict:
+    return gitlab_request(
+        host, token,
+        f"/projects/{project_id}/merge_requests/{mr_iid}/approvals",
+    )
+
+
+def parse_mr_info(mr: dict, approvals: dict | list) -> dict:
+    pipeline = mr.get("pipeline") or {}
+    pipeline_status = pipeline.get("status", "")
+
+    approved_by = approvals.get("approved_by", []) if isinstance(approvals, dict) else []
+    approvals_required = approvals.get("approvals_required", 0) if isinstance(approvals, dict) else 0
+
+    refs = mr.get("references", {})
+    full_ref = refs.get("full", "")
+    project_path = full_ref.rsplit("!", 1)[0] if "!" in full_ref else ""
+
+    # Short project name: last segment of path
+    short_project = project_path.rsplit("/", 1)[-1] if "/" in project_path else project_path
+
+    # MR status: has reviewers = In Review, otherwise Open
+    reviewers = mr.get("reviewers") or []
+    has_reviewers = len(reviewers) > 0
+
+    return {
+        "branch": mr.get("source_branch", ""),
+        "title": mr.get("title", ""),
+        "iid": mr["iid"],
+        "project_path": project_path,
+        "short_project": short_project,
+        "url": mr.get("web_url", ""),
+        "draft": mr.get("draft", False),
+        "has_reviewers": has_reviewers,
+        "pipeline_status": pipeline_status,
+        "approved_count": len(approved_by),
+        "approvals_required": approvals_required,
+        "updated_at": mr.get("updated_at", ""),
+    }
+
+
+def fetch_all_mr_info(host: str, token: str, mrs: list[dict]) -> list[dict]:
+    """Fetch approvals for all MRs in parallel, then build mr_info list."""
+    if not mrs:
+        return []
+
+    # Fetch all approvals concurrently
+    approval_map: dict[int, dict | list] = {}
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futures = {
+            pool.submit(fetch_mr_approvals, host, token, mr["project_id"], mr["iid"]): mr["iid"]
+            for mr in mrs
+        }
+        for future in as_completed(futures):
+            iid = futures[future]
+            try:
+                approval_map[iid] = future.result()
+            except Exception:
+                approval_map[iid] = {}
+
+    return [parse_mr_info(mr, approval_map.get(mr["iid"], {})) for mr in mrs]
+
+
+# --- GitHub ---
+
+GITHUB_API = "https://api.github.com"
+
+
+def github_request(token: str, path: str, params: dict | None = None) -> list | dict:
+    url = f"{GITHUB_API}{path}"
+    if params:
+        qs = "&".join(f"{k}={urllib.request.quote(str(v))}" for k, v in params.items())
+        url = f"{url}?{qs}"
+
+    req = urllib.request.Request(url, headers={
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+    })
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            print("GitHub auth failed. Check GITHUB_TOKEN.", file=sys.stderr)
+        return []
+
+
+def fetch_my_github_prs(token: str) -> list[dict]:
+    """Fetch open PRs authored by or requesting review from the authenticated user."""
+    authored = github_request(token, "/search/issues", {
+        "q": "is:pr is:open author:@me archived:false",
+        "per_page": "100",
+    })
+    reviewing = github_request(token, "/search/issues", {
+        "q": "is:pr is:open review-requested:@me archived:false",
+        "per_page": "100",
+    })
+    items = (authored if isinstance(authored, dict) else {}).get("items", [])
+    review_items = (reviewing if isinstance(reviewing, dict) else {}).get("items", [])
+    seen = {i["id"] for i in items}
+    for i in review_items:
+        if i["id"] not in seen:
+            items.append(i)
+            seen.add(i["id"])
+    return items
+
+
+def fetch_github_pr_reviews(token: str, repo: str, pr_number: int) -> list[dict]:
+    data = github_request(token, f"/repos/{repo}/pulls/{pr_number}/reviews")
+    return data if isinstance(data, list) else []
+
+
+def fetch_github_pr_detail(token: str, repo: str, pr_number: int) -> dict:
+    """Fetch full PR detail (includes draft, head.ref, etc.)."""
+    data = github_request(token, f"/repos/{repo}/pulls/{pr_number}")
+    return data if isinstance(data, dict) else {}
+
+
+def parse_github_pr_info(pr_detail: dict, reviews: list[dict]) -> dict:
+    """Normalize a GitHub PR into the same mr_info shape as GitLab."""
+    repo_full = pr_detail.get("base", {}).get("repo", {}).get("full_name", "")
+    short_project = repo_full.rsplit("/", 1)[-1] if "/" in repo_full else repo_full
+
+    # Count unique approvals
+    approvers: set[str] = set()
+    for r in reviews:
+        if r.get("state") == "APPROVED":
+            user = r.get("user", {}).get("login", "")
+            if user:
+                approvers.add(user)
+
+    reviewers = pr_detail.get("requested_reviewers") or []
+    has_reviewers = len(reviewers) > 0 or len(approvers) > 0
+
+    # Map GitHub check status to a pipeline-like status string
+    pipeline_status = ""
+    # We don't fetch check runs here to keep it fast; leave blank.
+
+    return {
+        "branch": pr_detail.get("head", {}).get("ref", ""),
+        "title": pr_detail.get("title", ""),
+        "iid": pr_detail.get("number", 0),
+        "project_path": repo_full,
+        "short_project": short_project,
+        "url": pr_detail.get("html_url", ""),
+        "draft": pr_detail.get("draft", False),
+        "has_reviewers": has_reviewers,
+        "pipeline_status": pipeline_status,
+        "approved_count": len(approvers),
+        "approvals_required": 0,
+        "updated_at": pr_detail.get("updated_at", ""),
+        "source": "github",
+    }
+
+
+def fetch_all_github_pr_info(token: str, search_items: list[dict]) -> list[dict]:
+    """Fetch full detail + reviews for each PR in parallel, return mr_info list."""
+    if not search_items:
+        return []
+
+    # Extract repo and PR number from search results
+    pr_refs: list[tuple[str, int]] = []
+    for item in search_items:
+        pr_url = item.get("pull_request", {}).get("url", "")
+        # URL format: https://api.github.com/repos/{owner}/{repo}/pulls/{number}
+        if "/repos/" in pr_url and "/pulls/" in pr_url:
+            parts = pr_url.split("/repos/", 1)[1]
+            repo_and_num = parts.rsplit("/pulls/", 1)
+            if len(repo_and_num) == 2:
+                pr_refs.append((repo_and_num[0], int(repo_and_num[1])))
+
+    if not pr_refs:
+        return []
+
+    details: dict[int, dict] = {}
+    review_map: dict[int, list[dict]] = {}
+
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        detail_futures = {
+            pool.submit(fetch_github_pr_detail, token, repo, num): (repo, num)
+            for repo, num in pr_refs
+        }
+        review_futures = {
+            pool.submit(fetch_github_pr_reviews, token, repo, num): (repo, num)
+            for repo, num in pr_refs
+        }
+
+        for future in as_completed(detail_futures):
+            _, num = detail_futures[future]
+            try:
+                details[num] = future.result()
+            except Exception:
+                details[num] = {}
+
+        for future in as_completed(review_futures):
+            _, num = review_futures[future]
+            try:
+                review_map[num] = future.result()
+            except Exception:
+                review_map[num] = []
+
+    result = []
+    for repo, num in pr_refs:
+        detail = details.get(num, {})
+        reviews = review_map.get(num, [])
+        if detail:
+            result.append(parse_github_pr_info(detail, reviews))
+    return result
+
+
+# --- Display ---
+
+def format_pipeline(status: str) -> str:
+    status_map = {
+        "success": "[green]CI:passed[/]",
+        "passed": "[green]CI:passed[/]",
+        "failed": "[red]CI:failed[/]",
+        "running": "[yellow]CI:running[/]",
+        "pending": "[yellow]CI:pending[/]",
+        "canceled": "[dim]CI:canceled[/]",
+        "skipped": "[dim]CI:skipped[/]",
+        "created": "[dim]CI:created[/]",
+    }
+    return status_map.get(status, f"[dim]CI:{status}[/]" if status else "")
+
+
+def format_approvals(approved: int, required: int) -> str:
+    if required == 0 and approved == 0:
+        return ""
+    if approved >= required and required > 0:
+        return f"[green]{approved}/{required}[/]"
+    return f"[yellow]{approved}/{required}[/]"
+
+
+def filter_issues(issues: list[dict], team: str | None) -> list[dict]:
+    if not team:
+        return issues
+    team_lower = team.lower()
+    return [
+        i for i in issues
+        if i["team"]["name"].lower() == team_lower
+        or i["team"]["key"].lower() == team_lower
+    ]
+
+
+def sort_key(issue: dict) -> tuple:
+    status_type = issue["state"]["type"]
+    status_name = issue["state"]["name"]
+    type_order = STATUS_ORDER.get(status_type, 99)
+    name_order = STATUS_NAME_ORDER.get(status_name, 50)
+    priority = issue.get("priority") or 99
+    return (type_order, name_order, priority)
+
+
+def time_ago(iso_str: str) -> str:
+    clean = iso_str.split(".")[0].split("+")[0]
+    try:
+        updated = time.mktime(time.strptime(clean[:19], "%Y-%m-%dT%H:%M:%S"))
+    except ValueError:
+        return "?"
+    delta = time.time() - updated
+    if delta < 3600:
+        return f"{int(delta / 60)}m"
+    if delta < 86400:
+        return f"{int(delta / 3600)}h"
+    return f"{int(delta / 86400)}d"
+
+
+def build_meta(issue: dict, mr_infos: list[dict] | None = None) -> str:
+    parts = []
+
+    pri = issue.get("priority") or 0
+    pri_str = PRIORITY_LABELS.get(pri, "")
+    if pri_str:
+        parts.append(pri_str)
+
+    labels = issue.get("labels", {}).get("nodes", [])
+    for label in labels:
+        parts.append(f"[magenta]\\[{label['name']}][/]")
+
+    if mr_infos:
+        for mr_info in mr_infos:
+            mr_parts = []
+            ci = format_pipeline(mr_info["pipeline_status"])
+            if ci:
+                mr_parts.append(ci)
+            approvals = format_approvals(mr_info["approved_count"], mr_info["approvals_required"])
+            if approvals:
+                mr_parts.append(approvals)
+            if mr_info["draft"]:
+                mr_parts.append("[dim]draft[/]")
+            if mr_parts:
+                parts.extend(mr_parts)
+
+    parts.append(f"[dim]{time_ago(issue['updatedAt'])}[/]")
+
+    return " ".join(parts)
+
+
+def build_mr_meta(mr_info: dict) -> str:
+    parts = []
+
+    ci = format_pipeline(mr_info["pipeline_status"])
+    if ci:
+        parts.append(ci)
+    approvals = format_approvals(mr_info["approved_count"], mr_info["approvals_required"])
+    if approvals:
+        parts.append(approvals)
+    if mr_info["draft"]:
+        parts.append("[dim]draft[/]")
+    if mr_info["updated_at"]:
+        parts.append(f"[dim]{time_ago(mr_info['updated_at'])}[/]")
+
+    return " ".join(parts)
+
+
+def build_table(
+    issues: list[dict],
+    mr_by_issue: dict[str, list[dict]],
+    uncorrelated_mrs: list[dict],
+) -> Table:
+    table = Table(show_edge=False, pad_edge=False, expand=True)
+    table.add_column("ID", style="cyan", no_wrap=True)
+    table.add_column("Status", no_wrap=True)
+    table.add_column("Title", ratio=3)
+    table.add_column("", no_wrap=True, justify="right")
+
+    # Build unified row list: (sort_tuple, status_name, row_data)
+    rows: list[tuple] = []
+
+    for issue in issues:
+        status_name = issue["state"]["name"]
+        sk = sort_key(issue)
+        mr_infos = mr_by_issue.get(issue["identifier"])
+        status_type = issue["state"]["type"]
+        color = STATUS_COLORS.get(status_type, "")
+
+        rows.append((sk, status_name, (
+            issue["identifier"],
+            f"[{color}]{status_name}[/]" if color else status_name,
+            issue["title"],
+            build_meta(issue, mr_infos),
+        )))
+
+    for mr_info in uncorrelated_mrs:
+        sep = "#" if mr_info.get("source") == "github" else "!"
+        ref = f"{mr_info['short_project']}{sep}{mr_info['iid']}"
+        if mr_info["has_reviewers"]:
+            # Sort with "In Review" issues
+            status_name = "In Review"
+            sk = (STATUS_ORDER["started"], STATUS_NAME_ORDER["In Review"], 50)
+            status_display = "[yellow]In Review[/]"
+        else:
+            # Sort with "In Progress" issues
+            status_name = "In Progress"
+            sk = (STATUS_ORDER["started"], STATUS_NAME_ORDER["In Progress"], 50)
+            status_display = "[yellow]Open[/]"
+
+        rows.append((sk, status_name, (
+            f"[green]{ref}[/]",
+            status_display,
+            mr_info["title"],
+            build_mr_meta(mr_info),
+        )))
+
+    rows.sort(key=lambda r: r[0])
+
+    current_status = None
+    for _, status_name, row_data in rows:
+        if status_name != current_status and current_status is not None:
+            table.add_section()
+        current_status = status_name
+        table.add_row(*row_data)
+
+    return table
+
+
+def build_data(
+    api_key: str,
+    gitlab_host: str | None,
+    gitlab_token: str | None,
+    github_token: str | None,
+    team: str | None,
+    debug: bool = False,
+) -> dict:
+    """Fetch and correlate all data, return structured dict."""
+    issues: list[dict] = []
+    raw_gitlab_mrs: list[dict] = []
+    raw_github_prs: list[dict] = []
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        issue_future = pool.submit(fetch_all_issues, api_key)
+        gl_future = None
+        gh_future = None
+        if gitlab_host and gitlab_token:
+            gl_future = pool.submit(fetch_my_mrs, gitlab_host, gitlab_token)
+        if github_token:
+            gh_future = pool.submit(fetch_my_github_prs, github_token)
+
+        issues = issue_future.result()
+        if gl_future:
+            raw_gitlab_mrs = gl_future.result()
+        if gh_future:
+            raw_github_prs = gh_future.result()
+
+    issues = filter_issues(issues, team)
+
+    issue_branches = {i.get("branchName") or "": i for i in issues if i.get("branchName")}
+    issue_by_prefix = {i["identifier"].lower(): i for i in issues}
+
+    # Build unified mr_info list from both platforms
+    all_mr_info: list[dict] = []
+    if raw_gitlab_mrs and gitlab_host and gitlab_token:
+        all_mr_info.extend(fetch_all_mr_info(gitlab_host, gitlab_token, raw_gitlab_mrs))
+    if raw_github_prs and github_token:
+        all_mr_info.extend(fetch_all_github_pr_info(github_token, raw_github_prs))
+
+    mr_by_issue: dict[str, list[dict]] = {}
+    uncorrelated_mrs: list[dict] = []
+
+    for mr_info in all_mr_info:
+        branch = mr_info["branch"]
+        title = mr_info["title"]
+        matched = False
+
+        if branch in issue_branches:
+            issue_id = issue_branches[branch]["identifier"]
+            mr_by_issue.setdefault(issue_id, []).append(mr_info)
+            matched = True
+        else:
+            for prefix, issue in issue_by_prefix.items():
+                if branch.startswith(prefix + "-") or branch == prefix:
+                    mr_by_issue.setdefault(issue["identifier"], []).append(mr_info)
+                    matched = True
+                    break
+
+        if not matched:
+            for identifier in issue_by_prefix:
+                if identifier in title.lower():
+                    real_id = issue_by_prefix[identifier]["identifier"]
+                    mr_by_issue.setdefault(real_id, []).append(mr_info)
+                    matched = True
+                    break
+
+        if not matched:
+            uncorrelated_mrs.append(mr_info)
+
+    if debug:
+        sep_fn = lambda m: "#" if m.get("source") == "github" else "!"
+        print(f"--- Debug: Correlated {len(mr_by_issue)} issues, uncorrelated {len(uncorrelated_mrs)} MRs/PRs ---", file=sys.stderr)
+        for issue_id, mrs in mr_by_issue.items():
+            for m in mrs:
+                print(f"  {issue_id} <- {m['project_path']}{sep_fn(m)}{m['iid']} ({m['branch']})", file=sys.stderr)
+        for m in uncorrelated_mrs:
+            print(f"  uncorrelated: {m['project_path']}{sep_fn(m)}{m['iid']} ({m['branch']}) \"{m['title']}\"", file=sys.stderr)
+
+    def _mr_ref(m: dict) -> str:
+        sep = "#" if m.get("source") == "github" else "!"
+        return f"{m['short_project']}{sep}{m['iid']}"
+
+    # Build JSON-serializable issue list
+    json_issues = []
+    for issue in issues:
+        mrs = mr_by_issue.get(issue["identifier"], [])
+        json_issues.append({
+            "id": issue["identifier"],
+            "title": issue["title"],
+            "status": issue["state"]["name"],
+            "status_type": issue["state"]["type"],
+            "priority": issue.get("priority") or 0,
+            "labels": [l["name"] for l in issue.get("labels", {}).get("nodes", [])],
+            "updated_at": issue.get("updatedAt", ""),
+            "url": issue.get("url", ""),
+            "branch_name": issue.get("branchName") or "",
+            "mrs": [
+                {
+                    "ref": _mr_ref(m),
+                    "branch": m["branch"],
+                    "pipeline": m["pipeline_status"],
+                    "approvals": f"{m['approved_count']}/{m['approvals_required']}",
+                    "draft": m["draft"],
+                    "has_reviewers": m["has_reviewers"],
+                    "url": m["url"],
+                    "source": m.get("source", "gitlab"),
+                }
+                for m in mrs
+            ],
+        })
+
+    json_uncorrelated = [
+        {
+            "ref": _mr_ref(m),
+            "title": m["title"],
+            "branch": m["branch"],
+            "pipeline": m["pipeline_status"],
+            "approvals": f"{m['approved_count']}/{m['approvals_required']}",
+            "draft": m["draft"],
+            "has_reviewers": m["has_reviewers"],
+            "url": m["url"],
+            "updated_at": m["updated_at"],
+            "source": m.get("source", "gitlab"),
+        }
+        for m in uncorrelated_mrs
+    ]
+
+    return {
+        "issues": json_issues,
+        "uncorrelated_mrs": json_uncorrelated,
+    }
+
+
+def build_output(
+    api_key: str,
+    gitlab_host: str | None,
+    gitlab_token: str | None,
+    github_token: str | None,
+    team: str | None,
+    debug: bool = False,
+) -> Table | str:
+    data = build_data(api_key, gitlab_host, gitlab_token, github_token, team, debug)
+
+    def _split_ref(ref: str, source: str) -> tuple[str, int]:
+        sep = "#" if source == "github" else "!"
+        parts = ref.rsplit(sep, 1)
+        return parts[0], int(parts[1])
+
+    # Reconstruct the structures build_table expects
+    issues = []
+    mr_by_issue: dict[str, list[dict]] = {}
+    for item in data["issues"]:
+        issue = {
+            "identifier": item["id"],
+            "title": item["title"],
+            "state": {"name": item["status"], "type": item["status_type"]},
+            "priority": item["priority"],
+            "labels": {"nodes": [{"name": l} for l in item["labels"]]},
+            "updatedAt": item["updated_at"],
+        }
+        issues.append(issue)
+        if item["mrs"]:
+            mr_by_issue[item["id"]] = [
+                {
+                    "pipeline_status": m["pipeline"],
+                    "approved_count": int(m["approvals"].split("/")[0]),
+                    "approvals_required": int(m["approvals"].split("/")[1]),
+                    "draft": m["draft"],
+                    "has_reviewers": m["has_reviewers"],
+                    "short_project": _split_ref(m["ref"], m.get("source", "gitlab"))[0],
+                    "iid": _split_ref(m["ref"], m.get("source", "gitlab"))[1],
+                    "source": m.get("source", "gitlab"),
+                }
+                for m in item["mrs"]
+            ]
+
+    uncorrelated_mrs = [
+        {
+            "short_project": _split_ref(m["ref"], m.get("source", "gitlab"))[0],
+            "iid": _split_ref(m["ref"], m.get("source", "gitlab"))[1],
+            "title": m["title"],
+            "pipeline_status": m["pipeline"],
+            "approved_count": int(m["approvals"].split("/")[0]),
+            "approvals_required": int(m["approvals"].split("/")[1]),
+            "draft": m["draft"],
+            "has_reviewers": m["has_reviewers"],
+            "updated_at": m["updated_at"],
+            "source": m.get("source", "gitlab"),
+        }
+        for m in data["uncorrelated_mrs"]
+    ]
+
+    if not issues and not uncorrelated_mrs:
+        return "No open issues or MRs/PRs found."
+
+    return build_table(issues, mr_by_issue, uncorrelated_mrs)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Show your open Linear issues, GitLab MRs, and GitHub PRs")
+    parser.add_argument("-t", "--team", help="Filter by team name or key")
+    parser.add_argument("-w", "--watch", action="store_true", help="Watch mode")
+    parser.add_argument("-i", "--interval", type=int, default=60, help="Refresh interval in seconds (default: 60)")
+    parser.add_argument("--json", action="store_true", help="Output structured JSON")
+    parser.add_argument("--debug", action="store_true", help="Print correlation debug info")
+    args = parser.parse_args()
+
+    api_key = os.environ.get("LINEAR_API_KEY")
+    if not api_key:
+        print("Set LINEAR_API_KEY (Settings > API > Personal API keys)", file=sys.stderr)
+        sys.exit(1)
+
+    gitlab_host = os.environ.get("GITLAB_HOST", "code.roche.com")
+    gitlab_token = os.environ.get("GITLAB_TOKEN")
+    github_token = os.environ.get("GITHUB_TOKEN_PERSONAL") or os.environ.get("GITHUB_TOKEN")
+
+    if not gitlab_token and not github_token:
+        print("Neither GITLAB_TOKEN nor GITHUB_TOKEN set — showing Linear issues only.", file=sys.stderr)
+
+    if args.json:
+        import json
+        data = build_data(api_key, gitlab_host, gitlab_token, github_token, args.team, args.debug)
+        print(json.dumps(data, indent=2))
+        return
+
+    console = Console()
+
+    if args.watch:
+        with Live(console=console, refresh_per_second=1) as live:
+            while True:
+                output = build_output(api_key, gitlab_host, gitlab_token, github_token, args.team, args.debug)
+                live.update(output)
+                time.sleep(args.interval)
+    else:
+        output = build_output(api_key, gitlab_host, gitlab_token, github_token, args.team, args.debug)
+        if isinstance(output, str):
+            console.print(output)
+        else:
+            console.print(output)
+
+
+if __name__ == "__main__":
+    main()
