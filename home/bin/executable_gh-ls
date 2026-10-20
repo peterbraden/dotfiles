@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+#
+# gh-ls - list files in a GitHub repository without cloning.
+#
+# Uses the GitHub Contents API to list directory contents.
+#
+# Requires:
+#   GITHUB_TOKEN_PERSONAL or GITHUB_TOKEN  - personal access token with repo scope
+#
+# Usage:
+#   gh-ls <owner/repo> [path] [options]
+#
+# Examples:
+#   gh-ls myorg/myrepo                    # list repo root
+#   gh-ls myorg/myrepo src                # list src/
+#   gh-ls myorg/myrepo --branch develop   # list on a branch
+#   gh-ls myorg/myrepo src -l             # long format (type, size, name)
+
+set -eu
+
+API="https://api.github.com"
+
+usage() {
+    cat <<EOF
+Usage: gh-ls <owner/repo> [path] [options]
+
+List files in a GitHub repository without cloning.
+
+Arguments:
+    owner/repo    GitHub repository (e.g. myorg/myrepo)
+    path          Directory path (default: repo root)
+
+Options:
+    --branch BRANCH   Branch or ref (default: repo's default branch)
+    -l                Long format (type, size, name)
+    -h, --help        Show this help
+EOF
+}
+
+die() { echo "gh-ls: $*" >&2; exit 1; }
+
+gh_api() {
+    local method="$1" endpoint="$2"
+    shift 2
+    local response http_code
+
+    response=$(curl -s -w "\n%{http_code}" \
+        -X "$method" \
+        -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+        -H "Accept: application/vnd.github+json" \
+        "$@" \
+        "${API}${endpoint}")
+
+    http_code=$(echo "$response" | tail -1)
+    body=$(echo "$response" | sed '$d')
+
+    if [[ "$http_code" -ge 400 ]]; then
+        local msg
+        msg=$(echo "$body" | jq -r '.message // empty' 2>/dev/null || true)
+        die "API ${method} ${endpoint} failed (HTTP ${http_code}): ${msg:-$body}"
+    fi
+
+    echo "$body"
+}
+
+# --- Parse arguments ---
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+[[ $# -lt 1 ]] && { usage >&2; exit 1; }
+
+repo="$1"; shift
+dirpath=""
+target_branch=""
+long_format=false
+
+# Next positional arg is the path (if it doesn't start with -)
+if [[ $# -gt 0 && "$1" != -* ]]; then
+    dirpath="$1"; shift
+fi
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --branch)      target_branch="$2"; shift ;;
+        -l)            long_format=true ;;
+        -h|--help)     usage; exit 0 ;;
+        *)             die "unknown option: $1" ;;
+    esac
+    shift
+done
+
+GITHUB_TOKEN="${GITHUB_TOKEN_PERSONAL:-${GITHUB_TOKEN:-}}"
+[[ -n "$GITHUB_TOKEN" ]] || die "set GITHUB_TOKEN_PERSONAL or GITHUB_TOKEN (personal access token with repo scope)"
+[[ "$repo" == */* ]] || die "repo must be owner/repo format"
+
+# --- Build API URL ---
+
+if [[ -n "$dirpath" ]]; then
+    endpoint="/repos/${repo}/contents/${dirpath}"
+else
+    endpoint="/repos/${repo}/contents"
+fi
+query=""
+if [[ -n "$target_branch" ]]; then
+    query="?ref=${target_branch}"
+fi
+
+result=$(gh_api GET "${endpoint}${query}")
+
+# --- Format output ---
+
+if [[ "$long_format" == true ]]; then
+    echo "$result" | jq -r '.[] | [.type, (if .size then (.size | tostring) else "-" end), .name] | @tsv' | column -t
+else
+    echo "$result" | jq -r '.[].name'
+fi
