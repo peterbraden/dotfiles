@@ -54,7 +54,6 @@ cmd "tmux-session" "Start or attach to a tmux session"
 
 section "Automation"
 cmd "llm" "Send a prompt to an LLM (wraps claude -p)"
-cmd "dump-roche-tokens" "Resolve 1Password tokens to ~/.roche-tokens"
 
 section "Remote files"
 cmd "gh-cat / gl-cat" "Print file contents from GitHub/GitLab"
