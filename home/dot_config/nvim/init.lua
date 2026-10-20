@@ -8,24 +8,27 @@ vim.opt.runtimepath:append(vim.fn.expand("~/.vim/bundle/ctrlp.vim"))
 vim.opt.runtimepath:append(vim.fn.expand("~/.vim/bundle/startify.vim"))
 vim.cmd("source " .. vim.fn.expand("~/.vimrc"))
 
--- nvim-treesitter main branch (needs nvim 0.12+ and tree-sitter-cli)
-local ts_languages = {
-  "c", "lua", "vim", "markdown", "markdown_inline",
-  "rust", "python", "hcl"
-}
-require'nvim-treesitter'.setup {
-  install_dir = vim.fn.stdpath('data') .. '/site',
-}
--- Asynchronous, and a no-op once the parsers are installed
-require'nvim-treesitter'.install(ts_languages)
+-- nvim-treesitter main branch (needs nvim 0.12+ and tree-sitter-cli).
+-- Skipped on older nvim (e.g. apt's) rather than erroring at startup.
+if vim.fn.has('nvim-0.12') == 1 then
+  local ts_languages = {
+    "c", "lua", "vim", "markdown", "markdown_inline",
+    "rust", "python", "hcl"
+  }
+  require'nvim-treesitter'.setup {
+    install_dir = vim.fn.stdpath('data') .. '/site',
+  }
+  -- Asynchronous, and a no-op once the parsers are installed
+  require'nvim-treesitter'.install(ts_languages)
 
--- Highlighting is Neovim's own; nvim-treesitter only provides parsers.
--- pcall: some filetypes have no parser, which is fine.
-vim.api.nvim_create_autocmd('FileType', {
-  callback = function(args)
-    pcall(vim.treesitter.start, args.buf)
-  end,
-})
+  -- Highlighting is Neovim's own; nvim-treesitter only provides parsers.
+  -- pcall: some filetypes have no parser, which is fine.
+  vim.api.nvim_create_autocmd('FileType', {
+    callback = function(args)
+      pcall(vim.treesitter.start, args.buf)
+    end,
+  })
+end
 
 vim.cmd.colorscheme "solarized8"
 
