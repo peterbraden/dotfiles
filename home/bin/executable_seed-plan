@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+#
+# seed-plan - create a plan.md in a directory from a task description.
+#
+# Only creates the file if it doesn't already exist.
+#
+# Usage:
+#   seed-plan <directory> <description>
+
+set -eu
+
+usage() {
+    echo "Usage: seed-plan <directory> <description>"
+}
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+[[ $# -lt 2 ]] && { usage >&2; exit 1; }
+
+DIRECTORY="$1"
+DESCRIPTION="$2"
+PLAN_FILE="$DIRECTORY/plan.md"
+
+if [[ -f "$PLAN_FILE" ]]; then
+    echo "seed-plan: $PLAN_FILE already exists, skipping" >&2
+    exit 0
+fi
+
+cat > "$PLAN_FILE" <<EOF
+# $DESCRIPTION
+
+## Status
+
+In progress.
+
+## Plan
+
+- [ ] ...
+
+## Notes
+
+EOF
+
+echo "$PLAN_FILE" 
