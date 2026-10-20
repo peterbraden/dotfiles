@@ -71,9 +71,3 @@ vim.keymap.set("n", "gd", function()
   end,
   { noremap = true, silent = true }
 )
-
-vim.keymap.set("n", "gr", function()
-    require("telescope.builtin").live_grep()
-  end,
-  { noremap = true, silent = true }
-)
