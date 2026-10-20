@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+#
+# open-project - open or reattach to a tmux session for a project.
+#
+# Looks for the project in ~/repos/<name>. If the directory doesn't exist,
+# attempts to clone it from github. Creates a session with 3 windows.
+#
+# Usage:
+#   open-project <project>         Open or reattach
+#   open-project new <project> ["task description"]
+#                                  Clone a new copy as <project>-N, seed plan.md, and open it
+
+set -eu
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPOS_DIR="${REPOS_DIR:-$HOME/repos}"
+
+usage() {
+  echo "Usage: open-project <project>"
+  echo "       open-project new <project>"
+  exit 1
+}
+
+[ $# -lt 1 ] && usage
+
+# Handle 'new' subcommand
+if [ "$1" = "new" ]; then
+  [ $# -lt 2 ] && usage
+  PROJECT="$2"
+  TASK="${3:-}"
+
+  # Find next available suffix
+  N=1
+  while [ -d "$REPOS_DIR/${PROJECT}-${N}" ]; do
+    N=$((N + 1))
+  done
+
+  CLONE_DIR="${PROJECT}-${N}"
+  SESSION_NO_DOTS="${CLONE_DIR//./-}"
+
+  DIRECTORY=$("$SCRIPT_DIR/find-or-clone" "$PROJECT" "$CLONE_DIR")
+
+  if [ -n "$TASK" ]; then
+    "$SCRIPT_DIR/seed-plan" "$DIRECTORY" "$TASK" >/dev/null
+  fi
+
+  "$SCRIPT_DIR/tmux-session" "$SESSION_NO_DOTS" "$DIRECTORY"
+  exit 0
+fi
+
+SESSION="$1"
+SESSION_NO_DOTS="${SESSION//./-}"
+
+DIRECTORY=$("$SCRIPT_DIR/find-or-clone" "$SESSION")
+
+"$SCRIPT_DIR/tmux-session" "$SESSION_NO_DOTS" "$DIRECTORY"
