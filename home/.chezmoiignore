@@ -4,3 +4,9 @@
 {{ if not (stat (joinPath .chezmoi.homeDir ".mutt/fastmail.account")) }}
 .muttrc
 {{ end }}
+
+# vdirsyncer only syncs the work calendar
+{{ if not .work }}
+.config/vdirsyncer
+bin/roche-cal-url
+{{ end }}

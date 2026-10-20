@@ -5,11 +5,13 @@ path = {{ .chezmoi.homeDir }}/.local/share/khal/home
 type = calendar
 
 
+{{- if .work }}
 [[roche]]
 path = {{ .chezmoi.homeDir }}/.local/share/khal/roche
 type = calendar
 # Synced one way from an http feed; local edits would be lost
 readonly = True
+{{- end }}
 
 
 [locale]

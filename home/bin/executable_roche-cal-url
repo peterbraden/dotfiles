@@ -1,0 +1,5 @@
+#!/bin/sh
+# Prints the Roche calendar feed URL from 1Password, for vdirsyncer's url.fetch.
+# A helper because vdirsyncer normalises command arguments like paths, which
+# turns op:// into op:/. The stored value is wrapped in quotes, so strip them.
+op read --account my.1password.eu "op://Personal/Roche/cal-url" | tr -d '"'

@@ -13,4 +13,5 @@ fileext = ".ics"
 
 [storage khal_roche_remote]
 type = "http"
-url = {{ onepasswordRead  "op://Personal/Roche/cal-url" }} 
+# Read from 1Password at sync time, so chezmoi apply never needs 1Password
+url.fetch = ["command", "{{ .chezmoi.homeDir }}/bin/roche-cal-url"]
