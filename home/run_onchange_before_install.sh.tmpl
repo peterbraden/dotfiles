@@ -2,6 +2,8 @@
 echo "# Running peterbraden/dotfiles install.sh"
 
 mkdir -p ~/.local/bin
+# khal errors if a configured calendar directory is missing
+mkdir -p ~/.local/share/khal/home
 
 # OSX
 if [ "$(uname -s)" == "Darwin" ]; then
