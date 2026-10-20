@@ -1,0 +1,465 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""
+pong - play pong while waiting for something to finish.
+
+Controls:
+    Up / Down:  Move paddle
+    P:          Pause / unpause
+    Q:          Quit
+
+Usage:
+    pong                                    Just play
+    pong --wait-for "make test"             Play until command finishes
+    pong --wait-for "kubectl rollout ..."   Play while waiting for rollout
+"""
+
+import argparse
+import curses
+import math
+import random
+import signal
+import subprocess
+import sys
+import threading
+import time
+
+signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+
+PADDLE_HEIGHT = 5
+PADDLE_OFFSET = 2
+BALL_CHAR = "●"
+WINNING_SCORE = 11
+CELEBRATION_DURATION = 6.0
+
+SPARK_CHARS = ["*", "✦", "✧", "◆", "◇", "●", "○", "★", "☆", "✶", "✴", "❋"]
+BURST_CHARS = ["█", "▓", "▒", "░", "✦", "★", "●", "◆"]
+
+
+def clamp(val, lo, hi):
+    return max(lo, min(hi, val))
+
+
+# --- Background job ---
+
+class BackgroundJob:
+    """Run a shell command in a thread, track completion and exit code."""
+
+    def __init__(self, cmd: str):
+        self.cmd = cmd
+        self.done = False
+        self.success = False
+        self.returncode = -1
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+
+    def _run(self):
+        try:
+            result = subprocess.run(
+                self.cmd, shell=True,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            self.returncode = result.returncode
+            self.success = result.returncode == 0
+        except Exception:
+            self.success = False
+            self.returncode = 1
+        finally:
+            self.done = True
+
+
+# --- Fireworks ---
+
+class Particle:
+    __slots__ = ("x", "y", "vx", "vy", "char", "color", "life", "max_life")
+
+    def __init__(self, x, y, vx, vy, char, color, life):
+        self.x = x
+        self.y = y
+        self.vx = vx
+        self.vy = vy
+        self.char = char
+        self.color = color
+        self.life = life
+        self.max_life = life
+
+
+def make_burst(cx, cy, color):
+    """Create a ring of particles expanding from a center point."""
+    particles = []
+    count = random.randint(12, 24)
+    for i in range(count):
+        angle = (2 * math.pi * i) / count + random.uniform(-0.2, 0.2)
+        speed = random.uniform(0.3, 1.2)
+        vx = math.cos(angle) * speed * 2
+        vy = math.sin(angle) * speed
+        char = random.choice(BURST_CHARS)
+        life = random.uniform(0.6, 1.5)
+        particles.append(Particle(float(cx), float(cy), vx, vy, char, color, life))
+    return particles
+
+
+def celebration_loop(stdscr, message: str):
+    """Full-screen fireworks with a flashing color-cycling message."""
+    curses.curs_set(0)
+    stdscr.nodelay(True)
+    stdscr.timeout(40)
+
+    if curses.has_colors():
+        curses.start_color()
+        curses.use_default_colors()
+        color_list = [
+            curses.COLOR_RED, curses.COLOR_GREEN, curses.COLOR_YELLOW,
+            curses.COLOR_BLUE, curses.COLOR_MAGENTA, curses.COLOR_CYAN,
+            curses.COLOR_WHITE,
+        ]
+        for i, c in enumerate(color_list, 1):
+            curses.init_pair(i, c, -1)
+        num_colors = len(color_list)
+    else:
+        num_colors = 0
+
+    particles: list[Particle] = []
+    start = time.monotonic()
+    next_burst = start
+    flash_on = True
+    flash_toggle = start
+
+    while True:
+        now = time.monotonic()
+        elapsed = now - start
+
+        if elapsed > CELEBRATION_DURATION:
+            stdscr.nodelay(False)
+            stdscr.timeout(-1)
+            stdscr.getch()
+            return
+
+        key = stdscr.getch()
+        if key == ord("q") or key == ord("Q"):
+            return
+
+        height, width = stdscr.getmaxyx()
+
+        # Spawn bursts
+        if now >= next_burst:
+            cx = random.randint(4, max(5, width - 5))
+            cy = random.randint(2, max(3, height - 3))
+            color = random.randint(1, num_colors) if num_colors > 0 else 0
+            particles.extend(make_burst(cx, cy, color))
+            next_burst = now + random.uniform(0.15, 0.4)
+
+        # Update particles
+        dt = 0.04
+        alive = []
+        for p in particles:
+            p.life -= dt
+            if p.life <= 0:
+                continue
+            p.x += p.vx * dt * 8
+            p.y += p.vy * dt * 4
+            p.vy += 0.3 * dt
+            alive.append(p)
+        particles = alive
+
+        # Flash toggle
+        if now - flash_toggle > 0.3:
+            flash_on = not flash_on
+            flash_toggle = now
+
+        # Draw
+        stdscr.erase()
+
+        for p in particles:
+            px, py = int(p.x), int(p.y)
+            if 0 <= py < height and 0 <= px < width - 1:
+                fade = p.life / p.max_life
+                attr = curses.A_BOLD if fade > 0.5 else curses.A_DIM
+                if p.color > 0:
+                    attr |= curses.color_pair(p.color)
+                ch = p.char if fade > 0.3 else "·"
+                try:
+                    stdscr.addstr(py, px, ch, attr)
+                except curses.error:
+                    pass
+
+        # Message
+        if flash_on:
+            msg_y = height // 2
+            msg_x = max(0, (width - len(message)) // 2)
+            attr = curses.A_BOLD
+            if num_colors > 0:
+                ci = int(elapsed * 4) % num_colors + 1
+                attr |= curses.color_pair(ci)
+            try:
+                stdscr.addstr(msg_y, msg_x, message, attr)
+            except curses.error:
+                pass
+
+            # Sparkle border around message
+            for bx in range(max(0, msg_x - 3), min(width - 1, msg_x + len(message) + 3)):
+                for by in [msg_y - 2, msg_y + 2]:
+                    if 0 <= by < height:
+                        bc = random.choice(SPARK_CHARS)
+                        battr = curses.A_BOLD
+                        if num_colors > 0:
+                            battr |= curses.color_pair(random.randint(1, num_colors))
+                        try:
+                            stdscr.addstr(by, bx, bc, battr)
+                        except curses.error:
+                            pass
+
+        stdscr.refresh()
+
+
+# --- Drawing helpers ---
+
+def draw_paddle(win, x, y, height, max_y):
+    for i in range(height):
+        py = y + i
+        if 0 <= py < max_y:
+            try:
+                win.addch(py, x, "│")
+            except curses.error:
+                pass
+
+
+def draw_ball(win, x, y):
+    try:
+        win.addstr(y, x, BALL_CHAR)
+    except curses.error:
+        pass
+
+
+def draw_scores(win, width, score_l, score_r):
+    score_str = f" {score_l}  ┃  {score_r} "
+    x = max(0, (width - len(score_str)) // 2)
+    try:
+        win.addstr(0, x, score_str, curses.A_BOLD)
+    except curses.error:
+        pass
+
+
+def draw_center_line(win, height, width):
+    x = width // 2
+    for y in range(1, height):
+        ch = "┊" if y % 2 == 0 else " "
+        try:
+            win.addch(y, x, ch, curses.A_DIM)
+        except curses.error:
+            pass
+
+
+def draw_message(win, height, width, msg, attr=curses.A_BOLD):
+    y = height // 2
+    x = max(0, (width - len(msg)) // 2)
+    try:
+        win.addstr(y, x, msg, attr)
+    except curses.error:
+        pass
+
+
+def draw_status_bar(win, height, width, job: BackgroundJob | None):
+    """Show the waited-on command status at the bottom."""
+    if job is None:
+        return
+    dots = "." * (int(time.monotonic() * 2) % 4)
+    label = f" Waiting: {job.cmd}{dots} "
+    label = label[:width - 1]
+    x = max(0, (width - len(label)) // 2)
+    try:
+        win.addstr(height - 1, x, label, curses.A_DIM)
+    except curses.error:
+        pass
+
+
+# --- Game ---
+
+def game(stdscr, job: BackgroundJob | None):
+    curses.curs_set(0)
+    stdscr.nodelay(True)
+    stdscr.timeout(30)
+
+    if curses.has_colors():
+        curses.start_color()
+        curses.use_default_colors()
+
+    height, width = stdscr.getmaxyx()
+    if height < 10 or width < 30:
+        curses.endwin()
+        print("Terminal too small. Need at least 30x10.", file=sys.stderr)
+        sys.exit(1)
+
+    score_l = 0
+    score_r = 0
+    paused = False
+
+    def reset_ball(direction=1):
+        return {
+            "x": float(width // 2),
+            "y": float(height // 2),
+            "vx": 0.6 * direction,
+            "vy": 0.3 * (1 if time.time() % 2 > 1 else -1),
+        }
+
+    ball = reset_ball()
+    paddle_l = height // 2 - PADDLE_HEIGHT // 2
+    paddle_r = height // 2 - PADDLE_HEIGHT // 2
+    serve_pause = 0.0
+
+    while True:
+        height, width = stdscr.getmaxyx()
+        if height < 10 or width < 30:
+            stdscr.clear()
+            draw_message(stdscr, height, width, "Terminal too small!")
+            stdscr.refresh()
+            time.sleep(0.1)
+            continue
+
+        play_area_top = 1
+        play_area_bottom = height - 1 if job is None else height - 2
+
+        # Background job finished — celebrate or show failure
+        if job is not None and job.done:
+            if job.success:
+                celebration_loop(stdscr, "★  You Win!  ★")
+            else:
+                draw_message(stdscr, height, width,
+                             f"Job failed (exit {job.returncode}) — Q to quit")
+                stdscr.refresh()
+                stdscr.nodelay(False)
+                while stdscr.getch() not in (ord("q"), ord("Q")):
+                    pass
+            return
+
+        # Input
+        key = stdscr.getch()
+        if key == ord("q") or key == ord("Q"):
+            break
+        if key == ord("p") or key == ord("P"):
+            paused = not paused
+
+        if not paused:
+            # Player paddle (right side)
+            if key == curses.KEY_UP:
+                paddle_r = clamp(paddle_r - 2, play_area_top, play_area_bottom - PADDLE_HEIGHT)
+            elif key == curses.KEY_DOWN:
+                paddle_r = clamp(paddle_r + 2, play_area_top, play_area_bottom - PADDLE_HEIGHT)
+
+            # AI paddle (left side) — slow reactions, imprecise tracking
+            if random.random() < 0.4:
+                paddle_center = paddle_l + PADDLE_HEIGHT // 2
+                target = int(ball["y"]) + random.randint(-3, 3)
+                if paddle_center < target - 1:
+                    paddle_l = clamp(paddle_l + 1, play_area_top, play_area_bottom - PADDLE_HEIGHT)
+                elif paddle_center > target + 1:
+                    paddle_l = clamp(paddle_l - 1, play_area_top, play_area_bottom - PADDLE_HEIGHT)
+
+            # Ball movement
+            if serve_pause > 0:
+                serve_pause -= 0.03
+            else:
+                ball["x"] += ball["vx"]
+                ball["y"] += ball["vy"]
+
+                bx = int(ball["x"])
+                by = int(ball["y"])
+
+                # Wall bounce — enforce minimum vy so ball escapes
+                wall_bounced = False
+                if by <= play_area_top:
+                    ball["y"] = float(play_area_top + 1)
+                    ball["vy"] = max(abs(ball["vy"]), 0.3)
+                    wall_bounced = True
+                elif by >= play_area_bottom - 1:
+                    ball["y"] = float(play_area_bottom - 2)
+                    ball["vy"] = -max(abs(ball["vy"]), 0.3)
+                    wall_bounced = True
+
+                # Paddle collisions — skip if wall just bounced to
+                # prevent the paddle immediately overriding vy
+                if not wall_bounced:
+                    lx = PADDLE_OFFSET
+                    if bx <= lx + 1 and paddle_l <= by < paddle_l + PADDLE_HEIGHT:
+                        ball["vx"] = abs(ball["vx"]) * 1.05
+                        hit_pos = (by - paddle_l) / PADDLE_HEIGHT
+                        vy = (hit_pos - 0.5) * 1.2
+                        if abs(vy) < 0.3:
+                            vy = 0.3 if vy >= 0 else -0.3
+                        ball["vy"] = vy
+                        ball["x"] = float(lx + 2)
+
+                    rx = width - PADDLE_OFFSET - 1
+                    if bx >= rx - 1 and paddle_r <= by < paddle_r + PADDLE_HEIGHT:
+                        ball["vx"] = -abs(ball["vx"]) * 1.05
+                        hit_pos = (by - paddle_r) / PADDLE_HEIGHT
+                        vy = (hit_pos - 0.5) * 1.2
+                        if abs(vy) < 0.3:
+                            vy = 0.3 if vy >= 0 else -0.3
+                        ball["vy"] = vy
+                        ball["x"] = float(rx - 2)
+
+                ball["vx"] = clamp(ball["vx"], -2.0, 2.0)
+                ball["vy"] = clamp(ball["vy"], -1.5, 1.5)
+
+                if bx <= 0:
+                    score_r += 1
+                    ball = reset_ball(direction=1)
+                    serve_pause = 1.0
+                elif bx >= width - 1:
+                    score_l += 1
+                    ball = reset_ball(direction=-1)
+                    serve_pause = 1.0
+
+        # Draw
+        stdscr.erase()
+        draw_scores(stdscr, width, score_l, score_r)
+        draw_center_line(stdscr, height, width)
+        draw_paddle(stdscr, PADDLE_OFFSET, paddle_l, PADDLE_HEIGHT, height)
+        draw_paddle(stdscr, width - PADDLE_OFFSET - 1, paddle_r, PADDLE_HEIGHT, height)
+        draw_ball(stdscr, int(ball["x"]), int(ball["y"]))
+        draw_status_bar(stdscr, height, width, job)
+
+        if paused:
+            draw_message(stdscr, height, width, "PAUSED — P to resume, Q to quit")
+
+        # When someone hits the score limit, reset and keep playing if waiting
+        if score_l >= WINNING_SCORE or score_r >= WINNING_SCORE:
+            if job is not None:
+                score_l = 0
+                score_r = 0
+            else:
+                winner = "AI" if score_l >= WINNING_SCORE else "You"
+                draw_message(stdscr, height, width, f"{winner} win! — Q to quit")
+                stdscr.refresh()
+                stdscr.nodelay(False)
+                while True:
+                    k = stdscr.getch()
+                    if k == ord("q") or k == ord("Q"):
+                        return
+                break
+
+        stdscr.refresh()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Play pong while waiting")
+    parser.add_argument(
+        "--wait-for", dest="wait_for", metavar="CMD",
+        help="Shell command to run in background; celebrate when it succeeds",
+    )
+    args = parser.parse_args()
+
+    job = BackgroundJob(args.wait_for) if args.wait_for else None
+    curses.wrapper(lambda stdscr: game(stdscr, job))
+
+    # Propagate the job's exit code
+    if job is not None:
+        sys.exit(job.returncode)
+
+
+if __name__ == "__main__":
+    main()
