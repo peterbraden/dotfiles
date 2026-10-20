@@ -17,3 +17,7 @@ shortcuts.vim
 bin/list-aws-services.py
 bin/.motd
 bin/sync-git.sh
+
+# nvim now adds these to runtimepath instead of symlinking them into its pack
+.config/nvim/pack/plugins/start/ctrlp.vim
+.config/nvim/pack/plugins/start/startify.vim

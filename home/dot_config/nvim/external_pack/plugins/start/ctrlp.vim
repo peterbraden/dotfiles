@@ -1,1 +1,0 @@
-../../../../../.vim/bundle/ctrlp.vim

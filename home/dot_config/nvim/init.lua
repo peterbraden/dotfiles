@@ -3,6 +3,9 @@ vim.opt.background = "dark"
 
 vim.opt.runtimepath:prepend(vim.fn.expand("~/.vim"))
 vim.opt.runtimepath:append(vim.fn.expand("~/.vim/after"))
+-- Shared with vim, which loads them via pathogen
+vim.opt.runtimepath:append(vim.fn.expand("~/.vim/bundle/ctrlp.vim"))
+vim.opt.runtimepath:append(vim.fn.expand("~/.vim/bundle/startify.vim"))
 vim.cmd("source " .. vim.fn.expand("~/.vimrc"))
 
 -- Pinned to the legacy master branch, which is configured via .configs
