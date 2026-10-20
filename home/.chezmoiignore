@@ -16,4 +16,5 @@ bin/roche-cal-url
 bin/absent-days
 bin/daily-summary
 bin/gl-cat
+bin/gl-file-append
 {{ end }}

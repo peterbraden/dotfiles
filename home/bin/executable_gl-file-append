@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+#
+# gl-file-append - append text to a file on GitLab without cloning.
+#
+# Uses the GitLab Repository Files API to fetch a file, append text, and
+# commit the result. By default commits directly to the repo's default branch.
+# With --pr, creates a new branch and opens a merge request instead.
+#
+# Requires:
+#   GITLAB_TOKEN  - personal access token with api scope
+#   GITLAB_HOST   - GitLab host (default: code.roche.com)
+#
+# Usage:
+#   gl-file-append <owner/repo> <path> <text>
+#   gl-file-append <owner/repo> <path> <text> --pr
+#   gl-file-append <owner/repo> <path> <text> --pr --title "MR title"
+#   gl-file-append <owner/repo> <path> <text> --branch main
+#   echo "new line" | gl-file-append <owner/repo> <path> -
+#
+# Examples:
+#   gl-file-append mygroup/myrepo CHANGELOG.md "\n- fix: typo"
+#   gl-file-append mygroup/myrepo docs/notes.md "$(date): deployed" --pr
+#   echo "appended via pipe" | gl-file-append mygroup/myrepo README.md -
+
+set -eu
+
+usage() {
+    cat <<EOF
+Usage: gl-file-append <owner/repo> <path> <text> [options]
+
+Append text to a file on GitLab without cloning.
+
+Arguments:
+    owner/repo    GitLab project path (e.g. mygroup/myrepo)
+    path          File path in the repo (e.g. CHANGELOG.md)
+    text          Text to append (use - to read from stdin)
+
+Options:
+    --pr              Create a branch and open a merge request
+    --title TITLE     MR title (default: "Append to <path>")
+    --branch BRANCH   Target branch (default: repo's default branch)
+    --message MSG     Commit message (default: "Append to <path>")
+    -h, --help        Show this help
+EOF
+}
+
+die() { echo "gl-file-append: $*" >&2; exit 1; }
+
+# Portable base64 decode (Linux uses -d, macOS uses -D)
+b64_decode() { base64 -d 2>/dev/null || base64 -D; }
+b64_encode() { base64 | tr -d '\n'; }
+
+# URL-encode a string (for project paths and file paths)
+urlencode() { python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$1"; }
+
+gl_api() {
+    local method="$1" endpoint="$2"
+    shift 2
+    local response http_code host
+
+    host="${GITLAB_HOST:-code.roche.com}"
+
+    response=$(curl -s -w "\n%{http_code}" \
+        -X "$method" \
+        -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+        "$@" \
+        "https://${host}/api/v4${endpoint}")
+
+    http_code=$(echo "$response" | tail -1)
+    body=$(echo "$response" | sed '$d')
+
+    if [[ "$http_code" -ge 400 ]]; then
+        local msg
+        msg=$(echo "$body" | jq -r '.message // .error // empty' 2>/dev/null || true)
+        die "API ${method} ${endpoint} failed (HTTP ${http_code}): ${msg:-$body}"
+    fi
+
+    echo "$body"
+}
+
+# --- Parse arguments ---
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+[[ $# -lt 3 ]] && { usage >&2; exit 1; }
+
+project="$1"; shift
+filepath="$1"; shift
+append_text="$1"; shift
+
+create_pr=false
+pr_title=""
+commit_msg=""
+target_branch=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --pr)       create_pr=true ;;
+        --title)    pr_title="$2"; shift ;;
+        --branch)   target_branch="$2"; shift ;;
+        --message)  commit_msg="$2"; shift ;;
+        -h|--help)  usage; exit 0 ;;
+        *)          die "unknown option: $1" ;;
+    esac
+    shift
+done
+
+# Read from stdin if text is "-"
+if [[ "$append_text" == "-" ]]; then
+    append_text=$(cat)
+fi
+
+GITLAB_TOKEN="${GITLAB_TOKEN:-}"
+[[ -n "$GITLAB_TOKEN" ]] || die "set GITLAB_TOKEN (personal access token with api scope)"
+[[ "$project" == */* ]] || die "project must be owner/repo format"
+[[ -n "$filepath" ]] || die "file path required"
+[[ -n "$append_text" ]] || die "text to append required"
+
+# Defaults
+commit_msg="${commit_msg:-Append to ${filepath}}"
+pr_title="${pr_title:-Append to ${filepath}}"
+
+encoded_project=$(urlencode "$project")
+encoded_path=$(urlencode "$filepath")
+
+# --- Resolve target branch ---
+
+if [[ -z "$target_branch" ]]; then
+    project_info=$(gl_api GET "/projects/${encoded_project}")
+    target_branch=$(echo "$project_info" | jq -r '.default_branch')
+fi
+
+# --- Fetch current file contents ---
+
+file_info=$(gl_api GET "/projects/${encoded_project}/repository/files/${encoded_path}?ref=${target_branch}")
+current_content_b64=$(echo "$file_info" | jq -r '.content')
+
+# Decode, append, re-encode
+current_content=$(echo "$current_content_b64" | b64_decode)
+new_content="${current_content}$(printf '%b' "$append_text")"
+new_content_b64=$(printf '%s' "$new_content" | b64_encode)
+
+# --- Commit the change ---
+
+if [[ "$create_pr" == true ]]; then
+    # Create a new branch
+    pr_branch="gl-file-append/$(echo "$filepath" | tr '/' '-')-$(date +%s)"
+    gl_api POST "/projects/${encoded_project}/repository/branches" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"branch\": $(printf '%s' "$pr_branch" | jq -Rs .),
+            \"ref\": $(printf '%s' "$target_branch" | jq -Rs .)
+        }" >/dev/null
+
+    # Commit to the new branch
+    gl_api PUT "/projects/${encoded_project}/repository/files/${encoded_path}" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"branch\": $(printf '%s' "$pr_branch" | jq -Rs .),
+            \"commit_message\": $(printf '%s' "$commit_msg" | jq -Rs .),
+            \"content\": $(printf '%s' "$new_content" | jq -Rs .),
+            \"encoding\": \"text\"
+        }" >/dev/null
+
+    # Open the MR
+    host="${GITLAB_HOST:-code.roche.com}"
+    mr_response=$(gl_api POST "/projects/${encoded_project}/merge_requests" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"title\": $(printf '%s' "$pr_title" | jq -Rs .),
+            \"source_branch\": $(printf '%s' "$pr_branch" | jq -Rs .),
+            \"target_branch\": $(printf '%s' "$target_branch" | jq -Rs .),
+            \"description\": \"Automated append to \`${filepath}\`.\"
+        }")
+
+    mr_url=$(echo "$mr_response" | jq -r '.web_url')
+    echo "MR created: ${mr_url}"
+else
+    # Commit directly to the target branch
+    gl_api PUT "/projects/${encoded_project}/repository/files/${encoded_path}" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"branch\": $(printf '%s' "$target_branch" | jq -Rs .),
+            \"commit_message\": $(printf '%s' "$commit_msg" | jq -Rs .),
+            \"content\": $(printf '%s' "$new_content" | jq -Rs .),
+            \"encoding\": \"text\"
+        }" >/dev/null
+
+    echo "Committed to ${target_branch}"
+fi
