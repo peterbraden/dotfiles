@@ -274,9 +274,6 @@ highlight clear SignColumn
 augroup vimrcFiletypes
   autocmd!
 
-  au BufRead,BufNewFile *.pde set filetype=arduino
-  au BufRead,BufNewFile *.ino set filetype=arduino
-
   " Enable spellchecking for Markdown
   autocmd FileType markdown setlocal spell
 

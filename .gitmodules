@@ -19,9 +19,6 @@
 [submodule "home/dot_vim/external_bundle/airline.vim"]
 	path = home/dot_vim/external_bundle/airline.vim
 	url = https://github.com/vim-airline/vim-airline.git
-[submodule "home/dot_vim/external_bundle/arduino.vim"]
-	path = home/dot_vim/external_bundle/arduino.vim
-	url = https://github.com/tclem/vim-arduino.git
 [submodule "home/dot_vim/external_bundle/colors-solarized.vim"]
 	path = home/dot_vim/external_bundle/colors-solarized.vim
 	url = https://github.com/altercation/vim-colors-solarized.git
@@ -43,9 +40,6 @@
 [submodule "home/dot_vim/external_bundle/markdown.vim"]
 	path = home/dot_vim/external_bundle/markdown.vim
 	url = https://github.com/preservim/vim-markdown.git
-[submodule "home/dot_vim/external_bundle/openscad.vim"]
-	path = home/dot_vim/external_bundle/openscad.vim
-	url = https://github.com/sirtaj/vim-openscad.git
 [submodule "home/dot_vim/external_bundle/startify.vim"]
 	path = home/dot_vim/external_bundle/startify.vim
 	url = https://github.com/mhinz/vim-startify.git
