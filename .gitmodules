@@ -1,36 +1,36 @@
 [submodule "home/dot_vim/external_bundle/airline.vim"]
 	path = home/dot_vim/external_bundle/airline.vim
-	url = https://github.com/bling/vim-airline
+	url = https://github.com/vim-airline/vim-airline.git
 [submodule "home/dot_vim/external_bundle/arduino.vim"]
 	path = home/dot_vim/external_bundle/arduino.vim
-	url = git@github.com:tclem/vim-arduino.git
+	url = https://github.com/tclem/vim-arduino.git
 [submodule "home/dot_vim/external_bundle/colors-solarized.vim"]
 	path = home/dot_vim/external_bundle/colors-solarized.vim
-	url = git@github.com:altercation/vim-colors-solarized.git
+	url = https://github.com/altercation/vim-colors-solarized.git
 [submodule "home/dot_vim/external_bundle/ctrlp.vim"]
 	path = home/dot_vim/external_bundle/ctrlp.vim
-	url = git@github.com:kien/ctrlp.vim.git
+	url = https://github.com/ctrlpvim/ctrlp.vim.git
 [submodule "home/dot_vim/external_bundle/editorconfig.vim"]
 	path = home/dot_vim/external_bundle/editorconfig.vim
 	url = https://github.com/editorconfig/editorconfig-vim.git
 [submodule "home/dot_vim/external_bundle/fugitive.vim"]
 	path = home/dot_vim/external_bundle/fugitive.vim
-	url = git@github.com:tpope/vim-fugitive.git
+	url = https://github.com/tpope/vim-fugitive.git
 [submodule "home/dot_vim/external_bundle/javascript.vim"]
 	path = home/dot_vim/external_bundle/javascript.vim
 	url = https://github.com/pangloss/vim-javascript.git
 [submodule "home/dot_vim/external_bundle/json.vim"]
 	path = home/dot_vim/external_bundle/json.vim
-	url = git@github.com:elzr/vim-json.git
+	url = https://github.com/elzr/vim-json.git
 [submodule "home/dot_vim/external_bundle/markdown.vim"]
 	path = home/dot_vim/external_bundle/markdown.vim
-	url = git@github.com:plasticboy/vim-markdown.git
+	url = https://github.com/preservim/vim-markdown.git
 [submodule "home/dot_vim/external_bundle/openscad.vim"]
 	path = home/dot_vim/external_bundle/openscad.vim
-	url = git@github.com:sirtaj/vim-openscad.git
+	url = https://github.com/sirtaj/vim-openscad.git
 [submodule "home/dot_vim/external_bundle/startify.vim"]
 	path = home/dot_vim/external_bundle/startify.vim
-	url = git@github.com:mhinz/vim-startify.git
+	url = https://github.com/mhinz/vim-startify.git
 [submodule "home/dot_vim/external_bundle/typescript.vim"]
 	path = home/dot_vim/external_bundle/typescript.vim
 	url = https://github.com/leafgarland/typescript-vim.git
@@ -39,7 +39,7 @@
 	url = https://github.com/vim-airline/vim-airline-themes
 [submodule "home/dot_vim/external_bundle/vim-go.vim"]
 	path = home/dot_vim/external_bundle/vim-go.vim
-	url = git@github.com:fatih/vim-go.git
+	url = https://github.com/fatih/vim-go.git
 [submodule "home/dot_vim/external_bundle/vimproc.vim"]
 	path = home/dot_vim/external_bundle/vimproc.vim
 	url = https://github.com/Shougo/vimproc.vim.git
@@ -62,4 +62,4 @@
 	url = https://github.com/zsh-users/zsh-autosuggestions
 [submodule "home/dot_config/nvim/external_pack/plugins/start/solarized8.vim"]
 	path = home/dot_config/nvim/external_pack/plugins/start/solarized8.vim
-	url = git@github.com:lifepillar/vim-solarized8.git
+	url = https://github.com/lifepillar/vim-solarized8.git
