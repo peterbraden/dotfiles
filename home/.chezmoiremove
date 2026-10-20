@@ -12,3 +12,8 @@
 .vim/neovim
 .vim/init.vim
 shortcuts.vim
+
+# Deleted bin scripts
+bin/list-aws-services.py
+bin/.motd
+bin/sync-git.sh

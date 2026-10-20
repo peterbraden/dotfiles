@@ -101,10 +101,7 @@ def build_table(items: list[dict], show_all: bool) -> Table | Text:
         ctx = "unknown"
 
     last_rev = ""
-    for p in parsed:
-        # Find most recent revision from any item
-        break
-    # Get from raw items instead
+    # Most recent revision from any item
     for item in items:
         rev = item.get("status", {}).get("lastAppliedRevision", "")
         if rev:

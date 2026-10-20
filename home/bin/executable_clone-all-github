@@ -1,9 +1,7 @@
 #!/bin/bash
 # Usage: CLONE=true GHNAME=foo
 
-if [ -z "$GHNAME" ]; then
-  GHNAME=$(whoami)
-fi
+GHNAME=${GHNAME:-peterbraden}
 
 DIRECTORY=~/repos
 
@@ -31,8 +29,6 @@ function clone_or_update {
 
 echo "# --- Update repos for $GHNAME"
 
-curl -s "https://api.github.com/users/$GHNAME/repos?per_page=200" |
-perl -ne 'print "$1\n" if (/"ssh_url": "([^"]+)/)' |
+# gh paginates and authenticates; the REST API capped at 100 repos per page
+gh repo list "$GHNAME" --limit 1000 --json sshUrl -q '.[].sshUrl' |
 clone_or_update
-
-#curl -u $GHNAME -s 'https://api.github.com/users/$GHNAME/repos?per_page=200' | perl -ne 'print "$1\n" if (/"ssh_url": "([^"]+)/)' | xargs -n 1 git clone
