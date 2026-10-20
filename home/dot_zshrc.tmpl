@@ -18,7 +18,8 @@ git_branch() {
 }
 
 git_dirty() {
-  st=$($GIT status --porcelain --ignore-submodules=dirty 2>/dev/null | tail -n 1)
+  # Ignore the repo's core.fsmonitor: it can be a command, and this runs on cd
+  st=$($GIT -c core.fsmonitor=false status --porcelain --ignore-submodules=dirty 2>/dev/null | tail -n 1)
   if [[ $st == "" ]]
   then
       echo "%{$fg[green]%}$(git_prompt_info)%{$reset_color%}"
