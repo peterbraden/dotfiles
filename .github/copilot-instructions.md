@@ -76,6 +76,6 @@ command b
 
 - Prefer existing tools over adding new dependencies (Lindy effect philosophy)
 - Git submodules for vendoring (keeps tools local, survives link rot)
-- Modern replacements on macOS: `eza`, `fd`, `bat`, `rg` (aliased in `dot_alias.tmpl`)
+- Modern replacements on macOS: `ls` is aliased to `eza` and `cat` to `bat` in `dot_alias.tmpl`; `fd` and `rg` are used directly (`find` and `sed` are deliberately not aliased)
 - Shell scripts go in `home/bin/` with `executable_` prefix
 - Function over alias over script - see alias file header for rationale
