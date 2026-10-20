@@ -52,6 +52,3 @@
 [submodule "home/dot_vim/external_bundle/vim-go.vim"]
 	path = home/dot_vim/external_bundle/vim-go.vim
 	url = https://github.com/fatih/vim-go.git
-[submodule "home/dot_vim/external_bundle/vimproc.vim"]
-	path = home/dot_vim/external_bundle/vimproc.vim
-	url = https://github.com/Shougo/vimproc.vim.git
