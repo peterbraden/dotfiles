@@ -11,8 +11,9 @@
 #   brew  - Homebrew
 #
 # Configuration:
-#   DOTFILES_INSTALL_URL - raw URL to your install script
-#     (default: https://raw.githubusercontent.com/peterbraden/dotfiles/master/home/run_before_onchange_install.sh.tmpl)
+#   Reads the install script from the local chezmoi source by default.
+#   DOTFILES_INSTALL_URL - fetch the install script from this URL instead
+#     (fallback when there is no local source: the GitHub master copy)
 #
 # Usage:
 #   brew-extras              # show manually installed packages
@@ -21,7 +22,9 @@
 
 set -eu
 
-DOTFILES_INSTALL_URL="${DOTFILES_INSTALL_URL:-https://raw.githubusercontent.com/peterbraden/dotfiles/master/home/run_before_onchange_install.sh.tmpl}"
+INSTALL_SCRIPT_NAME="run_onchange_before_install.sh.tmpl"
+DEFAULT_INSTALL_URL="https://raw.githubusercontent.com/peterbraden/dotfiles/master/home/$INSTALL_SCRIPT_NAME"
+DOTFILES_INSTALL_URL="${DOTFILES_INSTALL_URL:-}"
 
 usage() {
     cat <<EOF
@@ -32,7 +35,7 @@ Show brew packages not in your dotfiles install script.
 Options:
     --missing     Also show dotfiles packages not currently installed
     --all         Show extras, missing, and shared packages
-    --url URL     Override the dotfiles install script URL
+    --url URL     Fetch the install script from URL instead of the local source
     -h, --help    Show this help
 EOF
 }
@@ -61,18 +64,27 @@ command -v brew >/dev/null 2>&1 || die "brew not found"
 
 # --- Fetch dotfiles install script ---
 
-install_script=$(curl -sfL "$DOTFILES_INSTALL_URL") \
-    || die "failed to fetch install script from ${DOTFILES_INSTALL_URL}"
+local_script=""
+if [[ -z "$DOTFILES_INSTALL_URL" ]] && command -v chezmoi >/dev/null 2>&1; then
+    local_script="$(chezmoi source-path 2>/dev/null)/$INSTALL_SCRIPT_NAME"
+fi
+if [[ -n "$local_script" && -f "$local_script" ]]; then
+    install_script=$(cat "$local_script")
+else
+    DOTFILES_INSTALL_URL="${DOTFILES_INSTALL_URL:-$DEFAULT_INSTALL_URL}"
+    install_script=$(curl -sfL "$DOTFILES_INSTALL_URL") \
+        || die "failed to fetch install script from ${DOTFILES_INSTALL_URL}"
+fi
 
 # --- Extract declared packages ---
 # Matches: brew "pkg", cask "pkg", brew install pkg
 
 dotfiles_packages=$(echo "$install_script" | \
-    grep -E '^\s*(brew|cask)\s+"[^"]+"' | \
-    sed -E 's/^\s*(brew|cask)\s+"([^"]+)".*/\2/' ; \
+    grep -E '^[[:space:]]*(brew|cask)[[:space:]]+"[^"]+"' | \
+    sed -E 's/^[[:space:]]*(brew|cask)[[:space:]]+"([^"]+)".*/\2/' ; \
     echo "$install_script" | \
-    grep -E '^\s*brew install\s+' | \
-    sed -E 's/^\s*brew install\s+//' | \
+    grep -E '^[[:space:]]*brew install[[:space:]]+' | \
+    sed -E 's/^[[:space:]]*brew install[[:space:]]+//' | \
     tr -s ' ' '\n'
 )
 
