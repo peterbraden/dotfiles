@@ -1,0 +1,262 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "rich",
+# ]
+# ///
+"""
+pod-status - show failing pods in the cluster.
+
+Displays pods that are not Running/Succeeded in a coloured table.
+Catches CrashLoopBackOff, ImagePullBackOff, Error, OOMKilled,
+pending, and other non-healthy states.
+
+Usage:
+    pod-status                 Show failing pods
+    pod-status --watch         Watch (refresh every 5s)
+    pod-status --watch -i 10   Watch with custom interval
+    pod-status -n kube-system  Filter by namespace
+    pod-status --all           Show all pods including healthy
+    pod-status --json          Machine-readable JSON output
+
+JSON shape:
+    {"context": str, "healthy": int, "failing": int, "total": int,
+     "pods": [{"namespace", "name", "ready", "status", "restarts",
+               "healthy", "age"}]}
+"""
+
+import argparse
+import json
+import re
+import signal
+import subprocess
+import sys
+import time
+
+from rich.console import Console
+from rich.live import Live
+from rich.table import Table
+from rich.text import Text
+
+
+def get_pods(namespace: str | None) -> list[dict]:
+    cmd = ["kubectl", "get", "pods", "-o", "json"]
+    if namespace:
+        cmd += ["-n", namespace]
+    else:
+        cmd.append("--all-namespaces")
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        return []
+
+    data = json.loads(result.stdout)
+    return data.get("items", [])
+
+
+def parse_pod(pod: dict) -> dict:
+    metadata = pod["metadata"]
+    status = pod.get("status", {})
+    phase = status.get("phase", "Unknown")
+
+    # Determine the effective status from container statuses
+    reason = ""
+    restarts = 0
+    ready_count = 0
+    total_count = 0
+
+    container_statuses = status.get("containerStatuses", [])
+    init_statuses = status.get("initContainerStatuses", [])
+
+    for cs in container_statuses:
+        total_count += 1
+        restarts += cs.get("restartCount", 0)
+        if cs.get("ready", False):
+            ready_count += 1
+
+        state = cs.get("state", {})
+        if "waiting" in state:
+            reason = state["waiting"].get("reason", "Waiting")
+        elif "terminated" in state:
+            reason = state["terminated"].get("reason", "Terminated")
+
+    # Check init containers too
+    for cs in init_statuses:
+        state = cs.get("state", {})
+        if "waiting" in state:
+            reason = f"Init:{state['waiting'].get('reason', 'Waiting')}"
+        elif "terminated" in state:
+            exit_code = state["terminated"].get("exitCode", 0)
+            if exit_code != 0:
+                reason = f"Init:Error (exit {exit_code})"
+
+    # Use reason if available, otherwise phase
+    effective_status = reason if reason else phase
+
+    # Determine if healthy
+    healthy_statuses = ("Running", "Succeeded", "Completed")
+    healthy = effective_status in healthy_statuses
+
+    # Pod conditions can reveal issues too
+    if phase == "Pending":
+        for cond in status.get("conditions", []):
+            if cond.get("type") == "PodScheduled" and cond.get("status") == "False":
+                effective_status = cond.get("reason", "Unschedulable")
+                break
+
+    return {
+        "namespace": metadata.get("namespace", "-"),
+        "name": metadata["name"],
+        "ready": f"{ready_count}/{total_count}" if total_count > 0 else "-",
+        "status": effective_status,
+        "restarts": restarts,
+        "healthy": healthy,
+        "age": _age(metadata.get("creationTimestamp", "")),
+    }
+
+
+def _age(timestamp: str) -> str:
+    if not timestamp:
+        return "-"
+    from datetime import datetime, timezone
+
+    try:
+        created = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        delta = datetime.now(timezone.utc) - created
+        seconds = int(delta.total_seconds())
+
+        if seconds < 60:
+            return f"{seconds}s"
+        elif seconds < 3600:
+            return f"{seconds // 60}m"
+        elif seconds < 86400:
+            return f"{seconds // 3600}h"
+        else:
+            return f"{seconds // 86400}d"
+    except Exception:
+        return "-"
+
+
+def get_kube_context() -> str:
+    try:
+        ctx = subprocess.run(
+            ["kubectl", "config", "current-context"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        m = re.match(r"arn:aws:eks:[^:]+:[^:]+:cluster/(.+)", ctx)
+        if m:
+            ctx = f"aws:{m.group(1)}"
+        return ctx
+    except Exception:
+        return "unknown"
+
+
+def build_json(pods: list[dict], show_all: bool) -> dict:
+    parsed = [parse_pod(pod) for pod in pods]
+    healthy_count = sum(1 for p in parsed if p["healthy"])
+    return {
+        "context": get_kube_context(),
+        "healthy": healthy_count,
+        "failing": len(parsed) - healthy_count,
+        "total": len(parsed),
+        "pods": parsed if show_all else [p for p in parsed if not p["healthy"]],
+    }
+
+
+def build_table(pods: list[dict], show_all: bool) -> Table | Text:
+    parsed = [parse_pod(pod) for pod in pods]
+    healthy_count = sum(1 for p in parsed if p["healthy"])
+    failing_count = len(parsed) - healthy_count
+    total = len(parsed)
+
+    ctx = get_kube_context()
+    summary = f"{healthy_count} healthy, {failing_count} failing ({total} total) | {ctx}"
+    summary_style = "green" if failing_count == 0 else "yellow"
+
+    rows = parsed if show_all else [p for p in parsed if not p["healthy"]]
+
+    if not rows:
+        return Text(summary, style=summary_style)
+
+    table = Table(
+        caption=summary,
+        caption_style=summary_style,
+        show_edge=False,
+        pad_edge=False,
+    )
+    table.add_column("NAMESPACE", style="dim")
+    table.add_column("NAME")
+    table.add_column("READY")
+    table.add_column("STATUS")
+    table.add_column("RESTARTS")
+    table.add_column("AGE", style="dim")
+
+    for row in rows:
+        status = row["status"]
+        if status in ("CrashLoopBackOff", "OOMKilled", "Error") or status.startswith("Init:Error"):
+            style = "red"
+        elif status in ("ImagePullBackOff", "ErrImagePull", "Unschedulable"):
+            style = "red"
+        elif status in ("Pending", "ContainerCreating", "PodInitializing") or status.startswith("Init:"):
+            style = "yellow"
+        elif status in ("Running", "Succeeded", "Completed"):
+            style = "green"
+        elif status == "Terminating":
+            style = "dim"
+        else:
+            style = "yellow"
+
+        restarts_style = "red" if row["restarts"] > 5 else ("yellow" if row["restarts"] > 0 else "dim")
+
+        table.add_row(
+            row["namespace"],
+            Text(row["name"], style=style),
+            row["ready"],
+            Text(status, style=style),
+            Text(str(row["restarts"]), style=restarts_style),
+            row["age"],
+        )
+
+    return table
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Show failing pods in the cluster")
+    parser.add_argument("-w", "--watch", action="store_true", help="Watch mode")
+    parser.add_argument("-i", "--interval", type=int, default=5, help="Refresh interval (seconds)")
+    parser.add_argument("-n", "--namespace", help="Filter by namespace")
+    parser.add_argument("-a", "--all", action="store_true", dest="show_all", help="Show all including healthy")
+    parser.add_argument("--json", action="store_true", help="Machine-readable JSON output")
+    args = parser.parse_args()
+
+    if args.json and args.watch:
+        parser.error("--json cannot be combined with --watch")
+
+    console = Console()
+
+    if args.json:
+        pods = get_pods(args.namespace)
+        if not pods:
+            print("Failed to get pods. Is kubectl configured?", file=sys.stderr)
+            sys.exit(1)
+        print(json.dumps(build_json(pods, args.show_all), indent=2))
+    elif args.watch:
+        with Live(console=console, refresh_per_second=1) as live:
+            while True:
+                pods = get_pods(args.namespace)
+                table = build_table(pods, args.show_all)
+                live.update(table)
+                time.sleep(args.interval)
+    else:
+        pods = get_pods(args.namespace)
+        if not pods:
+            console.print("[red]Failed to get pods. Is kubectl configured?[/]")
+            sys.exit(1)
+        table = build_table(pods, args.show_all)
+        console.print(table)
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+    main()
