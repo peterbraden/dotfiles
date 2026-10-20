@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -eu
+
+# Send a push notification to your phone via Telegram bot.
+#
+# Requires:
+#   TELEGRAM_BOT_TOKEN  - bot token from @BotFather
+#   TELEGRAM_CHAT_ID    - your chat ID
+#
+# Usage:
+#   notify "Build passed"
+#   notify                     # sends "Done"
+#   make test && notify "Tests passed"
+#   notify -t "Deploy" "v1.2.3 is live"
+
+usage() {
+    cat <<EOF
+Usage: telegram-notify [-t title] [message]
+       command | telegram-notify [-t title]
+
+Send a push notification to your phone via Telegram.
+Reads from stdin when piped.
+
+Options:
+    -t TITLE    Bold title prepended to the message
+    -h          Show this help
+
+Examples:
+    telegram-notify "Build passed"
+    telegram-notify -t "CI" "All checks green"
+    make test && telegram-notify "Tests passed"
+    daily-summary | telegram-notify -t "Daily Summary"
+EOF
+}
+
+title=""
+while getopts "t:h" opt; do
+    case "$opt" in
+        t) title="$OPTARG" ;;
+        h) usage; exit 0 ;;
+        *) usage >&2; exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+# Read from stdin if piped, otherwise use argument
+if [[ ! -t 0 ]]; then
+    msg=$(cat)
+elif [[ $# -gt 0 ]]; then
+    msg="$1"
+else
+    msg="Done"
+fi
+
+if [[ -n "$title" ]]; then
+    # Telegram MarkdownV2 requires escaping special chars in the title
+    # Keep it simple — use HTML parse mode instead
+    text="<b>${title}</b>
+${msg}"
+    parse_mode="HTML"
+else
+    text="$msg"
+    parse_mode=""
+fi
+
+: "${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN (from @BotFather)}"
+: "${TELEGRAM_CHAT_ID:?Set TELEGRAM_CHAT_ID (your chat ID)}"
+
+# Build JSON payload — handles newlines and special characters
+json_text=$(printf '%s' "$text" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+json_body="{\"chat_id\":\"${TELEGRAM_CHAT_ID}\",\"text\":${json_text},\"disable_notification\":false"
+if [[ -n "$parse_mode" ]]; then
+    json_body="${json_body},\"parse_mode\":\"${parse_mode}\""
+fi
+json_body="${json_body}}"
+
+http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+    -X POST \
+    -H "Content-Type: application/json" \
+    --data-raw "$json_body" \
+    "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage")
+
+if [[ "$http_code" != "200" ]]; then
+    echo "notify: failed (HTTP ${http_code})" >&2
+    exit 1
+fi
