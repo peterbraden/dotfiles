@@ -45,6 +45,7 @@ function reloadConfig(files)
   end
 end
 
-hs.pathwatcher.new(os.getenv('HOME') .. '/.hammerspoon/', reloadConfig):start()
+-- Global, so the watcher isn't garbage-collected (which stops auto-reload)
+configWatcher = hs.pathwatcher.new(os.getenv('HOME') .. '/.hammerspoon/', reloadConfig):start()
 
 
