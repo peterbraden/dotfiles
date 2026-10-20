@@ -8,7 +8,8 @@ type = calendar
 [[roche]]
 path = {{ .chezmoi.homeDir }}/.local/share/khal/roche
 type = calendar
-# readonly = True
+# Synced one way from an http feed; local edits would be lost
+readonly = True
 
 
 [locale]
@@ -22,4 +23,4 @@ longdatetimeformat = %Y-%m-%d %H:%M
 agenda_event_format = "{calendar-color}{cancelled}{start}-{end} {title}{repeat-symbol}{alarm-symbol}{reset}"
 
 [default]
-default_calendar = roche
+default_calendar = home
