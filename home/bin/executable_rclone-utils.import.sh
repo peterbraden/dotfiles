@@ -3,13 +3,11 @@
 
 # Creates remote 'aws' for s3
 create_s3_remote(){
-  CONFIG=$(rclone config file | sed 's/Configuration file is stored at://g' | tr '\n' ' ' | sed 's/ //g')
-  MATCH=$(grep '\[aws\]' ${CONFIG})
-  if [ -z "$MATCH" ]; then
-    echo "Remote 'aws' not found - creating..."
-    echo "\n[aws]\ntype = s3\nprovider = AWS\nenv_auth = true\nregion = us-east-1\nacl = private" >> ${CONFIG}
-  else
+  if rclone listremotes | grep -qx 'aws:'; then
     echo "Remote already exists"
+  else
+    echo "Remote 'aws' not found - creating..."
+    rclone config create aws s3 provider=AWS env_auth=true region=us-east-1 acl=private
   fi
 }
 
@@ -22,7 +20,8 @@ create_bucket(){
 create_encrypted_s3_bucket(){
   #NB This doesn't work yet, run config manually through the menus to get the 
   #   Passphrase generation etc.
-  exit 1
+  # (return, not exit: this file is sourced)
+  return 1
   NAME=$1
   create_s3_remote
   create_bucket $NAME
