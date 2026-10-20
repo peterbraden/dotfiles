@@ -1,0 +1,228 @@
+#!/usr/bin/env bash
+#
+# dashboard - full-screen live view of current work.
+#
+# Shows ~/.plan, open issues, tmux sessions, and recent activity
+# in a multi-panel terminal dashboard. Refreshes every 30s.
+#
+# Usage:
+#   dashboard
+
+set -eu
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLAN_FILE="$HOME/.plan"
+REFRESH=30
+
+# --- Colors ---
+RST="\033[0m"
+BOLD="\033[1m"
+DIM="\033[2m"
+BLUE="\033[34m"
+CYAN="\033[36m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+RED="\033[31m"
+GRAY="\033[38;5;245m"
+WHITE="\033[97m"
+BG_BLUE="\033[44m"
+BG_GREEN="\033[42m"
+BG_CYAN="\033[46m"
+BG_MAGENTA="\033[45m"
+BG_GRAY="\033[48;5;238m"
+
+# --- Terminal setup ---
+cleanup() {
+  tput rmcup 2>/dev/null
+  tput cnorm 2>/dev/null
+  rm -f "$tmp_issues" "$tmp_sessions" "$tmp_activity"
+  exit 0
+}
+trap cleanup EXIT INT TERM
+
+tput smcup
+tput civis
+
+tmp_issues="$(mktemp)"
+tmp_sessions="$(mktemp)"
+tmp_activity="$(mktemp)"
+
+need_render=true
+trap 'need_render=true' WINCH
+
+# --- Strip ANSI for length calculation ---
+strip_ansi() {
+  sed 's/\x1b\[[0-9;]*[a-zA-Z]//g'
+}
+
+# --- Render a header bar ---
+header_bar() {
+  local text="$1" bg="$2" width="$3"
+  local stripped_len=${#text}
+  local pad=$(( width - stripped_len - 2 ))
+  (( pad < 0 )) && pad=0
+  printf "${bg}${WHITE}${BOLD} %s%*s${RST}" "$text" "$pad" ""
+}
+
+# --- Render plan with markdown coloring ---
+render_plan_line() {
+  local line="$1"
+  if [[ "$line" =~ ^#\  ]]; then
+    printf "${BOLD}${BLUE}%s${RST}" "$line"
+  elif [[ "$line" =~ ^##\  ]]; then
+    printf "${BOLD}${CYAN}%s${RST}" "$line"
+  elif [[ "$line" =~ \[x\]|\[X\] ]]; then
+    printf "${GREEN}%s${RST}" "$line"
+  elif [[ "$line" =~ \[\ \] ]]; then
+    printf "${WHITE}%s${RST}" "$line"
+  elif [[ "$line" =~ ^- ]]; then
+    printf "${WHITE}%s${RST}" "$line"
+  elif [[ "$line" =~ ^\ *- ]]; then
+    printf "${GRAY}%s${RST}" "$line"
+  else
+    printf "${DIM}%s${RST}" "$line"
+  fi
+}
+
+# --- Clip a line to a max visible width ---
+clip_line() {
+  local line="$1" max_w="$2"
+  local stripped
+  stripped=$(printf '%s' "$line" | strip_ansi)
+  if (( ${#stripped} <= max_w )); then
+    printf '%s' "$line"
+  else
+    printf '%s' "$line" | cut -c1-"$max_w"
+  fi
+}
+
+# --- Write text into a panel region ---
+draw_panel() {
+  local start_row=$1 start_col=$2 panel_w=$3 panel_h=$4
+  local content="$5"
+  local row=0
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    (( row >= panel_h )) && break
+    tput cup $(( start_row + row )) "$start_col"
+    clip_line "$line" "$panel_w"
+    row=$(( row + 1 ))
+  done <<< "$content"
+}
+
+# --- Main render ---
+render() {
+  local cols lines left_w right_w right_col
+  cols=$(tput cols)
+  lines=$(tput lines)
+
+  left_w=$(( cols * 55 / 100 ))
+  right_w=$(( cols - left_w - 1 ))
+  right_col=$(( left_w + 1 ))
+
+  local issues_h=$(( (lines - 2) * 50 / 100 ))
+  local sessions_h=$(( (lines - 2) * 20 / 100 ))
+  local activity_h=$(( lines - 2 - issues_h - sessions_h ))
+
+  # Clear screen
+  tput clear
+
+  # --- Left column: Plan ---
+  tput cup 0 0
+  header_bar "~/.plan" "$BG_BLUE" "$left_w"
+
+  local plan_content=""
+  if [[ -f "$PLAN_FILE" ]]; then
+    local plan_lines=""
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      local rendered
+      rendered=$(render_plan_line "$line")
+      plan_lines+="${rendered}"$'\n'
+    done < "$PLAN_FILE"
+    plan_content="$plan_lines"
+  else
+    plan_content="${DIM}No ~/.plan file${RST}"
+  fi
+  draw_panel 1 0 "$left_w" $(( lines - 2 )) "$plan_content"
+
+  # --- Draw vertical separator ---
+  for (( r = 0; r < lines - 1; r++ )); do
+    tput cup "$r" "$left_w"
+    printf "${GRAY}│${RST}"
+  done
+
+  # --- Right column: Issues ---
+  tput cup 0 "$right_col"
+  header_bar "Issues" "$BG_GREEN" "$right_w"
+
+  local issues_content
+  issues_content=$(cat "$tmp_issues" 2>/dev/null | strip_ansi | head -$(( issues_h - 1 )))
+  draw_panel 1 "$right_col" "$right_w" $(( issues_h - 1 )) "$issues_content"
+
+  # --- Right column: Sessions ---
+  local sess_row=$(( issues_h ))
+  tput cup "$sess_row" "$right_col"
+  header_bar "Sessions" "$BG_CYAN" "$right_w"
+
+  local sess_content
+  sess_content=$(cat "$tmp_sessions" 2>/dev/null | strip_ansi | head -$(( sessions_h - 1 )))
+  draw_panel $(( sess_row + 1 )) "$right_col" "$right_w" $(( sessions_h - 1 )) "$sess_content"
+
+  # --- Right column: Activity ---
+  local act_row=$(( sess_row + sessions_h ))
+  tput cup "$act_row" "$right_col"
+  header_bar "Activity (8h)" "$BG_MAGENTA" "$right_w"
+
+  local act_content
+  act_content=$(cat "$tmp_activity" 2>/dev/null | strip_ansi | head -$(( activity_h - 1 )))
+  draw_panel $(( act_row + 1 )) "$right_col" "$right_w" $(( activity_h - 1 )) "$act_content"
+
+  # --- Bottom bar ---
+  tput cup $(( lines - 1 )) 0
+  printf "${BG_GRAY}${WHITE} updated %s   ${DIM}refresh ${REFRESH}s • q to quit%*s${RST}" \
+    "$(date '+%H:%M:%S')" $(( cols - 40 )) ""
+}
+
+# --- Gather data ---
+gather() {
+  "$SCRIPT_DIR/my-issues" > "$tmp_issues" 2>/dev/null &
+  "$SCRIPT_DIR/tml" > "$tmp_sessions" 2>/dev/null &
+  ("$SCRIPT_DIR/daily-summary" --since 8h 2>/dev/null || true) > "$tmp_activity" &
+  wait 2>/dev/null || true
+}
+
+# --- Initial gather ---
+gather
+render
+
+# --- Main loop ---
+last_gather=$(date +%s)
+while true; do
+  if read -rsn1 -t 1 key 2>/dev/null; then
+    case "$key" in
+      q|Q) break ;;
+      r|R) gather; need_render=true ;;
+    esac
+  fi
+
+  if [[ "$need_render" == "true" ]]; then
+    render
+    need_render=false
+  fi
+
+  now=$(date +%s)
+  if (( now - last_gather >= REFRESH )); then
+    gather
+    need_render=true
+    last_gather=$now
+  fi
+
+  # Also re-render if plan file changed
+  if [[ -f "$PLAN_FILE" ]]; then
+    plan_mtime=$(stat -f "%m" "$PLAN_FILE" 2>/dev/null || echo 0)
+    if [[ "${last_plan_mtime:-0}" != "$plan_mtime" ]]; then
+      need_render=true
+      last_plan_mtime="$plan_mtime"
+    fi
+  fi
+done
