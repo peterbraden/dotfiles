@@ -68,6 +68,9 @@ path_append /usr/local/sbin
 
 {{ if .golang }}
 path_append /usr/local/go/bin   # Add golang
+# Keep GOPATH (module cache, go install binaries) out of $HOME
+export GOPATH="$HOME/.local/share/go"
+path_append "$GOPATH/bin"
 {{ end }}
 {{ if .nodejs }}
 
