@@ -6,8 +6,9 @@ vim.opt.runtimepath:append(vim.fn.expand("~/.vim/after"))
 vim.opt.runtimepath:append(vim.fn.expand("~/.config/neovim"))
 vim.cmd("source " .. vim.fn.expand("~/.vimrc"))
 
-require'nvim-treesitter'.setup {
-  install_dir = vim.fn.stdpath('data') .. '/site',
+-- Pinned to the legacy master branch, which is configured via .configs
+require'nvim-treesitter.configs'.setup {
+  parser_install_dir = vim.fn.stdpath('data') .. '/site',
   ensure_installed = {
     "c", "lua", "vim", "markdown", "markdown_inline",
     "rust", "python", "hcl"
