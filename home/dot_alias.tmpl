@@ -18,7 +18,6 @@ alias glg='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset 
 alias git-cleanup='git branch --merged | grep -vE "^[*+]|^ *(master|main)$" | xargs -r -n 1 git branch -d' # never master/main
 alias gfm='git-fix-merges'
 alias mg=mv #disable mg editor
-alias mutt=neomutt
 alias rmswp='find ./ -type f -name "\.*sw[klmnop]" -delete && find ./ -type f -name "\.*un~" -delete'
 alias s=rg
 alias ssh-gh-codespaces="gh cs ssh --server-port 2222"

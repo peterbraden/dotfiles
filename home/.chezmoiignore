@@ -1,10 +1,5 @@
 **/.git
 
-# mutt needs the local (unmanaged) account file with credentials
-{{ if not (stat (joinPath .chezmoi.homeDir ".mutt/fastmail.account")) }}
-.muttrc
-{{ end }}
-
 # vdirsyncer only syncs the work calendar
 {{ if not .work }}
 .config/vdirsyncer

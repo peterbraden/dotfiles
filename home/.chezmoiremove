@@ -25,3 +25,6 @@ bin/sync-git.sh
 
 # Replaced by the work profile template and the 1Password ~/roche.env
 roche.sh
+
+# mutt is no longer used (~/.mutt itself is unmanaged and left alone)
+.muttrc
