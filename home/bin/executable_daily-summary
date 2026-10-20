@@ -1,0 +1,740 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "rich",
+# ]
+# ///
+"""
+daily-summary - summarize what you did today.
+
+Pulls from Linear, GitLab, GitHub, and local git repos to build a
+summary of tickets touched, MRs/PRs updated, and commits authored.
+
+Requires:
+    LINEAR_API_KEY   - Linear personal API key
+    GITLAB_TOKEN     - GitLab personal access token (optional)
+    GITLAB_HOST      - GitLab host (default: code.roche.com)
+    GITHUB_TOKEN     - GitHub personal access token (optional)
+                       (also reads GITHUB_TOKEN_PERSONAL)
+
+Usage:
+    daily-summary              Today's activity
+    daily-summary --since 2d   Last 2 days
+    daily-summary --repos-dir ~/repos   Scan repos in this directory
+    daily-summary --json       Machine-readable JSON output
+
+JSON shape:
+    {"since", "until", "issues": [{"id", "title", "status", "status_type",
+     "group": completed|in_progress|touched, "changes", "url"}],
+     "mrs": [{"ref", "source", "title", "state", "draft", "ci", "comments",
+     "url", "updated_at"}], "commits": [{"hash", "message", "date", "repo",
+     "insertions", "deletions", "files_changed"}]}
+"""
+
+import argparse
+import datetime
+import json
+import os
+import re
+import signal
+import subprocess
+import sys
+import urllib.request
+import urllib.error
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+from rich.console import Console
+from rich.markup import escape
+from rich.text import Text
+
+signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+
+LINEAR_API = "https://api.linear.app/graphql"
+
+
+# --- Helpers ---
+
+def parse_since(since_str: str) -> datetime.datetime:
+    """Parse a duration like '2d', '1w', '12h' into a datetime."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    unit = since_str[-1]
+    try:
+        val = int(since_str[:-1])
+    except ValueError:
+        print(f"Invalid --since value: {since_str}", file=sys.stderr)
+        sys.exit(1)
+    if unit == "d":
+        return now - datetime.timedelta(days=val)
+    elif unit == "h":
+        return now - datetime.timedelta(hours=val)
+    elif unit == "w":
+        return now - datetime.timedelta(weeks=val)
+    else:
+        print(f"Invalid --since unit: {unit} (use d/h/w)", file=sys.stderr)
+        sys.exit(1)
+
+
+def start_of_today_utc() -> datetime.datetime:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+# --- Linear ---
+
+ISSUES_QUERY = """
+query($after: String, $updatedAfter: DateTimeOrDuration!) {
+  viewer {
+    assignedIssues(
+      filter: {
+        updatedAt: { gte: $updatedAfter }
+      }
+      first: 100
+      after: $after
+      orderBy: updatedAt
+    ) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        identifier
+        title
+        state { name type }
+        completedAt
+        updatedAt
+        url
+        history(first: 20) {
+          nodes {
+            createdAt
+            fromState { name }
+            toState { name }
+          }
+        }
+        comments(first: 10) {
+          nodes {
+            createdAt
+            body
+            user { name isMe }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def query_linear(api_key: str, query: str, variables: dict | None = None) -> dict:
+    payload = json.dumps({"query": query, "variables": variables or {}}).encode()
+    req = urllib.request.Request(
+        LINEAR_API,
+        data=payload,
+        headers={
+            "Authorization": api_key,
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        print(f"Linear API error: {e.code} {body}", file=sys.stderr)
+        return {}
+
+
+def fetch_issues_since(api_key: str, since: datetime.datetime) -> list[dict]:
+    issues = []
+    cursor = None
+    since_iso = since.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    while True:
+        variables: dict = {"updatedAfter": since_iso}
+        if cursor:
+            variables["after"] = cursor
+        data = query_linear(api_key, ISSUES_QUERY, variables)
+        if not data or "data" not in data:
+            break
+        assigned = data["data"]["viewer"]["assignedIssues"]
+        issues.extend(assigned["nodes"])
+        if assigned["pageInfo"]["hasNextPage"]:
+            cursor = assigned["pageInfo"]["endCursor"]
+        else:
+            break
+    return issues
+
+
+# --- GitLab ---
+
+def gitlab_request(host: str, token: str, path: str, params: dict | None = None) -> list | dict:
+    url = f"https://{host}/api/v4{path}"
+    if params:
+        qs = "&".join(f"{k}={urllib.request.quote(str(v))}" for k, v in params.items())
+        url = f"{url}?{qs}"
+
+    req = urllib.request.Request(url, headers={"PRIVATE-TOKEN": token})
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            print("GitLab auth failed. Check GITLAB_TOKEN.", file=sys.stderr)
+        return []
+
+
+def _fetch_mrs_by_scope(host: str, token: str, since: datetime.datetime, scope: str) -> list[dict]:
+    since_iso = since.strftime("%Y-%m-%dT%H:%M:%SZ")
+    mrs = []
+    page = 1
+    while True:
+        data = gitlab_request(host, token, "/merge_requests", {
+            "scope": scope,
+            "state": "all",
+            "updated_after": since_iso,
+            "per_page": 100,
+            "page": page,
+        })
+        if not data:
+            break
+        mrs.extend(data)
+        if len(data) < 100:
+            break
+        page += 1
+    return mrs
+
+
+def _fetch_mrs_from_events(host: str, token: str, since: datetime.datetime) -> list[dict]:
+    """Fetch MRs I interacted with (merged, approved, commented) via the events API."""
+    events = fetch_events_since(host, token, since)
+    mrs = []
+    seen_ids: set[int] = set()
+    for ev in events:
+        if ev.get("target_type") != "MergeRequest":
+            continue
+        target_id = ev.get("target_id")
+        project_id = ev.get("project_id")
+        if not target_id or not project_id or target_id in seen_ids:
+            continue
+        seen_ids.add(target_id)
+        mr = gitlab_request(host, token, f"/projects/{project_id}/merge_requests/{ev.get('target_iid', 0)}")
+        if isinstance(mr, dict) and mr.get("id"):
+            mrs.append(mr)
+    return mrs
+
+
+def fetch_mrs_since(host: str, token: str, since: datetime.datetime) -> list[dict]:
+    """Fetch MRs authored by, assigned to, or interacted with by me."""
+    authored = _fetch_mrs_by_scope(host, token, since, "created_by_me")
+    assigned = _fetch_mrs_by_scope(host, token, since, "assigned_to_me")
+    from_events = _fetch_mrs_from_events(host, token, since)
+    seen = {mr["id"] for mr in authored}
+    for mr in assigned + from_events:
+        if mr["id"] not in seen:
+            authored.append(mr)
+            seen.add(mr["id"])
+    return authored
+
+
+def fetch_events_since(host: str, token: str, since: datetime.datetime) -> list[dict]:
+    """Fetch user events (pushes, comments, etc.) since the given time."""
+    since_iso = since.strftime("%Y-%m-%dT%H:%M:%SZ")
+    data = gitlab_request(host, token, "/events", {
+        "after": since.strftime("%Y-%m-%d"),
+        "per_page": 100,
+    })
+    return data if isinstance(data, list) else []
+
+
+# --- GitHub ---
+
+GITHUB_API = "https://api.github.com"
+
+
+def github_request(token: str, path: str, params: dict | None = None) -> list | dict:
+    url = f"{GITHUB_API}{path}"
+    if params:
+        qs = "&".join(f"{k}={urllib.request.quote(str(v))}" for k, v in params.items())
+        url = f"{url}?{qs}"
+
+    req = urllib.request.Request(url, headers={
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+    })
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            print("GitHub auth failed. Check GITHUB_TOKEN.", file=sys.stderr)
+        return []
+
+
+def fetch_github_prs_since(token: str, since: datetime.datetime) -> list[dict]:
+    """Fetch PRs authored by or requesting review from me, updated since the given time."""
+    since_iso = since.strftime("%Y-%m-%dT%H:%M:%S")
+    authored = github_request(token, "/search/issues", {
+        "q": f"is:pr author:@me updated:>={since_iso}",
+        "per_page": "100",
+        "sort": "updated",
+    })
+    reviewing = github_request(token, "/search/issues", {
+        "q": f"is:pr review-requested:@me updated:>={since_iso}",
+        "per_page": "100",
+        "sort": "updated",
+    })
+    items = (authored if isinstance(authored, dict) else {}).get("items", [])
+    review_items = (reviewing if isinstance(reviewing, dict) else {}).get("items", [])
+    seen = {i["id"] for i in items}
+    for i in review_items:
+        if i["id"] not in seen:
+            items.append(i)
+            seen.add(i["id"])
+
+    # Fetch full PR details to get state (merged vs open vs closed) and draft
+    prs: list[dict] = []
+    for item in items:
+        pr_url = item.get("pull_request", {}).get("url", "")
+        if not pr_url:
+            continue
+        try:
+            req = urllib.request.Request(pr_url, headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json",
+            })
+            with urllib.request.urlopen(req) as resp:
+                prs.append(json.loads(resp.read()))
+        except (urllib.error.HTTPError, urllib.error.URLError):
+            # Fall back to search result data
+            prs.append({
+                "number": item.get("number", 0),
+                "title": item.get("title", ""),
+                "state": item.get("state", ""),
+                "draft": False,
+                "merged_at": None,
+                "html_url": item.get("html_url", ""),
+                "updated_at": item.get("updated_at", ""),
+                "user_notes_count": item.get("comments", 0),
+                "base": {"repo": {"full_name": item.get("repository_url", "").rsplit("/repos/", 1)[-1] if "/repos/" in item.get("repository_url", "") else ""}},
+            })
+    return prs
+
+
+# --- Git commits ---
+
+def find_git_repos(repos_dir: str) -> list[Path]:
+    """Find git repos one level deep in the given directory."""
+    repos_path = Path(repos_dir).expanduser()
+    if not repos_path.is_dir():
+        return []
+    repos = []
+    for child in repos_path.iterdir():
+        if child.is_dir() and (child / ".git").exists():
+            repos.append(child)
+    return sorted(repos)
+
+
+def get_commits_since(repo: Path, since: datetime.datetime, author_email: str) -> list[dict]:
+    """Get commits from a repo since the given time by the given author."""
+    since_str = since.strftime("%Y-%m-%dT%H:%M:%S")
+    try:
+        result = subprocess.run(
+            ["git", "log", f"--since={since_str}", f"--author={author_email}",
+             "--all", "--format=%H|%s|%ai", "--shortstat"],
+            capture_output=True, text=True, cwd=repo, timeout=10,
+        )
+        if result.returncode != 0:
+            return []
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return []
+
+    commits = []
+    lines = result.stdout.strip().splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if not line or "|" not in line:
+            i += 1
+            continue
+        parts = line.split("|", 2)
+        if len(parts) != 3:
+            i += 1
+            continue
+
+        # Next non-empty line might be the stat line
+        insertions = 0
+        deletions = 0
+        files_changed = 0
+        while i + 1 < len(lines) and not lines[i + 1].strip():
+            i += 1
+        if i + 1 < len(lines):
+            stat_line = lines[i + 1].strip()
+            if "changed" in stat_line and "|" not in stat_line:
+                fc = re.search(r"(\d+) file", stat_line)
+                ins = re.search(r"(\d+) insertion", stat_line)
+                dels = re.search(r"(\d+) deletion", stat_line)
+                files_changed = int(fc.group(1)) if fc else 0
+                insertions = int(ins.group(1)) if ins else 0
+                deletions = int(dels.group(1)) if dels else 0
+                i += 1  # skip stat line
+
+        commits.append({
+            "hash": parts[0][:8],
+            "message": parts[1],
+            "date": parts[2],
+            "repo": repo.name,
+            "insertions": insertions,
+            "deletions": deletions,
+            "files_changed": files_changed,
+        })
+        i += 1
+    return commits
+
+
+def get_git_email() -> str:
+    """Get the configured git author email."""
+    try:
+        result = subprocess.run(
+            ["git", "config", "user.email"],
+            capture_output=True, text=True, timeout=5,
+        )
+        return result.stdout.strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return ""
+
+
+def fetch_all_commits(repos_dir: str, since: datetime.datetime, email: str) -> list[dict]:
+    repos = find_git_repos(repos_dir)
+    if not repos:
+        return []
+
+    all_commits = []
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {pool.submit(get_commits_since, repo, since, email): repo for repo in repos}
+        for future in futures:
+            all_commits.extend(future.result())
+
+    return all_commits
+
+
+# --- Output ---
+
+def issue_changes(issue: dict, since: datetime.datetime) -> list[str]:
+    """Extract relevant changes from issue history and comments since the cutoff."""
+    changes = []
+    since_str = since.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Status transitions
+    for h in issue.get("history", {}).get("nodes", []):
+        if h.get("createdAt", "") < since_str:
+            continue
+        from_state = h.get("fromState")
+        to_state = h.get("toState")
+        if from_state and to_state:
+            changes.append(f"{from_state['name']} → {to_state['name']}")
+
+    # Comments by me
+    comment_count = 0
+    for c in issue.get("comments", {}).get("nodes", []):
+        if c.get("createdAt", "") < since_str:
+            continue
+        user = c.get("user") or {}
+        if user.get("isMe"):
+            comment_count += 1
+    if comment_count:
+        changes.append(f"{comment_count} comment{'s' if comment_count > 1 else ''}")
+
+    return changes
+
+
+def mr_short_ref(mr: dict) -> str:
+    """Short ref for display. Works for both GitLab MRs and GitHub PRs."""
+    source = mr.get("_source", "gitlab")
+    if source == "github":
+        repo = mr.get("base", {}).get("repo", {}).get("full_name", "")
+        short = repo.rsplit("/", 1)[-1] if "/" in repo else repo
+        return f"{short}#{mr.get('number', '?')}"
+
+    refs = mr.get("references", {})
+    ref = refs.get("full", f"!{mr['iid']}")
+    # Take last path segment + MR number
+    if "/" in ref and "!" in ref:
+        path, num = ref.rsplit("!", 1)
+        short_path = path.rsplit("/", 1)[-1]
+        return f"{short_path}!{num}"
+    return ref
+
+
+def mr_details(mr: dict) -> list[str]:
+    """Extract change details from an MR/PR."""
+    details = []
+    source = mr.get("_source", "gitlab")
+
+    if source == "github":
+        # GitHub PRs don't carry pipeline info in the PR object
+        comments = mr.get("comments", 0) or mr.get("review_comments", 0)
+        if comments:
+            details.append(f"{comments} comment{'s' if comments > 1 else ''}")
+        if mr.get("draft"):
+            details.append("[dim]draft[/]")
+        return details
+
+    pipeline = mr.get("pipeline") or {}
+    status = pipeline.get("status", "")
+    if status:
+        status_map = {
+            "success": "[green]CI passed[/]",
+            "passed": "[green]CI passed[/]",
+            "failed": "[red]CI failed[/]",
+            "running": "[yellow]CI running[/]",
+        }
+        ci = status_map.get(status)
+        if ci:
+            details.append(ci)
+
+    changes = mr.get("changes_count")
+    if changes:
+        details.append(f"{changes} files")
+
+    # User notes count (discussions/comments)
+    notes = mr.get("user_notes_count", 0)
+    if notes:
+        details.append(f"{notes} comment{'s' if notes > 1 else ''}")
+
+    if mr.get("draft"):
+        details.append("[dim]draft[/]")
+
+    return details
+
+
+def print_summary(
+    console: Console,
+    issues: list[dict],
+    mrs: list[dict],
+    commits: list[dict],
+    since: datetime.datetime,
+):
+    now = datetime.datetime.now(datetime.timezone.utc)
+    delta = now - since
+    if delta.days == 0:
+        period = "today"
+    elif delta.days == 1:
+        period = "last 24h"
+    else:
+        period = f"last {delta.days}d"
+
+    console.print(f"\n[bold]Activity summary ({period})[/]\n")
+
+    # --- Tickets ---
+    if issues:
+        completed = [i for i in issues if i.get("completedAt")]
+        in_progress = [i for i in issues if i["state"]["type"] == "started" and not i.get("completedAt")]
+        other = [i for i in issues if i["state"]["type"] not in ("started", "completed", "canceled") and not i.get("completedAt")]
+
+        if completed:
+            console.print("[green]Completed:[/]")
+            for i in completed:
+                changes = issue_changes(i, since)
+                detail = f" [dim]({', '.join(changes)})[/]" if changes else ""
+                console.print(f"  [cyan]{i['identifier']}[/] {escape(i['title'])}{detail}")
+
+        if in_progress:
+            console.print("[yellow]In progress:[/]")
+            for i in in_progress:
+                changes = issue_changes(i, since)
+                detail = f" [dim]({', '.join(changes)})[/]" if changes else ""
+                console.print(f"  [cyan]{i['identifier']}[/] {escape(i['title'])}{detail}")
+
+        if other:
+            console.print("[blue]Touched:[/]")
+            for i in other:
+                changes = issue_changes(i, since)
+                detail = f" [dim]({', '.join(changes)})[/]" if changes else ""
+                console.print(f"  [cyan]{i['identifier']}[/] {escape(i['title'])} [dim]({i['state']['name']})[/]{detail}")
+    else:
+        console.print("[dim]No ticket activity.[/]")
+
+    console.print()
+
+    # --- MRs / PRs ---
+    if mrs:
+        merged = [m for m in mrs if m.get("state") == "merged" or m.get("merged_at")]
+        opened = [m for m in mrs if m.get("state") in ("opened", "open") and not m.get("merged_at")]
+
+        if merged:
+            console.print("[green]Merged:[/]")
+            for m in merged:
+                details = mr_details(m)
+                detail = f" [dim]({', '.join(details)})[/]" if details else ""
+                console.print(f"  [green]{mr_short_ref(m)}[/] {escape(m['title'])}{detail}")
+
+        if opened:
+            console.print("[yellow]Open:[/]")
+            for m in opened:
+                details = mr_details(m)
+                detail = f" [dim]({', '.join(details)})[/]" if details else ""
+                console.print(f"  [yellow]{mr_short_ref(m)}[/] {escape(m['title'])}{detail}")
+    else:
+        console.print("[dim]No MR/PR activity.[/]")
+
+    console.print()
+
+    # --- Commits ---
+    if commits:
+        by_repo: dict[str, list[dict]] = {}
+        for c in commits:
+            by_repo.setdefault(c["repo"], []).append(c)
+
+        total_ins = sum(c.get("insertions", 0) for c in commits)
+        total_dels = sum(c.get("deletions", 0) for c in commits)
+        stats = f" [green]+{total_ins}[/] [red]-{total_dels}[/]" if total_ins or total_dels else ""
+        console.print(f"[blue]Commits ({len(commits)}){stats}:[/]")
+
+        for repo_name, repo_commits in sorted(by_repo.items()):
+            repo_ins = sum(c.get("insertions", 0) for c in repo_commits)
+            repo_dels = sum(c.get("deletions", 0) for c in repo_commits)
+            repo_stats = f" [green]+{repo_ins}[/] [red]-{repo_dels}[/]" if repo_ins or repo_dels else ""
+            console.print(f"  [bold]{repo_name}[/] ({len(repo_commits)}){repo_stats}")
+            for c in repo_commits[:10]:
+                ins = c.get("insertions", 0)
+                dels = c.get("deletions", 0)
+                stat = ""
+                if ins or dels:
+                    stat = f" [green]+{ins}[/][red]-{dels}[/]"
+                console.print(f"    [dim]{c['hash']}[/] {escape(c['message'])}{stat}")
+            if len(repo_commits) > 10:
+                console.print(f"    [dim]... and {len(repo_commits) - 10} more[/]")
+    else:
+        console.print("[dim]No commits found.[/]")
+
+    console.print()
+
+
+def mr_state(mr: dict) -> str:
+    if mr.get("state") == "merged" or mr.get("merged_at"):
+        return "merged"
+    if mr.get("state") in ("opened", "open"):
+        return "open"
+    return mr.get("state") or "unknown"
+
+
+def build_json(
+    issues: list[dict],
+    mrs: list[dict],
+    commits: list[dict],
+    since: datetime.datetime,
+) -> dict:
+    def issue_group(i: dict) -> str:
+        if i.get("completedAt"):
+            return "completed"
+        if i["state"]["type"] == "started":
+            return "in_progress"
+        return "touched"
+
+    def mr_row(m: dict) -> dict:
+        github = m.get("_source") == "github"
+        return {
+            "ref": mr_short_ref(m),
+            "source": "github" if github else "gitlab",
+            "title": m.get("title", ""),
+            "state": mr_state(m),
+            "draft": bool(m.get("draft")),
+            "ci": None if github else (m.get("pipeline") or {}).get("status") or None,
+            "comments": m.get("comments", 0) if github else m.get("user_notes_count", 0),
+            "url": m.get("html_url") if github else m.get("web_url"),
+            "updated_at": m.get("updated_at"),
+        }
+
+    return {
+        "since": since.isoformat(),
+        "until": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "issues": [
+            {
+                "id": i["identifier"],
+                "title": i["title"],
+                "status": i["state"]["name"],
+                "status_type": i["state"]["type"],
+                "group": issue_group(i),
+                "changes": issue_changes(i, since),
+                "url": i.get("url"),
+            }
+            for i in issues
+        ],
+        "mrs": [mr_row(m) for m in mrs],
+        "commits": commits,
+    }
+
+
+# --- Main ---
+
+def main():
+    parser = argparse.ArgumentParser(description="Summarize your day's activity")
+    parser.add_argument(
+        "--since", default=None,
+        help="How far back to look (e.g. 1d, 2d, 12h, 1w). Default: start of today.",
+    )
+    parser.add_argument(
+        "--repos-dir", default="~/repos",
+        help="Directory containing git repos to scan (default: ~/repos)",
+    )
+    parser.add_argument(
+        "--json", action="store_true",
+        help="Machine-readable JSON output (warnings still go to stderr)",
+    )
+    args = parser.parse_args()
+
+    if args.since:
+        since = parse_since(args.since)
+    else:
+        since = start_of_today_utc()
+
+    api_key = os.environ.get("LINEAR_API_KEY")
+    if not api_key:
+        print("LINEAR_API_KEY not set — skipping ticket activity.", file=sys.stderr)
+
+    gitlab_host = os.environ.get("GITLAB_HOST", "code.roche.com")
+    gitlab_token = os.environ.get("GITLAB_TOKEN")
+    github_token = os.environ.get("GITHUB_TOKEN_PERSONAL") or os.environ.get("GITHUB_TOKEN")
+
+    if not gitlab_token and not github_token:
+        print("Neither GITLAB_TOKEN nor GITHUB_TOKEN set — skipping MR/PR activity.", file=sys.stderr)
+
+    email = get_git_email()
+
+    # Fetch everything in parallel
+    issues: list[dict] = []
+    mrs: list[dict] = []
+    commits: list[dict] = []
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futures = {}
+        if api_key:
+            futures["issues"] = pool.submit(fetch_issues_since, api_key, since)
+        if gitlab_host and gitlab_token:
+            futures["gl_mrs"] = pool.submit(fetch_mrs_since, gitlab_host, gitlab_token, since)
+        if github_token:
+            futures["gh_prs"] = pool.submit(fetch_github_prs_since, github_token, since)
+        if email:
+            futures["commits"] = pool.submit(fetch_all_commits, args.repos_dir, since, email)
+
+        if "issues" in futures:
+            issues = futures["issues"].result()
+        if "gl_mrs" in futures:
+            mrs.extend(futures["gl_mrs"].result())
+        if "gh_prs" in futures:
+            # Tag GitHub PRs so mr_short_ref/mr_details can distinguish them
+            for pr in futures["gh_prs"].result():
+                pr["_source"] = "github"
+                mrs.append(pr)
+        if "commits" in futures:
+            commits = futures["commits"].result()
+
+    if args.json:
+        print(json.dumps(build_json(issues, mrs, commits, since), indent=2))
+        return
+
+    console = Console()
+    print_summary(console, issues, mrs, commits, since)
+
+
+if __name__ == "__main__":
+    main()
