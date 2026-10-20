@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+#
+# task-start - create a worktree-based workspace for a task.
+#
+# Creates a git worktree from a repo's default branch, seeds a plan.md,
+# and opens a tmux session. Uses gum for interactive prompts when args
+# are omitted.
+#
+# Requires:
+#   gum   - for interactive mode (https://github.com/charmbracelet/gum)
+#
+# Usage:
+#   task-start                                     # interactive
+#   task-start <repo> <description>                # positional
+#   task-start --repo myapp --description "Fix X"  # flags
+#   task-start --repo myapp --branch pb/fix-x      # explicit branch
+#
+# Environment:
+#   REPOS_DIR       - where repos live (default: ~/repos)
+#   WORKTREES_DIR   - where worktrees live (default: ~/repos/worktrees)
+#   GIT_CLONE_BASE  - git clone prefix (default: git@github.com:peterbraden)
+#   GIT_INITIALS    - branch prefix (default: derived from git user name)
+
+set -eu
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPOS_DIR="${REPOS_DIR:-$HOME/repos}"
+WORKTREES_DIR="${WORKTREES_DIR:-$REPOS_DIR/worktrees}"
+
+usage() {
+    cat <<EOF
+Usage: task-start [options] [<repo> [<description>]]
+
+Create a worktree-based workspace for a task.
+
+Arguments:
+    repo            Repository name (looked up in ~/repos, cloned if missing)
+    description     Task description (used for branch name and plan.md)
+
+Options:
+    --repo REPO           Repository name
+    --branch BRANCH       Explicit branch name (skips auto-generation)
+    --description DESC    Task description
+    -h, --help            Show this help
+
+Interactive mode:
+    When arguments are omitted, gum is used to prompt for missing values.
+
+Examples:
+    task-start                                     # fully interactive
+    task-start myapp "Fix auth bug"                # positional args
+    task-start --repo myapp --branch pb/fix-auth   # explicit branch
+EOF
+}
+
+die() { echo "task-start: $*" >&2; exit 1; }
+
+# Slugify a string for use as a branch name
+slugify() {
+    echo "$1" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '-' | sed 's/^-//;s/-$//' | cut -c1-50
+}
+
+# Get git initials for branch prefix (e.g. "pb" from "Peter Braden")
+get_initials() {
+    if [[ -n "${GIT_INITIALS:-}" ]]; then
+        echo "$GIT_INITIALS"
+        return
+    fi
+    local name
+    name=$(git config user.name 2>/dev/null || true)
+    if [[ -n "$name" ]]; then
+        echo "$name" | sed 's/\([a-zA-Z]\)[^ ]* */\1/g' | tr '[:upper:]' '[:lower:]'
+    else
+        echo "wt"
+    fi
+}
+
+# Prompt with gum, or die if gum isn't available
+gum_or_die() {
+    command -v gum >/dev/null 2>&1 || die "gum is required for interactive mode (https://github.com/charmbracelet/gum). Pass --repo and --description as flags instead."
+}
+
+# --- Parse arguments ---
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+repo=""
+branch=""
+description=""
+
+# Parse positional args first
+positional=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --repo)         repo="$2"; shift ;;
+        --branch)       branch="$2"; shift ;;
+        --description)  description="$2"; shift ;;
+        -h|--help)      usage; exit 0 ;;
+        -*)             die "unknown option: $1" ;;
+        *)              positional+=("$1") ;;
+    esac
+    shift
+done
+
+# Fill from positional args
+if [[ ${#positional[@]} -ge 1 && -z "$repo" ]]; then
+    repo="${positional[0]}"
+fi
+if [[ ${#positional[@]} -ge 2 && -z "$description" ]]; then
+    description="${positional[1]}"
+fi
+
+# --- Interactive prompts for missing values ---
+
+if [[ -z "$repo" ]]; then
+    gum_or_die
+    # Build list of repos from ~/repos
+    choices=()
+    if [[ -d "$REPOS_DIR" ]]; then
+        for dir in "$REPOS_DIR"/*/; do
+            [[ -d "$dir/.git" ]] || continue
+            choices+=("$(basename "${dir%/}")")
+        done
+    fi
+
+    if [[ ${#choices[@]} -gt 0 ]]; then
+        repo=$(printf '%s\n' "${choices[@]}" | gum filter --placeholder "Select repo...")
+    else
+        repo=$(gum input --placeholder "Repo name (e.g. myapp)")
+    fi
+fi
+
+[[ -n "$repo" ]] || die "repo is required"
+
+if [[ -z "$description" && -z "$branch" ]]; then
+    gum_or_die
+    description=$(gum input --placeholder "Task description (e.g. Fix auth bug)")
+fi
+
+# --- Resolve repo directory ---
+
+REPO_DIR=$("$SCRIPT_DIR/find-or-clone" "$repo")
+
+# --- Determine default branch ---
+
+cd "$REPO_DIR"
+git fetch origin --quiet 2>/dev/null || true
+
+default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || true)
+if [[ -z "$default_branch" ]]; then
+    # Fallback: check for main or master
+    if git show-ref --verify --quiet refs/remotes/origin/main 2>/dev/null; then
+        default_branch="main"
+    elif git show-ref --verify --quiet refs/remotes/origin/master 2>/dev/null; then
+        default_branch="master"
+    else
+        default_branch=$(git rev-parse --abbrev-ref HEAD)
+    fi
+fi
+
+# --- Determine branch name ---
+
+if [[ -z "$branch" ]]; then
+    initials=$(get_initials)
+    slug=$(slugify "$description")
+    branch="${initials}/${slug}"
+fi
+
+# --- Create worktree ---
+
+mkdir -p "$WORKTREES_DIR"
+
+# Worktree directory: repo--branch-slug
+branch_slug=$(echo "$branch" | tr '/' '-')
+worktree_dir="$WORKTREES_DIR/${repo}--${branch_slug}"
+
+if [[ -d "$worktree_dir" ]]; then
+    echo "Worktree already exists: $worktree_dir"
+else
+    git worktree add -b "$branch" "$worktree_dir" "origin/$default_branch"
+    echo "Created worktree: $worktree_dir"
+fi
+
+# --- Seed plan ---
+
+if [[ -n "$description" ]]; then
+    "$SCRIPT_DIR/seed-plan" "$worktree_dir" "$description"
+fi
+
+# --- Open tmux session ---
+
+session_name="${repo}--${branch_slug}"
+"$SCRIPT_DIR/tmux-session" "$session_name" "$worktree_dir"
