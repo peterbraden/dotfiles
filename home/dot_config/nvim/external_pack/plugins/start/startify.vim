@@ -1,1 +1,1 @@
-/Users/bradenp1/.vim/bundle/startify.vim
+../../../../../.vim/bundle/startify.vim
