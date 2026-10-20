@@ -44,3 +44,7 @@
 	program = gpg
 [pull]
 	rebase = false
+
+# Machine-local settings (e.g. work identity), not in this repo. Last so it wins.
+[include]
+    path = ~/.gitconfig.local
