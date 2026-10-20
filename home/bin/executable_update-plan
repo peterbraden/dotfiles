@@ -40,13 +40,20 @@ unset ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN ANTHROPIC_CUSTOM_HEADERS
 # --- Lock (prevent overlapping runs) ---
 LOCK_DIR="/tmp/update-plan.lock"
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-    if [[ -d "$LOCK_DIR" ]] && find "$LOCK_DIR" -maxdepth 0 -mmin +5 | grep -q .; then
-        rm -rf "$LOCK_DIR"
-        mkdir "$LOCK_DIR" 2>/dev/null || exit 0
-    else
+    # Only take over the lock once the run holding it has exited. (Taking it
+    # over by age let hung runs pile up.) A lock without a pid file younger
+    # than a minute belongs to a run that is just starting.
+    holder=$(cat "$LOCK_DIR/pid" 2>/dev/null)
+    if [[ -n $holder ]] && kill -0 "$holder" 2>/dev/null; then
         exit 0
     fi
+    if [[ -z $holder ]] && find "$LOCK_DIR" -maxdepth 0 -mmin -1 | grep -q .; then
+        exit 0
+    fi
+    rm -rf "$LOCK_DIR"
+    mkdir "$LOCK_DIR" 2>/dev/null || exit 0
 fi
+echo $$ > "$LOCK_DIR/pid"
 
 # --- Temp files ---
 tmp_issues="$(mktemp "$TMP_BASE/ctx-issues.XXXXXX")"
@@ -84,6 +91,26 @@ pid_summary=$!
 ("$SCRIPT_DIR/tasks" 2>/dev/null || true) | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' > "$tmp_tasks" &
 pid_tasks=$!
 
+# Give up on the whole run if gathering takes too long, rather than hang
+GATHER_TIMEOUT=120
+kill_tree() {
+    local p
+    for p in "$@"; do
+        kill_tree $(pgrep -P "$p")
+        kill "$p" 2>/dev/null || true
+    done
+}
+deadline=$((SECONDS + GATHER_TIMEOUT))
+while [[ -n $(jobs -pr) ]]; do
+    if (( SECONDS >= deadline )); then
+        echo "[$(date '+%F %T')] update-plan: gathering timed out after ${GATHER_TIMEOUT}s, keeping previous plan" >&2
+        pids=$(jobs -p)
+        disown -a   # no "Terminated" job notices in the log
+        kill_tree $pids
+        exit 0
+    fi
+    sleep 1
+done
 wait 2>/dev/null || true
 
 # Merge issue results from multiple tokens
