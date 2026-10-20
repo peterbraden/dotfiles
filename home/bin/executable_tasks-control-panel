@@ -1,0 +1,594 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "rich",
+# ]
+# ///
+"""
+tasks-control-panel - full-screen dashboard of everything you're working on.
+
+Merges Linear issues, GitLab MRs, and local tmux sessions into a
+unified view. Items with an active tmux session are promoted to
+"Active" regardless of ticket status.
+
+Requires:
+    LINEAR_API_KEY   - Linear personal API key
+    GITLAB_TOKEN     - GitLab personal access token (optional)
+
+Usage:
+    tasks-control-panel
+"""
+
+import json
+import os
+import signal
+import subprocess
+import sys
+import threading
+import time
+from pathlib import Path
+
+from rich.console import Console
+from rich.live import Live
+from rich.text import Text
+from rich.table import Table
+from rich.panel import Panel
+from rich.columns import Columns
+from rich import box
+
+signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+
+CACHE_DIR = Path.home() / ".cache" / "utils"
+CACHE_FILE = CACHE_DIR / "my-issues.json"
+CACHE_MAX_AGE = 300  # 5 minutes
+REFRESH_INTERVAL = 60  # background refresh every 60s
+DISPLAY_INTERVAL = 5  # re-render every 5s
+
+SELF_SESSION = "control-center"
+
+PRIORITY_LABELS = {
+    0: "",
+    1: "[red]Urgent[/]",
+    2: "[yellow]High[/]",
+    3: "Medium",
+    4: "[dim]Low[/]",
+}
+
+STATUS_COLORS = {
+    "started": "yellow",
+    "unstarted": "blue",
+    "triage": "magenta",
+    "backlog": "dim",
+}
+
+
+# --- Cache ---
+
+def read_cache() -> dict | None:
+    """Read cached my-issues JSON if fresh enough."""
+    if not CACHE_FILE.exists():
+        return None
+    try:
+        age = time.time() - CACHE_FILE.stat().st_mtime
+        if age > CACHE_MAX_AGE:
+            return None
+        return json.loads(CACHE_FILE.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def write_cache(data: dict):
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    CACHE_FILE.write_text(json.dumps(data))
+
+
+# --- Background data refresh ---
+
+class IssueDataRefresher:
+    """Runs my-issues --json in background, caches result."""
+
+    def __init__(self):
+        self.data: dict | None = read_cache()
+        self.lock = threading.Lock()
+        self._refreshing = False
+        self.last_refresh = 0.0
+        # Trigger immediate refresh if no cache
+        if self.data is None:
+            self.refresh()
+
+    def get_data(self) -> dict | None:
+        with self.lock:
+            return self.data
+
+    def maybe_refresh(self):
+        """Trigger a background refresh if enough time has passed."""
+        if self._refreshing:
+            return
+        if time.time() - self.last_refresh < REFRESH_INTERVAL:
+            return
+        self.refresh()
+
+    def refresh(self):
+        self._refreshing = True
+        t = threading.Thread(target=self._do_refresh, daemon=True)
+        t.start()
+
+    def _do_refresh(self):
+        try:
+            result = subprocess.run(
+                [sys.executable, os.path.join(os.path.dirname(__file__), "my-issues"), "--json"],
+                capture_output=True, text=True, timeout=30,
+                env={**os.environ},
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                data = json.loads(result.stdout)
+                with self.lock:
+                    self.data = data
+                write_cache(data)
+        except (subprocess.TimeoutExpired, json.JSONDecodeError, OSError) as e:
+            print(f"Background refresh failed: {e}", file=sys.stderr)
+        finally:
+            self.last_refresh = time.time()
+            self._refreshing = False
+
+
+# --- Tmux sessions ---
+
+def get_tmux_sessions() -> list[dict]:
+    """Get active tmux sessions with their first pane's cwd."""
+    try:
+        result = subprocess.run(
+            ["tmux", "list-sessions", "-F", "#{session_name}|#{session_windows}|#{session_activity}"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return []
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return []
+
+    sessions = []
+    for line in result.stdout.strip().splitlines():
+        parts = line.split("|", 2)
+        if len(parts) != 3:
+            continue
+        name = parts[0]
+        if name == SELF_SESSION:
+            continue
+        sessions.append({
+            "name": name,
+            "windows": int(parts[1]),
+            "activity": int(parts[2]),
+        })
+
+    # Get cwd for each session's first pane
+    for session in sessions:
+        try:
+            result = subprocess.run(
+                ["tmux", "display-message", "-t", f"{session['name']}:0.0", "-p", "#{pane_current_path}"],
+                capture_output=True, text=True, timeout=5,
+            )
+            session["cwd"] = result.stdout.strip() if result.returncode == 0 else ""
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            session["cwd"] = ""
+
+    return sessions
+
+
+def get_git_info(cwd: str) -> dict:
+    """Get branch, dirty status, last commit, and unpushed count."""
+    if not cwd or not Path(cwd).is_dir():
+        return {"branch": "", "dirty": 0, "last_commit": "", "last_commit_age": "", "unpushed": 0}
+
+    info = {"branch": "", "dirty": 0, "last_commit": "", "last_commit_age": "", "unpushed": 0}
+
+    def _run(args):
+        try:
+            r = subprocess.run(args, capture_output=True, text=True, cwd=cwd, timeout=5)
+            return r.stdout.strip() if r.returncode == 0 else ""
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return ""
+
+    info["branch"] = _run(["git", "branch", "--show-current"])
+
+    porcelain = _run(["git", "status", "--porcelain"])
+    if porcelain:
+        info["dirty"] = len([l for l in porcelain.splitlines() if l])
+
+    # Last commit message + age
+    log_line = _run(["git", "log", "-1", "--format=%s|%ct"])
+    if log_line and "|" in log_line:
+        msg, epoch_str = log_line.rsplit("|", 1)
+        info["last_commit"] = msg
+        try:
+            delta = time.time() - int(epoch_str)
+            if delta < 3600:
+                info["last_commit_age"] = f"{int(delta / 60)}m"
+            elif delta < 86400:
+                info["last_commit_age"] = f"{int(delta / 3600)}h"
+            else:
+                info["last_commit_age"] = f"{int(delta / 86400)}d"
+        except ValueError:
+            pass
+
+    # Unpushed commits
+    if info["branch"]:
+        count_str = _run(["git", "rev-list", "--count", f"@{{u}}..HEAD"])
+        if count_str.isdigit():
+            info["unpushed"] = int(count_str)
+
+    return info
+
+
+def get_plan_oneline(cwd: str) -> str:
+    """Get plan summary from a directory."""
+    if not cwd:
+        return ""
+    try:
+        result = subprocess.run(
+            [os.path.join(os.path.dirname(__file__), "plan-oneline")],
+            capture_output=True, text=True, cwd=cwd, timeout=5,
+        )
+        return result.stdout.strip() if result.returncode == 0 else ""
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return ""
+
+
+def enrich_sessions(sessions: list[dict]) -> list[dict]:
+    """Add git info and plan to each session, in parallel."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    def enrich(session):
+        cwd = session.get("cwd", "")
+        session["git"] = get_git_info(cwd)
+        session["plan"] = get_plan_oneline(cwd)
+        return session
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        return list(pool.map(enrich, sessions))
+
+
+# --- Correlation ---
+
+def correlate(sessions: list[dict], issue_data: dict | None) -> dict:
+    """
+    Correlate sessions with issues/MRs.
+
+    Returns:
+        active: list of (session, issue_or_none, mrs) — has tmux session
+        other_issues: list of issues without a session
+        uncorrelated_mrs: list of MRs without a session or issue
+    """
+    if issue_data is None:
+        # No issue data yet — all sessions are uncorrelated
+        return {
+            "active": [(s, None, []) for s in sessions],
+            "other_issues": [],
+            "uncorrelated_mrs": [],
+        }
+
+    issues = issue_data.get("issues", [])
+    uncorrelated_mrs = list(issue_data.get("uncorrelated_mrs", []))
+
+    # Build lookup: branch -> issue, identifier (lowered) -> issue
+    branch_to_issue: dict[str, dict] = {}
+    id_to_issue: dict[str, dict] = {}
+    for issue in issues:
+        if issue.get("branch_name"):
+            branch_to_issue[issue["branch_name"]] = issue
+        id_to_issue[issue["id"].lower()] = issue
+
+    # Also map MR branches to issues
+    mr_branch_to_issue: dict[str, dict] = {}
+    for issue in issues:
+        for mr in issue.get("mrs", []):
+            mr_branch_to_issue[mr["branch"]] = issue
+
+    matched_issue_ids: set[str] = set()
+    active: list[tuple] = []
+
+    for session in sessions:
+        branch = session.get("git", {}).get("branch", "")
+        matched_issue = None
+
+        # 1. Session branch matches an MR branch -> issue
+        if branch in mr_branch_to_issue:
+            matched_issue = mr_branch_to_issue[branch]
+
+        # 2. Session branch matches issue branchName
+        if not matched_issue and branch in branch_to_issue:
+            matched_issue = branch_to_issue[branch]
+
+        # 3. Session branch starts with lowercased issue identifier
+        if not matched_issue:
+            for prefix, issue in id_to_issue.items():
+                if branch.startswith(prefix + "-") or branch == prefix:
+                    matched_issue = issue
+                    break
+
+        # 4. Session name matches issue identifier
+        if not matched_issue:
+            session_lower = session["name"].lower()
+            for prefix, issue in id_to_issue.items():
+                if prefix in session_lower:
+                    matched_issue = issue
+                    break
+
+        if matched_issue:
+            matched_issue_ids.add(matched_issue["id"])
+            active.append((session, matched_issue, matched_issue.get("mrs", [])))
+        else:
+            # Check if session branch matches an uncorrelated MR
+            matched_mr = None
+            remaining_mrs = []
+            for mr in uncorrelated_mrs:
+                if mr["branch"] == branch and not matched_mr:
+                    matched_mr = mr
+                else:
+                    remaining_mrs.append(mr)
+            uncorrelated_mrs = remaining_mrs
+            active.append((session, None, [matched_mr] if matched_mr else []))
+
+    other_issues = [i for i in issues if i["id"] not in matched_issue_ids]
+
+    return {
+        "active": active,
+        "other_issues": other_issues,
+        "uncorrelated_mrs": uncorrelated_mrs,
+    }
+
+
+# --- Rendering ---
+
+def time_ago(iso_str: str) -> str:
+    if not iso_str:
+        return ""
+    clean = iso_str.split(".")[0].split("+")[0]
+    try:
+        updated = time.mktime(time.strptime(clean[:19], "%Y-%m-%dT%H:%M:%S"))
+    except ValueError:
+        return "?"
+    delta = time.time() - updated
+    if delta < 3600:
+        return f"{int(delta / 60)}m"
+    if delta < 86400:
+        return f"{int(delta / 3600)}h"
+    return f"{int(delta / 86400)}d"
+
+
+def format_mr_inline(mr: dict) -> str:
+    """Format MR info for inline display."""
+    parts = []
+    pipeline = mr.get("pipeline", "")
+    if pipeline:
+        pmap = {
+            "success": "[green]CI:passed[/]",
+            "passed": "[green]CI:passed[/]",
+            "failed": "[red]CI:failed[/]",
+            "running": "[yellow]CI:running[/]",
+            "pending": "[yellow]CI:pending[/]",
+        }
+        parts.append(pmap.get(pipeline, f"[dim]CI:{pipeline}[/]"))
+
+    approvals = mr.get("approvals", "")
+    if approvals and approvals != "0/0":
+        a, r = approvals.split("/")
+        if int(a) >= int(r) and int(r) > 0:
+            parts.append(f"[green]{approvals}[/]")
+        else:
+            parts.append(f"[yellow]{approvals}[/]")
+
+    if mr.get("draft"):
+        parts.append("[dim]draft[/]")
+
+    return " ".join(parts)
+
+
+def render_active_item(session: dict, issue: dict | None, mrs: list) -> Text:
+    """Render an expanded active item with one concept per line."""
+    lines = Text()
+    indent = "        "
+
+    # Line 1: session/ID + branch + plan/title
+    plan = session.get("plan", "")
+    git = session.get("git", {})
+    branch = git.get("branch", "")
+    dirty = git.get("dirty", 0)
+    unpushed = git.get("unpushed", 0)
+
+    line1_parts = []
+    if issue:
+        line1_parts.append(f"[white bold]{issue['id']}[/]")
+    else:
+        line1_parts.append(f"[white bold]{session['name']}[/]")
+
+    if branch:
+        branch_color = "red" if dirty else "green"
+        line1_parts.append(f"[{branch_color}]{branch}[/]")
+
+    title = plan if plan else (issue["title"] if issue else "(no ticket)")
+    line1_parts.append(f"[dim]{title}[/]")
+
+    lines.append_text(Text.from_markup("   " + " ".join(line1_parts) + "\n"))
+
+    # Line 2: git status
+    line2_parts = []
+    cwd_name = os.path.basename(session.get("cwd", ""))
+    if session["name"] != cwd_name:
+        line2_parts.append(f"[dim]\\[{session['name']}][/]")
+
+    git_bits = []
+    if dirty:
+        git_bits.append(f"[yellow]{dirty} dirty[/]")
+    if unpushed:
+        git_bits.append(f"[yellow]{unpushed} unpushed[/]")
+    if git_bits:
+        line2_parts.append("(" + ", ".join(git_bits) + ")")
+
+    if line2_parts:
+        lines.append_text(Text.from_markup(indent + " ".join(line2_parts) + "\n"))
+
+    # Line 3: last commit
+    last_commit = git.get("last_commit", "")
+    last_commit_age = git.get("last_commit_age", "")
+    if last_commit:
+        if len(last_commit) > 60:
+            last_commit = last_commit[:57] + "..."
+        age_str = f" ({last_commit_age} ago)" if last_commit_age else ""
+        lines.append_text(Text.from_markup(f"{indent}[dim]Last: {last_commit}{age_str}[/]\n"))
+
+    # Line 4: MR info + status + priority + labels
+    line4_parts = []
+    for mr in mrs:
+        mr_str = format_mr_inline(mr)
+        if mr_str:
+            line4_parts.append(mr_str)
+
+    if issue:
+        status = issue.get("status", "")
+        status_type = issue.get("status_type", "")
+        color = STATUS_COLORS.get(status_type, "dim")
+        line4_parts.append(f"[{color}]{status}[/]")
+
+        pri = PRIORITY_LABELS.get(issue.get("priority", 0), "")
+        if pri:
+            line4_parts.append(pri)
+        for label in issue.get("labels", []):
+            line4_parts.append(f"[magenta]\\[{label}][/]")
+
+    if line4_parts:
+        lines.append_text(Text.from_markup(indent + " · ".join(line4_parts) + "\n"))
+
+    return lines
+
+
+def age_seconds(iso_str: str) -> float:
+    """Return age in seconds from an ISO timestamp."""
+    if not iso_str:
+        return 0
+    clean = iso_str.split(".")[0].split("+")[0]
+    try:
+        updated = time.mktime(time.strptime(clean[:19], "%Y-%m-%dT%H:%M:%S"))
+        return time.time() - updated
+    except ValueError:
+        return 0
+
+
+ONE_WEEK = 7 * 86400
+
+
+def render_compact_issue(issue: dict) -> str:
+    """Render a compact one-line issue, dimmed."""
+    status = issue.get("status", "")
+    parts = []
+    updated = issue.get("updated_at", "")
+    if updated:
+        parts.append(time_ago(updated))
+
+    meta = "  ".join(parts)
+    meta_str = f"  {meta}" if meta else ""
+
+    return f"[dim]  {issue['id']}  {status:<16}  {issue['title']}{meta_str}[/]"
+
+
+def render_compact_mr(mr: dict) -> str:
+    """Render a compact one-line uncorrelated MR, dimmed."""
+    updated = mr.get("updated_at", "")
+    age = time_ago(updated) if updated else ""
+    age_str = f"  {age}" if age else ""
+
+    return f"[dim]  {mr['ref']}  {'MR':<16}  {mr['title']}{age_str}[/]"
+
+
+def build_display(correlated: dict, refreshing: bool) -> Text:
+    """Build the full display."""
+    output = Text()
+
+    refresh_indicator = " [dim](refreshing...)[/]" if refreshing else ""
+    output.append_text(Text.from_markup(f"[bold]Tasks Control Panel[/]{refresh_indicator}\n\n"))
+
+    active = correlated["active"]
+    other_issues = correlated["other_issues"]
+    uncorrelated_mrs = correlated["uncorrelated_mrs"]
+
+    # --- Active ---
+    if active:
+        output.append_text(Text.from_markup(f"[bold green]Active ({len(active)})[/]\n\n"))
+        for session, issue, mrs in active:
+            output.append_text(render_active_item(session, issue, mrs))
+            output.append("\n")
+    else:
+        output.append_text(Text.from_markup("[dim]No active sessions.[/]\n\n"))
+
+    # --- Other issues ---
+    # Filter out items older than a week, split into groups
+    recent = [i for i in other_issues if age_seconds(i.get("updated_at", "")) < ONE_WEEK]
+    stale = [i for i in other_issues if age_seconds(i.get("updated_at", "")) >= ONE_WEEK]
+    recent_mrs = [m for m in uncorrelated_mrs if age_seconds(m.get("updated_at", "")) < ONE_WEEK]
+    stale_mrs = [m for m in uncorrelated_mrs if age_seconds(m.get("updated_at", "")) >= ONE_WEEK]
+
+    in_progress = [i for i in recent if i["status_type"] == "started"]
+    triage = [i for i in recent if i["status_type"] == "triage"]
+    todo = [i for i in recent if i["status_type"] == "unstarted"]
+    backlog = [i for i in recent if i["status_type"] == "backlog"]
+
+    visible = in_progress + triage + recent_mrs
+    collapsed = todo + backlog
+
+    if visible:
+        output.append_text(Text.from_markup(f"[bold]Other ({len(visible)})[/]\n"))
+        for issue in in_progress + triage:
+            output.append_text(Text.from_markup(render_compact_issue(issue) + "\n"))
+        for mr in recent_mrs:
+            output.append_text(Text.from_markup(render_compact_mr(mr) + "\n"))
+        output.append("\n")
+
+    # Collapsed counts
+    counts = []
+    if collapsed:
+        todo_count = len(todo)
+        backlog_count = len(backlog)
+        if todo_count:
+            counts.append(f"Todo ({todo_count})")
+        if backlog_count:
+            counts.append(f"Backlog ({backlog_count})")
+    hidden = len(stale) + len(stale_mrs)
+    if hidden:
+        counts.append(f"Older than 1w ({hidden})")
+    if counts:
+        output.append_text(Text.from_markup(f"[dim]{' · '.join(counts)}[/]\n"))
+
+    return output
+
+
+# --- Main ---
+
+def main():
+    console = Console()
+
+    refresher = IssueDataRefresher()
+
+    with Live(console=console, refresh_per_second=1, screen=True) as live:
+        while True:
+            # Trigger background refresh if needed
+            refresher.maybe_refresh()
+
+            # Get fresh session data (fast)
+            sessions = get_tmux_sessions()
+            sessions = enrich_sessions(sessions)
+
+            # Get cached issue data
+            issue_data = refresher.get_data()
+
+            # Correlate
+            correlated = correlate(sessions, issue_data)
+
+            # Render
+            display = build_display(correlated, refresher._refreshing)
+            live.update(display)
+
+            time.sleep(DISPLAY_INTERVAL)
+
+
+if __name__ == "__main__":
+    main()
