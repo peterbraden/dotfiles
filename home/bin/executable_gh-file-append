@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+#
+# gh-file-append - append text to a file on GitHub without cloning.
+#
+# Uses the GitHub Contents API to fetch a file, append text, and commit
+# the result. By default commits directly to the repo's default branch.
+# With --pr, creates a new branch and opens a pull request instead.
+#
+# Requires:
+#   GITHUB_TOKEN_PERSONAL or GITHUB_TOKEN  - personal access token with repo scope
+#
+# Usage:
+#   gh-file-append <owner/repo> <path> <text>
+#   gh-file-append <owner/repo> <path> <text> --pr
+#   gh-file-append <owner/repo> <path> <text> --pr --title "PR title"
+#   gh-file-append <owner/repo> <path> <text> --branch main
+#   echo "new line" | gh-file-append <owner/repo> <path> -
+#
+# Examples:
+#   gh-file-append myorg/myrepo CHANGELOG.md "\n- fix: typo"
+#   gh-file-append myorg/myrepo docs/notes.md "$(date): deployed" --pr
+#   echo "appended via pipe" | gh-file-append myorg/myrepo README.md -
+
+set -eu
+
+API="https://api.github.com"
+
+usage() {
+    cat <<EOF
+Usage: gh-file-append <owner/repo> <path> <text> [options]
+
+Append text to a file on GitHub without cloning.
+
+Arguments:
+    owner/repo    GitHub repository (e.g. myorg/myrepo)
+    path          File path in the repo (e.g. CHANGELOG.md)
+    text          Text to append (use - to read from stdin)
+
+Options:
+    --pr              Create a branch and open a pull request
+    --title TITLE     PR title (default: "Append to <path>")
+    --branch BRANCH   Target branch (default: repo's default branch)
+    --message MSG     Commit message (default: "Append to <path>")
+    -h, --help        Show this help
+EOF
+}
+
+die() { echo "gh-file-append: $*" >&2; exit 1; }
+
+# Portable base64 decode (Linux uses -d, macOS uses -D)
+b64_decode() { base64 -d 2>/dev/null || base64 -D; }
+b64_encode() { base64 | tr -d '\n'; }
+
+gh_api() {
+    local method="$1" endpoint="$2"
+    shift 2
+    local response http_code
+
+    response=$(curl -s -w "\n%{http_code}" \
+        -X "$method" \
+        -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+        -H "Accept: application/vnd.github+json" \
+        "$@" \
+        "${API}${endpoint}")
+
+    http_code=$(echo "$response" | tail -1)
+    body=$(echo "$response" | sed '$d')
+
+    if [[ "$http_code" -ge 400 ]]; then
+        local msg
+        msg=$(echo "$body" | jq -r '.message // empty' 2>/dev/null || true)
+        die "API ${method} ${endpoint} failed (HTTP ${http_code}): ${msg:-$body}"
+    fi
+
+    echo "$body"
+}
+
+# --- Parse arguments ---
+
+# Handle help before positional check
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+[[ $# -lt 3 ]] && { usage >&2; exit 1; }
+
+repo="$1"; shift
+filepath="$1"; shift
+append_text="$1"; shift
+
+create_pr=false
+pr_title=""
+commit_msg=""
+target_branch=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --pr)       create_pr=true ;;
+        --title)    pr_title="$2"; shift ;;
+        --branch)   target_branch="$2"; shift ;;
+        --message)  commit_msg="$2"; shift ;;
+        -h|--help)  usage; exit 0 ;;
+        *)          die "unknown option: $1" ;;
+    esac
+    shift
+done
+
+# Read from stdin if text is "-"
+if [[ "$append_text" == "-" ]]; then
+    append_text=$(cat)
+fi
+
+GITHUB_TOKEN="${GITHUB_TOKEN_PERSONAL:-${GITHUB_TOKEN:-}}"
+[[ -n "$GITHUB_TOKEN" ]] || die "set GITHUB_TOKEN_PERSONAL or GITHUB_TOKEN (personal access token with repo scope)"
+
+[[ "$repo" == */* ]] || die "repo must be owner/repo format"
+[[ -n "$filepath" ]] || die "file path required"
+[[ -n "$append_text" ]] || die "text to append required"
+
+# Defaults
+commit_msg="${commit_msg:-Append to ${filepath}}"
+pr_title="${pr_title:-Append to ${filepath}}"
+
+# --- Resolve target branch ---
+
+if [[ -z "$target_branch" ]]; then
+    repo_info=$(gh_api GET "/repos/${repo}")
+    target_branch=$(echo "$repo_info" | jq -r '.default_branch')
+fi
+
+# --- Fetch current file contents ---
+
+file_info=$(gh_api GET "/repos/${repo}/contents/${filepath}?ref=${target_branch}")
+current_sha=$(echo "$file_info" | jq -r '.sha')
+current_content_b64=$(echo "$file_info" | jq -r '.content' | tr -d '\n')
+
+# Decode, append, re-encode
+current_content=$(echo "$current_content_b64" | b64_decode)
+# Interpret escape sequences in append_text (e.g. \n)
+new_content="${current_content}$(printf '%b' "$append_text")"
+new_content_b64=$(printf '%s' "$new_content" | b64_encode)
+
+# --- Commit the change ---
+
+if [[ "$create_pr" == true ]]; then
+    # Get the SHA of the target branch tip
+    branch_info=$(gh_api GET "/repos/${repo}/git/ref/heads/${target_branch}")
+    base_sha=$(echo "$branch_info" | jq -r '.object.sha')
+
+    # Create a new branch
+    pr_branch="gh-file-append/$(echo "$filepath" | tr '/' '-')-$(date +%s)"
+    gh_api POST "/repos/${repo}/git/refs" \
+        -H "Content-Type: application/json" \
+        -d "{\"ref\":\"refs/heads/${pr_branch}\",\"sha\":\"${base_sha}\"}" >/dev/null
+
+    # Commit to the new branch
+    gh_api PUT "/repos/${repo}/contents/${filepath}" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"message\": $(printf '%s' "$commit_msg" | jq -Rs .),
+            \"content\": \"${new_content_b64}\",
+            \"sha\": \"${current_sha}\",
+            \"branch\": \"${pr_branch}\"
+        }" >/dev/null
+
+    # Open the PR
+    pr_response=$(gh_api POST "/repos/${repo}/pulls" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"title\": $(printf '%s' "$pr_title" | jq -Rs .),
+            \"head\": \"${pr_branch}\",
+            \"base\": \"${target_branch}\",
+            \"body\": \"Automated append to \`${filepath}\`.\"
+        }")
+
+    pr_url=$(echo "$pr_response" | jq -r '.html_url')
+    echo "PR created: ${pr_url}"
+else
+    # Commit directly to the target branch
+    gh_api PUT "/repos/${repo}/contents/${filepath}" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"message\": $(printf '%s' "$commit_msg" | jq -Rs .),
+            \"content\": \"${new_content_b64}\",
+            \"sha\": \"${current_sha}\",
+            \"branch\": \"${target_branch}\"
+        }" >/dev/null
+
+    echo "Committed to ${target_branch}"
+fi
