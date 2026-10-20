@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# tmux-tree - toggle a sidebar showing tmux sessions/windows/panes/processes.
+#
+# Usage:
+#   tmux-tree              Toggle the tree sidebar
+
+set -eu
+
+PANE_TITLE="tmux-tree-pane"
+TREE_WIDTH=30
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [ -z "${TMUX:-}" ]; then
+  echo "Not in a tmux session."
+  exit 1
+fi
+
+# Toggle: if the tree pane exists in this window, kill it
+pane_id="$(tmux list-panes -F '#{pane_id} #{pane_title}' | grep "$PANE_TITLE" | awk '{print $1}' || true)"
+if [ -n "$pane_id" ]; then
+  tmux kill-pane -t "$pane_id"
+  exit 0
+fi
+
+# Open the tree pane on the left
+tmux split-window -hb -p "$TREE_WIDTH" \
+  "printf '\\033]2;$PANE_TITLE\\033\\\\'; exec $SCRIPT_DIR/tmux-tree-render"
+
+# Return focus to the original pane
+tmux last-pane
