@@ -1,0 +1,319 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""
+todo - Manage GitHub-style markdown todo lists (e.g. in plan files).
+
+Usage:
+    todo add [--section NAME] <description...>
+    todo complete [--section NAME] <prefix...>
+    todo reopen [--section NAME] <prefix...>
+    todo list [--section NAME] [--open] [--json]
+
+Items are markdown task list entries:
+    - [ ] open item
+    - [x] done item
+
+Sections are markdown headers (any level). --section matches a header's text
+case-insensitively. A section's items are those between its header and the
+next header of any level.
+
+Commands:
+    add        Append an item after the last item in the section (or in the
+               file, if no section is given). A missing section is created
+               at the end of the file as "## NAME".
+    complete   Check off the open item whose description starts with <prefix>
+               (case-insensitive). Errors if the prefix is ambiguous.
+               Alias: done
+    reopen     Uncheck a completed item, matched the same way.
+    list       Print items grouped by section. Alias: ls
+               --json emits {"file": path, "items": [{"section", "line",
+               "done", "indent", "text"}]}; section is null before the
+               first header.
+
+File selection (first match wins):
+    -f/--file FILE, $TODO_FILE, plan.md found by walking up from the
+    current directory, ~/.plan
+
+Examples:
+    todo add write the docs
+    todo add --section Backlog "fix flaky test"
+    todo complete write the
+    todo done -s Backlog fix
+    todo list --open
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+import tempfile
+
+HEADER_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
+ITEM_RE = re.compile(r"^(\s*)([-*+])\s+\[([ xX])\]\s+(.*?)\s*$")
+
+
+def die(msg):
+    print(f"todo: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def find_file(explicit):
+    if explicit:
+        return explicit
+    if os.environ.get("TODO_FILE"):
+        return os.environ["TODO_FILE"]
+    d = os.getcwd()
+    while True:
+        candidate = os.path.join(d, "plan.md")
+        if os.path.isfile(candidate):
+            return candidate
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    return os.path.expanduser("~/.plan")
+
+
+def read_lines(path):
+    try:
+        with open(path, newline="") as f:
+            text = f.read()
+    except FileNotFoundError:
+        return [], "\n"
+    nl = "\r\n" if "\r\n" in text else "\n"
+    return text.splitlines(), nl
+
+
+def write_lines(path, lines, nl):
+    real = os.path.realpath(path)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(real) or ".", prefix=".todo-")
+    try:
+        with os.fdopen(fd, "w", newline="") as f:
+            f.write(nl.join(lines) + nl)
+        if os.path.exists(real):
+            os.chmod(tmp, os.stat(real).st_mode & 0o7777)
+        os.replace(tmp, real)
+    except BaseException:
+        os.unlink(tmp)
+        raise
+
+
+def section_ranges(lines):
+    """Yield (title or None, header_idx or -1, start, end) for each section.
+
+    Items live in lines[start:end]; the preamble before any header has title None.
+    """
+    headers = []
+    in_fence = False
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith(("```", "~~~")):
+            in_fence = not in_fence
+        if in_fence:
+            continue
+        m = HEADER_RE.match(line)
+        if m:
+            headers.append((i, m.group(2)))
+    bounds = [(None, -1, 0, headers[0][0] if headers else len(lines))]
+    for n, (i, title) in enumerate(headers):
+        end = headers[n + 1][0] if n + 1 < len(headers) else len(lines)
+        bounds.append((title, i, i + 1, end))
+    return bounds
+
+
+def select_range(lines, section):
+    """Return (start, end, header_idx) for the section, or the whole file."""
+    if section is None:
+        return 0, len(lines), -1
+    want = section.strip().lower()
+    matches = [r for r in section_ranges(lines) if r[0] and r[0].lower() == want]
+    if not matches:
+        # Fall back to prefix match so "todo add -s back" finds "Backlog".
+        matches = [r for r in section_ranges(lines)
+                   if r[0] and r[0].lower().startswith(want)]
+    if len(matches) > 1:
+        names = ", ".join(repr(r[0]) for r in matches)
+        die(f"section {section!r} is ambiguous: {names}")
+    if not matches:
+        return None
+    _, h, s, e = matches[0]
+    return s, e, h
+
+
+def find_items(lines, start, end):
+    """Return [(idx, indent, mark, desc)] for task items in lines[start:end]."""
+    items = []
+    in_fence = False
+    for i in range(start, end):
+        if lines[i].lstrip().startswith(("```", "~~~")):
+            in_fence = not in_fence
+        if in_fence:
+            continue
+        m = ITEM_RE.match(lines[i])
+        if m:
+            items.append((i, len(m.group(1).expandtabs(4)), m.group(3), m.group(4)))
+    return items
+
+
+def item_block_end(lines, idx, indent, limit):
+    """Index just past an item and its more-indented continuation lines."""
+    j = idx + 1
+    last = idx + 1
+    while j < limit:
+        line = lines[j]
+        if line.strip():
+            cur = len(line) - len(line.lstrip())
+            if cur <= indent:
+                break
+            last = j + 1
+        j += 1
+    return last
+
+
+def cmd_add(args):
+    path = find_file(args.file)
+    lines, nl = read_lines(path)
+    desc = " ".join(args.text).strip()
+    if not desc:
+        die("add: description required")
+    new = f"- [ ] {desc}"
+
+    rng = select_range(lines, args.section)
+    if rng is None:
+        while lines and not lines[-1].strip():
+            lines.pop()
+        if lines:
+            lines.append("")
+        lines += [f"## {args.section.strip()}", "", new]
+    else:
+        start, end, header = rng
+        items = find_items(lines, start, end)
+        if items:
+            top = min(it[1] for it in items)
+            idx, indent = [(it[0], it[1]) for it in items if it[1] == top][-1]
+            at = item_block_end(lines, idx, indent, end)
+            lines.insert(at, new)
+        elif header >= 0:
+            at = end
+            while at > start and not lines[at - 1].strip():
+                at -= 1
+            lines[at:at] = ["", new]
+            after = at + 2
+            if after < len(lines) and lines[after].strip():
+                lines.insert(after, "")
+        else:
+            while lines and not lines[-1].strip():
+                lines.pop()
+            lines.append(new)
+
+    write_lines(path, lines, nl)
+    print(new)
+
+
+def cmd_toggle(args, from_mark, to_mark, verb):
+    path = find_file(args.file)
+    lines, nl = read_lines(path)
+    prefix = " ".join(args.text).strip().lower()
+    if not prefix:
+        die(f"{verb}: prefix required")
+
+    rng = select_range(lines, args.section)
+    if rng is None:
+        die(f"no section matching {args.section!r}")
+    start, end, _ = rng
+    items = [it for it in find_items(lines, start, end)
+             if it[3].lower().startswith(prefix)]
+    if not items:
+        die(f"no item starting with {prefix!r}")
+    candidates = [it for it in items if (it[2] == " ") == (from_mark == " ")]
+    if not candidates:
+        state = "already completed" if from_mark == " " else "not completed"
+        die(f"{items[0][3]!r} is {state}")
+    if len(candidates) > 1:
+        print(f"todo: {prefix!r} is ambiguous:", file=sys.stderr)
+        for idx, _, mark, desc in candidates:
+            print(f"  line {idx + 1}: [{mark}] {desc}", file=sys.stderr)
+        sys.exit(1)
+
+    idx, _, _, desc = candidates[0]
+    lines[idx] = re.sub(r"\[[ xX]\]", f"[{to_mark}]", lines[idx], count=1)
+    write_lines(path, lines, nl)
+    print(f"[{to_mark}] {desc}")
+
+
+def cmd_list(args):
+    path = find_file(args.file)
+    lines, _ = read_lines(path)
+    rng = select_range(lines, args.section)
+    if rng is None:
+        die(f"no section matching {args.section!r}")
+    if args.section is None:
+        ranges = section_ranges(lines)
+    else:
+        start, end, header = rng
+        ranges = [(HEADER_RE.match(lines[header]).group(2), header, start, end)]
+    if args.json:
+        out = [
+            {"section": title, "line": idx + 1, "done": mark != " ",
+             "indent": indent, "text": desc}
+            for title, _, start, end in ranges
+            for idx, indent, mark, desc in find_items(lines, start, end)
+            if not (args.open and mark != " ")
+        ]
+        print(json.dumps({"file": os.path.realpath(path), "items": out}, indent=2))
+        return
+
+    first = True
+    for title, _, start, end in ranges:
+        items = [it for it in find_items(lines, start, end)
+                 if not (args.open and it[2] != " ")]
+        if not items:
+            continue
+        if title is not None:
+            print(("" if first else "\n") + f"# {title}")
+        for _, indent, mark, desc in items:
+            box = "[ ]" if mark == " " else "[x]"
+            print(f"{' ' * indent}- {box} {desc}")
+        first = False
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="todo",
+        description="Manage GitHub-style markdown todo lists.",
+        epilog="See the header of this script for details.",
+    )
+    parser.add_argument("-f", "--file", help="markdown file (default: $TODO_FILE, plan.md, ~/.plan)")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    def add_cmd(name, aliases=(), text=True, **kw):
+        p = sub.add_parser(name, aliases=list(aliases), **kw)
+        p.add_argument("-s", "--section", help="header text to scope to")
+        p.add_argument("-f", "--file", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+        if text:
+            p.add_argument("text", nargs="+", help="description or prefix")
+        return p
+
+    add_cmd("add", help="add an item")
+    add_cmd("complete", ["done"], help="check off an item by description prefix")
+    add_cmd("reopen", help="uncheck an item by description prefix")
+    p = add_cmd("list", ["ls"], text=False, help="list items")
+    p.add_argument("--open", action="store_true", help="only unchecked items")
+    p.add_argument("--json", action="store_true", help="machine-readable JSON output")
+
+    args = parser.parse_args()
+    if args.cmd == "add":
+        cmd_add(args)
+    elif args.cmd in ("complete", "done"):
+        cmd_toggle(args, " ", "x", "complete")
+    elif args.cmd == "reopen":
+        cmd_toggle(args, "x", " ", "reopen")
+    else:
+        cmd_list(args)
+
+
+if __name__ == "__main__":
+    main()
