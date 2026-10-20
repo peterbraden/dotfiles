@@ -7,3 +7,8 @@
 
 # tmux picks up the agent socket via tmux show-environment in .profile instead
 .ssh/rc
+
+# Old vim/neovim leftovers
+.vim/neovim
+.vim/init.vim
+shortcuts.vim

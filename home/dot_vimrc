@@ -17,7 +17,10 @@ set clipboard=unnamed   " Use Mac clipboard
 
 " Autoread
 set autoread " Reload files when they change on disk
-au CursorHold,CursorHoldI * checktime " Trigger the reload when the cursor stops moving
+augroup autoread
+  autocmd!
+  au CursorHold,CursorHoldI * checktime " Trigger the reload when the cursor stops moving
+augroup END
 
 " au FocusGained,BufEnter * :silent! ! " Trigger autoread when changing buffers or coming back to vim.
 
@@ -322,8 +325,8 @@ let g:ctrlp_prompt_mappings = {
 
 " Editing VIM {{{
 " Shortcuts.vim
-source $HOME/shortcuts.vim
+source ~/.vim/shortcuts.vim
 " Open vimrc or shortcuts.vim
 :nnoremap <leader>rc :vsplit $MYVIMRC<cr>
-:nnoremap <leader>sc :vsplit $HOME/shortcuts.vim<cr>
+:nnoremap <leader>sc :vsplit ~/.vim/shortcuts.vim<cr>
 " }}}

@@ -3,7 +3,6 @@ vim.opt.background = "dark"
 
 vim.opt.runtimepath:prepend(vim.fn.expand("~/.vim"))
 vim.opt.runtimepath:append(vim.fn.expand("~/.vim/after"))
-vim.opt.runtimepath:append(vim.fn.expand("~/.config/neovim"))
 vim.cmd("source " .. vim.fn.expand("~/.vimrc"))
 
 -- Pinned to the legacy master branch, which is configured via .configs
