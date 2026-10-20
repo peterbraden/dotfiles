@@ -3,19 +3,6 @@ echo "# Running peterbraden/dotfiles install.sh"
 
 mkdir -p ~/.local/bin
 
-# Compare against the real login shell, not $SHELL (inherited from tmux, sudo...)
-if [ "$(uname -s)" == "Darwin" ]; then
-  login_shell=$(dscl . -read ~ UserShell | awk '{print $2}')
-else
-  login_shell=$(getent passwd "$USER" | cut -d: -f7)
-fi
-# Prefer zsh, else bash. chsh only accepts shells listed in /etc/shells.
-target_shell=$(grep -m1 '/zsh$' /etc/shells || grep -m1 '/bash$' /etc/shells)
-if [ -n "$target_shell" ] && [ "$(basename "$login_shell")" != "$(basename "$target_shell")" ]; then
-  echo "# - Changing shell to $target_shell"
-  chsh -s "$target_shell" || echo "# ! chsh failed, change your shell manually" >&2
-fi
-
 # OSX
 if [ "$(uname -s)" == "Darwin" ]; then
   echo "# - Setting up a mac"
@@ -155,4 +142,18 @@ if [ "$(uname -s)" == "Linux" ]; then
 
     # TODO tailscale, atuin
   fi
+fi
+
+# Change the login shell last, so zsh is installed first on Linux
+# Compare against the real login shell, not $SHELL (inherited from tmux, sudo...)
+if [ "$(uname -s)" == "Darwin" ]; then
+  login_shell=$(dscl . -read ~ UserShell | awk '{print $2}')
+else
+  login_shell=$(getent passwd "$USER" | cut -d: -f7)
+fi
+# Prefer zsh, else bash. chsh only accepts shells listed in /etc/shells.
+target_shell=$(grep -m1 '/zsh$' /etc/shells || grep -m1 '/bash$' /etc/shells)
+if [ -n "$target_shell" ] && [ "$(basename "$login_shell")" != "$(basename "$target_shell")" ]; then
+  echo "# - Changing shell to $target_shell"
+  chsh -s "$target_shell" || echo "# ! chsh failed, change your shell manually" >&2
 fi
