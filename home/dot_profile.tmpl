@@ -5,8 +5,7 @@
 # Because of this we stick to /bin/sh syntax
 #
 # .profile is a good place for environment variables
-# Depending on $SHELL we want to either source .bashrc or .zshrc so we also get
-# the rest of the setup in our login shell too.
+# For bash we source .bashrc so login shells get the interactive setup too.
 
 export DOTPATH=~/.local/share/chezmoi
 
@@ -80,9 +79,9 @@ else
   fi
 fi
 
-if [ "$SHELL" == "/bin/zsh" ]; then
-  source ~/.zshrc
-else
-  source ~/.bashrc
+# bash login shells don't read .bashrc, so pull it in here.
+# zsh reads .zshrc itself after .zprofile, so it must not be sourced here.
+if [ -n "$BASH_VERSION" ]; then
+  . ~/.bashrc
 fi
 
