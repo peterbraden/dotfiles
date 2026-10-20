@@ -98,6 +98,9 @@ cask "1password-cli"
 {{ if .rust }}
 brew "rustup"
 {{- end }}
+{{ if .python }}
+brew "pyright" # LSP for nvim; independent of the active pyenv version
+{{- end }}
 
 EOS
 
