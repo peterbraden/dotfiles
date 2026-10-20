@@ -22,11 +22,29 @@ require'nvim-treesitter.configs'.setup {
 
 vim.cmd.colorscheme "solarized8"
 
+-- The project's poetry virtualenv python, or nil when there isn't one
+local function poetry_python(root)
+  if not root or vim.fn.executable('poetry') == 0 then
+    return nil
+  end
+  local out = vim.fn.system({'poetry', '-C', root, 'env', 'info', '-e'})
+  if vim.v.shell_error ~= 0 then
+    return nil
+  end
+  return vim.trim(out)
+end
+
 require('lspconfig').pyright.setup{
+  -- Resolved when pyright starts for a project, not on every nvim start.
+  -- Without a poetry env pyright falls back to its default interpreter.
+  before_init = function(_, config)
+    local python = poetry_python(config.root_dir)
+    if python then
+      config.settings.python.pythonPath = python
+    end
+  end,
   settings = {
-    python = {
-      pythonPath = vim.fn.system('poetry run which python'):gsub('%s+', ''),
-    }
+    python = {}
   }
 }
 
