@@ -1,5 +1,10 @@
 **/.git
 
+# Hammerspoon is macOS only
+{{ if ne .chezmoi.os "darwin" }}
+.hammerspoon
+{{ end }}
+
 # vdirsyncer only syncs the work calendar
 {{ if not .work }}
 .config/vdirsyncer
