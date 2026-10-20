@@ -2,7 +2,7 @@
 
 My personal config files and shell scripts for a development machine.
 
-I live in a terminal (usually iTerm on a mac), so my full development experience
+I live in a terminal (usually Ghostty on a mac), so my full development experience
 is defined in these files.
 
 My philosophy is that it's far better to invest in
@@ -69,8 +69,8 @@ One line machine setups are pretty nice.
 
 ##### 1. Setup new SSH key and use for github:
 ```sh
-ssh-keygen -t rsa -C "peterbraden@peterbraden.co.uk"
-cat ~/.ssh/id_rsa.pub | pbcopy
+ssh-keygen -t ed25519 -C "peterbraden@peterbraden.co.uk"
+cat ~/.ssh/id_ed25519.pub | pbcopy
 ```
 Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
 
@@ -95,7 +95,7 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
 - [Tailscale](https://apps.apple.com/ca/app/tailscale/id1475387142?mt=12)
 
 #### Install Apps from Firefox
-- [iterm](http://www.iterm2.com/#/section/home)
+- [ghostty](https://ghostty.org)
 - [nextcloud](https://nextcloud.com/install/#install-clients)
 
 </details>
