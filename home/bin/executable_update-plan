@@ -10,7 +10,7 @@
 #   update-plan
 #
 # Cron (every 5 minutes):
-#   */5 * * * * $HOME/repos/utils/bin/update-plan 2>> /tmp/update-plan.log
+#   */5 * * * * $HOME/bin/update-plan 2>> /tmp/update-plan.log
 
 set -eu
 
@@ -20,9 +20,20 @@ TMP_BASE="${TMPDIR:-/tmp}"
 
 # --- Source environment for cron ---
 # Minimal PATH setup (no full shell profile — it blocks in non-interactive env).
-export PATH="$HOME/repos/utils/bin:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
-# API keys (for my-issues, daily-summary)
-[[ -f "$HOME/.roche-tokens" ]] && set -a && source "$HOME/.roche-tokens" && set +a
+export PATH="$HOME/bin:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+# API keys (for my-issues, daily-summary) from the 1Password Environment pipe.
+# Reading it needs 1Password unlocked, so give up after a few seconds rather
+# than hanging cron, and keep the previous plan instead of writing one from
+# incomplete data.
+if ! env_lines=$(perl -e 'alarm 5; exec @ARGV' cat "$HOME/roche.env" 2>/dev/null) || [[ -z $env_lines ]]; then
+    echo "[$(date '+%F %T')] update-plan: ~/roche.env unavailable (1Password locked?), keeping previous plan" >&2
+    exit 0
+fi
+while IFS= read -r line; do
+    line=${line%$'\r'}
+    [[ $line =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] && export "$line"
+done <<< "$env_lines"
+unset env_lines line
 # claude uses its own auth — don't let the Roche proxy vars override it
 unset ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN ANTHROPIC_CUSTOM_HEADERS
 
