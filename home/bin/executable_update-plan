@@ -1,0 +1,222 @@
+#!/usr/bin/env bash
+#
+# update-plan - refresh ~/.plan with a concise summary of current work.
+#
+# Gathers context from my-issues, daily-summary, and tasks, then
+# uses an LLM to synthesize a short markdown plan. Safe to run from
+# cron — failures leave ~/.plan untouched.
+#
+# Usage:
+#   update-plan
+#
+# Cron (every 5 minutes):
+#   */5 * * * * $HOME/repos/utils/bin/update-plan 2>> /tmp/update-plan.log
+
+set -eu
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLAN_FILE="$HOME/.plan"
+TMP_BASE="${TMPDIR:-/tmp}"
+
+# --- Source environment for cron ---
+# Minimal PATH setup (no full shell profile — it blocks in non-interactive env).
+export PATH="$HOME/repos/utils/bin:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+# API keys (for my-issues, daily-summary)
+[[ -f "$HOME/.roche-tokens" ]] && set -a && source "$HOME/.roche-tokens" && set +a
+# claude uses its own auth — don't let the Roche proxy vars override it
+unset ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN ANTHROPIC_CUSTOM_HEADERS
+
+# --- Lock (prevent overlapping runs) ---
+LOCK_DIR="/tmp/update-plan.lock"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    if [[ -d "$LOCK_DIR" ]] && find "$LOCK_DIR" -maxdepth 0 -mmin +5 | grep -q .; then
+        rm -rf "$LOCK_DIR"
+        mkdir "$LOCK_DIR" 2>/dev/null || exit 0
+    else
+        exit 0
+    fi
+fi
+
+# --- Temp files ---
+tmp_issues="$(mktemp "$TMP_BASE/ctx-issues.XXXXXX")"
+tmp_summary="$(mktemp "$TMP_BASE/ctx-summary.XXXXXX")"
+tmp_tasks="$(mktemp "$TMP_BASE/ctx-tasks.XXXXXX")"
+tmp_prompt="$(mktemp "$TMP_BASE/plan-prompt.XXXXXX")"
+tmp_plan="$(mktemp "$TMP_BASE/update-plan.XXXXXX")"
+trap 'rm -f "$tmp_issues" "$tmp_summary" "$tmp_tasks" "$tmp_prompt" "$tmp_plan" "$TMP_BASE"/ctx-issues-*; rm -rf "$LOCK_DIR"' EXIT
+
+# --- Collect GitHub tokens ---
+# Finds all GITHUB_TOKEN* env vars with unique values.
+gh_tokens=()
+seen_tokens=""
+for var in $(env | grep -o '^GITHUB_TOKEN[^=]*'); do
+    val="${!var}"
+    if [[ -n "$val" ]] && [[ "$seen_tokens" != *"$val"* ]]; then
+        gh_tokens+=("$val")
+        seen_tokens+="$val:"
+    fi
+done
+
+# --- Gather context in parallel ---
+
+# Run my-issues once per GitHub token, merge results
+tmp_issues_parts=()
+for i in "${!gh_tokens[@]}"; do
+    part="$(mktemp "$TMP_BASE/ctx-issues-$i.XXXXXX")"
+    tmp_issues_parts+=("$part")
+    GITHUB_TOKEN="${gh_tokens[$i]}" "$SCRIPT_DIR/my-issues" --json > "$part" 2>/dev/null &
+done
+
+("$SCRIPT_DIR/daily-summary" --since 4h 2>/dev/null || true) | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' > "$tmp_summary" &
+pid_summary=$!
+
+("$SCRIPT_DIR/tasks" 2>/dev/null || true) | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' > "$tmp_tasks" &
+pid_tasks=$!
+
+wait 2>/dev/null || true
+
+# Merge issue results from multiple tokens
+if [[ ${#tmp_issues_parts[@]} -le 1 ]]; then
+    [[ ${#tmp_issues_parts[@]} -eq 1 ]] && cat "${tmp_issues_parts[0]}" > "$tmp_issues"
+else
+    python3 -c "
+import json, sys
+
+merged_issues = {}
+merged_uncorrelated = {}
+
+for path in sys.argv[1:]:
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        continue
+    for issue in data.get('issues', []):
+        iid = issue['id']
+        if iid not in merged_issues:
+            merged_issues[iid] = issue
+        else:
+            existing_mrs = {m['ref'] for m in merged_issues[iid].get('mrs', [])}
+            for mr in issue.get('mrs', []):
+                if mr['ref'] not in existing_mrs:
+                    merged_issues[iid]['mrs'].append(mr)
+    for mr in data.get('uncorrelated_mrs', []):
+        merged_uncorrelated[mr['ref']] = mr
+
+json.dump({
+    'issues': list(merged_issues.values()),
+    'uncorrelated_mrs': list(merged_uncorrelated.values()),
+}, sys.stdout, indent=2)
+" "${tmp_issues_parts[@]}" > "$tmp_issues"
+fi
+rm -f "${tmp_issues_parts[@]}"
+
+ctx_issues="$(cat "$tmp_issues")"
+ctx_summary="$(cat "$tmp_summary")"
+ctx_tasks="$(cat "$tmp_tasks")"
+
+current_plan=""
+[[ -f "$PLAN_FILE" ]] && current_plan="$(cat "$PLAN_FILE")"
+
+# --- Build prompt ---
+
+cat > "$tmp_prompt" <<'PROMPT_END'
+You are a personal productivity assistant. Your job is to maintain a concise ~/.plan file — a living snapshot of what I'm currently working on.
+
+Below is context gathered from my tools, plus the previous version of the plan. Synthesize it into a structured markdown document.
+
+## Format
+
+Group tickets into **workstreams** — clusters of related work toward a shared goal. Use `#` headings for each workstream. Under each workstream:
+
+- List the relevant tickets with their IDs, status, and a brief note on what's happening.
+- Include links to MRs/PRs and repos where relevant — these are important context.
+- Note what's blocked and on whom/what.
+- Note what needs review, and approval status.
+- Add brief context notes where helpful (e.g., "leading with code since RFC has open questions").
+
+Order workstreams by recency of actual interaction — NOT by Linear ticket `updated_at` (that fires on metadata noise). Instead, use these signals to determine what was most recently worked on:
+1. Active tmux sessions and dirty repos (from "Active sessions and repos" context) — strongest signal of current work
+2. Recent git commits (from "Recent activity" context) — what was touched in the last few hours
+3. Recently updated MRs/PRs — code pushed or reviewed recently
+A workstream with a dirty repo or recent commit ranks above one that only has a ticket status change.
+
+After the workstreams, add a section for standalone tickets that don't fit a workstream.
+
+## Example output style
+
+```
+# Airgap communication layer
+- [NAFM-1734] Implement Sneakernet — code complete, needs review
+    - https://github.com/roche-innersource/na-sneakernet
+- [NAFM-1747] Implement Envelope lib — code complete, needs review
+    - https://github.com/roche-innersource/na-envelopelib
+
+# Other
+- [NAFM-1729] Clean up unused edge workspace OCI config — in progress, MR !456 (0/2 approvals)
+```
+
+## Rules
+
+1. Keep each ticket to 1-2 lines, but include enough context to be useful (links, blocking info, next steps).
+2. Omit empty sections. Don't list completed/done tickets.
+3. If an MR/PR is linked to a ticket, include it with CI/approval status.
+4. Prioritise signals of active work: dirty git status, active tmux sessions, in-progress Linear status.
+5. **The previous plan is the source of truth.** Start from it and update — do NOT regenerate from scratch. Every line in the previous plan was written or approved by the user. Your job is to UPDATE it, not replace it.
+6. **Never drop content** unless the tool data explicitly shows the item is completed/done/merged. If a line in the previous plan has no matching ticket in the tool data, KEEP IT — the user added it manually and it matters. URLs, context notes, "blocked on" annotations, open questions — all must be preserved verbatim.
+7. **Only change what the tools tell you changed**: update statuses, approval counts, CI results. Add newly appeared tickets. Remove only tickets that are clearly done.
+8. **Never merge or rename workstream headings.** The user chose the grouping deliberately. Keep all existing sections separate — do not combine them even if the tickets seem related.
+9. Output ONLY the markdown. No preamble, no commentary, no wrapping code fences.
+PROMPT_END
+
+{
+    echo ""
+    echo "## Context: Issues (JSON)"
+    echo ""
+    if [[ -n "$ctx_issues" ]]; then
+        echo "$ctx_issues"
+    else
+        echo "(unavailable)"
+    fi
+
+    echo ""
+    echo "## Context: Recent activity (last 4h)"
+    echo ""
+    if [[ -n "$ctx_summary" ]]; then
+        echo "$ctx_summary"
+    else
+        echo "(unavailable)"
+    fi
+
+    echo ""
+    echo "## Context: Active sessions and repos"
+    echo ""
+    if [[ -n "$ctx_tasks" ]]; then
+        echo "$ctx_tasks"
+    else
+        echo "(unavailable)"
+    fi
+
+    echo ""
+    echo "## Current ~/.plan"
+    echo ""
+    if [[ -n "$current_plan" ]]; then
+        echo "$current_plan"
+    else
+        echo "(no previous plan)"
+    fi
+} >> "$tmp_prompt"
+
+# --- Generate and write ---
+
+if ! cat "$tmp_prompt" | "$SCRIPT_DIR/llm" > "$tmp_plan" 2>/dev/null; then
+    echo "update-plan: llm failed, keeping existing plan" >&2
+    exit 1
+fi
+
+if [[ ! -s "$tmp_plan" ]]; then
+    echo "update-plan: llm produced empty output, keeping existing plan" >&2
+    exit 1
+fi
+
+mv "$tmp_plan" "$PLAN_FILE"

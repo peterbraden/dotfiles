@@ -19,4 +19,5 @@ bin/gl-cat
 bin/gl-file-append
 bin/gl-ls
 bin/my-issues
+bin/update-plan
 {{ end }}
