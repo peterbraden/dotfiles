@@ -1,3 +1,6 @@
 # Old files that were never read by ssh/sshd
 .ssh/ssh_config
 .ssh/sshd_config
+
+# Duplicate copy of zsh-autosuggestions; .zshrc uses ~/.config/zsh_plugins
+.zsh/zsh-autosuggestions
