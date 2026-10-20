@@ -8,19 +8,24 @@ vim.opt.runtimepath:append(vim.fn.expand("~/.vim/bundle/ctrlp.vim"))
 vim.opt.runtimepath:append(vim.fn.expand("~/.vim/bundle/startify.vim"))
 vim.cmd("source " .. vim.fn.expand("~/.vimrc"))
 
--- Pinned to the legacy master branch, which is configured via .configs
-require'nvim-treesitter.configs'.setup {
-  parser_install_dir = vim.fn.stdpath('data') .. '/site',
-  ensure_installed = {
-    "c", "lua", "vim", "markdown", "markdown_inline",
-    "rust", "python", "hcl"
-  },
-  auto_install = true,
-  highlight = {
-    enable = true,
-  }
-
+-- nvim-treesitter main branch (needs nvim 0.12+ and tree-sitter-cli)
+local ts_languages = {
+  "c", "lua", "vim", "markdown", "markdown_inline",
+  "rust", "python", "hcl"
 }
+require'nvim-treesitter'.setup {
+  install_dir = vim.fn.stdpath('data') .. '/site',
+}
+-- Asynchronous, and a no-op once the parsers are installed
+require'nvim-treesitter'.install(ts_languages)
+
+-- Highlighting is Neovim's own; nvim-treesitter only provides parsers.
+-- pcall: some filetypes have no parser, which is fine.
+vim.api.nvim_create_autocmd('FileType', {
+  callback = function(args)
+    pcall(vim.treesitter.start, args.buf)
+  end,
+})
 
 vim.cmd.colorscheme "solarized8"
 
@@ -36,19 +41,20 @@ local function poetry_python(root)
   return vim.trim(out)
 end
 
-require('lspconfig').pyright.setup{
+-- nvim-lspconfig supplies the pyright defaults (lsp/pyright.lua)
+vim.lsp.config('pyright', {
   -- Resolved when pyright starts for a project, not on every nvim start.
   -- Without a poetry env pyright falls back to its default interpreter.
   before_init = function(_, config)
     local python = poetry_python(config.root_dir)
     if python then
+      config.settings = config.settings or {}
+      config.settings.python = config.settings.python or {}
       config.settings.python.pythonPath = python
     end
   end,
-  settings = {
-    python = {}
-  }
-}
+})
+vim.lsp.enable('pyright')
 
 -- Optionally, show diagnostics as virtual text
 vim.diagnostic.config({
