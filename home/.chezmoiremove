@@ -4,3 +4,6 @@
 
 # Duplicate copy of zsh-autosuggestions; .zshrc uses ~/.config/zsh_plugins
 .zsh/zsh-autosuggestions
+
+# tmux picks up the agent socket via tmux show-environment in .profile instead
+.ssh/rc

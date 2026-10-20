@@ -86,8 +86,8 @@ unset -f path_prepend path_append
 # -- SSH Agent --
 if [ -z "$SSH_AUTH_SOCK" -a -x "/usr/bin/ssh-agent" ]; then
   # Only run ssh agent if not already in a forwarded session
+  # Keys are added on first use (AddKeysToAgent in ~/.ssh/config)
 	eval `ssh-agent -s`
-  ssh-add $HOME/.ssh/id_rsa
 	trap "kill $SSH_AGENT_PID" 0
 else
   # We are in a forwarded session.
