@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+#
+# gl-ls - list files in a GitLab repository without cloning.
+#
+# Uses the GitLab Repository Tree API to list directory contents.
+#
+# Requires:
+#   GITLAB_TOKEN  - personal access token with read_repository scope
+#   GITLAB_HOST   - GitLab host (default: code.roche.com)
+#
+# Usage:
+#   gl-ls <owner/repo> [path] [options]
+#
+# Examples:
+#   gl-ls mygroup/myrepo                    # list repo root
+#   gl-ls mygroup/myrepo src                # list src/
+#   gl-ls mygroup/myrepo --branch develop   # list on a branch
+#   gl-ls mygroup/myrepo src -l             # long format (type, name)
+
+set -eu
+
+usage() {
+    cat <<EOF
+Usage: gl-ls <owner/repo> [path] [options]
+
+List files in a GitLab repository without cloning.
+
+Arguments:
+    owner/repo    GitLab project path (e.g. mygroup/myrepo)
+    path          Directory path (default: repo root)
+
+Options:
+    --branch BRANCH   Branch or ref (default: repo's default branch)
+    -l                Long format (type, name)
+    -h, --help        Show this help
+EOF
+}
+
+die() { echo "gl-ls: $*" >&2; exit 1; }
+
+# URL-encode a string (for project paths)
+urlencode() { python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$1"; }
+
+gl_api() {
+    local method="$1" endpoint="$2"
+    shift 2
+    local response http_code host
+
+    host="${GITLAB_HOST:-code.roche.com}"
+
+    response=$(curl -s -w "\n%{http_code}" \
+        -X "$method" \
+        -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+        "$@" \
+        "https://${host}/api/v4${endpoint}")
+
+    http_code=$(echo "$response" | tail -1)
+    body=$(echo "$response" | sed '$d')
+
+    if [[ "$http_code" -ge 400 ]]; then
+        local msg
+        msg=$(echo "$body" | jq -r '.message // .error // empty' 2>/dev/null || true)
+        die "API ${method} ${endpoint} failed (HTTP ${http_code}): ${msg:-$body}"
+    fi
+
+    echo "$body"
+}
+
+# --- Parse arguments ---
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+[[ $# -lt 1 ]] && { usage >&2; exit 1; }
+
+project="$1"; shift
+dirpath=""
+target_branch=""
+long_format=false
+
+# Next positional arg is the path (if it doesn't start with -)
+if [[ $# -gt 0 && "$1" != -* ]]; then
+    dirpath="$1"; shift
+fi
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --branch)      target_branch="$2"; shift ;;
+        -l)            long_format=true ;;
+        -h|--help)     usage; exit 0 ;;
+        *)             die "unknown option: $1" ;;
+    esac
+    shift
+done
+
+GITLAB_TOKEN="${GITLAB_TOKEN:-}"
+[[ -n "$GITLAB_TOKEN" ]] || die "set GITLAB_TOKEN (personal access token with read_repository scope)"
+[[ "$project" == */* ]] || die "project must be owner/repo format"
+
+# --- Build API URL ---
+
+encoded_project=$(urlencode "$project")
+
+query="per_page=100"
+if [[ -n "$dirpath" ]]; then
+    query="${query}&path=${dirpath}"
+fi
+if [[ -n "$target_branch" ]]; then
+    query="${query}&ref=${target_branch}"
+fi
+
+result=$(gl_api GET "/projects/${encoded_project}/repository/tree?${query}")
+
+# --- Format output ---
+
+if [[ "$long_format" == true ]]; then
+    echo "$result" | jq -r '.[] | [.type, .name] | @tsv' | column -t
+else
+    echo "$result" | jq -r '.[].name'
+fi
