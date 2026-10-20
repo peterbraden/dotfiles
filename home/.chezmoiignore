@@ -10,3 +10,8 @@
 .config/vdirsyncer
 bin/roche-cal-url
 {{ end }}
+
+# Work-only scripts (they talk to Roche GitLab)
+{{ if not .work }}
+bin/absent-days
+{{ end }}

@@ -1,0 +1,333 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "rich",
+# ]
+# ///
+"""
+absent-days - find weekdays with no activity.
+
+Checks Linear issues updated and GitLab MRs updated per day,
+then lists weekdays where nothing happened. Useful for identifying
+sick days or holidays.
+
+Requires:
+    LINEAR_API_KEY   - Linear personal API key
+    GITLAB_TOKEN     - GitLab personal access token (optional)
+    GITLAB_HOST      - GitLab host (default: code.roche.com)
+
+Usage:
+    absent-days                  Current month
+    absent-days --month 2026-02  Specific month
+    absent-days --month last     Previous month
+    absent-days --json           Machine-readable JSON output
+
+JSON shape:
+    {"month": "YYYY-MM", "sources": [str], "weekdays": int,
+     "inactive": [{"date", "weekday", "tickets", "commits", "mr_changes"}]}
+"""
+
+import argparse
+import datetime
+import json
+import os
+import signal
+import sys
+import urllib.request
+import urllib.error
+from concurrent.futures import ThreadPoolExecutor
+
+from rich.console import Console
+
+signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+
+LINEAR_API = "https://api.linear.app/graphql"
+
+
+# --- Date helpers ---
+
+def get_month_range(month_str: str | None) -> tuple[datetime.date, datetime.date]:
+    """Return (first_day, last_day) of the target month."""
+    today = datetime.date.today()
+
+    if month_str is None:
+        first = today.replace(day=1)
+    elif month_str == "last":
+        first = (today.replace(day=1) - datetime.timedelta(days=1)).replace(day=1)
+    else:
+        try:
+            first = datetime.date.fromisoformat(month_str + "-01")
+        except ValueError:
+            print(f"Invalid month format: {month_str} (use YYYY-MM)", file=sys.stderr)
+            sys.exit(1)
+
+    # Last day of month
+    if first.month == 12:
+        last = first.replace(year=first.year + 1, month=1, day=1) - datetime.timedelta(days=1)
+    else:
+        last = first.replace(month=first.month + 1, day=1) - datetime.timedelta(days=1)
+
+    # Don't go past today
+    if last > today:
+        last = today
+
+    return first, last
+
+
+def weekdays_in_range(first: datetime.date, last: datetime.date) -> list[datetime.date]:
+    """Return all weekdays (Mon-Fri) in the range inclusive."""
+    days = []
+    d = first
+    while d <= last:
+        if d.weekday() < 5:  # Mon=0 .. Fri=4
+            days.append(d)
+        d += datetime.timedelta(days=1)
+    return days
+
+
+# --- Linear ---
+
+ISSUES_QUERY = """
+query($after: String, $updatedAfter: DateTimeOrDuration!) {
+  viewer {
+    assignedIssues(
+      filter: {
+        updatedAt: { gte: $updatedAfter }
+      }
+      first: 250
+      after: $after
+      orderBy: updatedAt
+    ) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        updatedAt
+      }
+    }
+  }
+}
+"""
+
+
+def query_linear(api_key: str, query: str, variables: dict | None = None) -> dict:
+    payload = json.dumps({"query": query, "variables": variables or {}}).encode()
+    req = urllib.request.Request(
+        LINEAR_API,
+        data=payload,
+        headers={
+            "Authorization": api_key,
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        print(f"Linear API error: {e.code} {body}", file=sys.stderr)
+        return {}
+
+
+def fetch_linear_counts(api_key: str, since: datetime.date) -> dict[datetime.date, int]:
+    """Return count of issue updates per day."""
+    counts: dict[datetime.date, int] = {}
+    cursor = None
+    since_iso = datetime.datetime.combine(since, datetime.time.min, tzinfo=datetime.timezone.utc)
+    since_str = since_iso.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+    while True:
+        variables: dict = {"updatedAfter": since_str}
+        if cursor:
+            variables["after"] = cursor
+        data = query_linear(api_key, ISSUES_QUERY, variables)
+        if not data or "data" not in data:
+            break
+        assigned = data["data"]["viewer"]["assignedIssues"]
+        for node in assigned["nodes"]:
+            updated = node.get("updatedAt", "")
+            if updated:
+                try:
+                    day = datetime.date.fromisoformat(updated[:10])
+                    counts[day] = counts.get(day, 0) + 1
+                except ValueError:
+                    pass
+        if assigned["pageInfo"]["hasNextPage"]:
+            cursor = assigned["pageInfo"]["endCursor"]
+        else:
+            break
+    return counts
+
+
+# --- GitLab ---
+
+def gitlab_request(host: str, token: str, path: str, params: dict | None = None) -> list | dict:
+    url = f"https://{host}/api/v4{path}"
+    if params:
+        qs = "&".join(f"{k}={urllib.request.quote(str(v))}" for k, v in params.items())
+        url = f"{url}?{qs}"
+
+    req = urllib.request.Request(url, headers={"PRIVATE-TOKEN": token})
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError:
+        return []
+
+
+def fetch_gitlab_counts(host: str, token: str, since: datetime.date) -> tuple[dict[datetime.date, int], dict[datetime.date, int]]:
+    """Return (commit_counts, mr_counts) per day from GitLab events."""
+    commits: dict[datetime.date, int] = {}
+    mrs: dict[datetime.date, int] = {}
+    page = 1
+
+    push_actions = {"pushed to", "pushed new"}
+    mr_actions = {"opened", "accepted", "merged", "approved", "commented on"}
+
+    while True:
+        data = gitlab_request(host, token, "/events", {
+            "after": (since - datetime.timedelta(days=1)).isoformat(),
+            "per_page": 100,
+            "page": page,
+        })
+        if not data or not isinstance(data, list):
+            break
+        for event in data:
+            created = event.get("created_at", "")
+            if not created:
+                continue
+            try:
+                day = datetime.date.fromisoformat(created[:10])
+            except ValueError:
+                continue
+
+            action = event.get("action_name", "")
+            target_type = event.get("target_type", "")
+
+            if action in push_actions:
+                push_data = event.get("push_data") or {}
+                commit_count = push_data.get("commit_count", 1)
+                commits[day] = commits.get(day, 0) + commit_count
+            elif target_type == "MergeRequest" or action in mr_actions:
+                mrs[day] = mrs.get(day, 0) + 1
+            else:
+                # Other activity (issues, notes, etc.) — count as MR-adjacent
+                mrs[day] = mrs.get(day, 0) + 1
+
+        if len(data) < 100:
+            break
+        page += 1
+
+    return commits, mrs
+
+
+# --- Main ---
+
+def main():
+    parser = argparse.ArgumentParser(description="Find weekdays with no activity")
+    parser.add_argument(
+        "--month", default=None,
+        help="Month to check: YYYY-MM, 'last', or omit for current month",
+    )
+    parser.add_argument("--json", action="store_true", help="Machine-readable JSON output")
+    args = parser.parse_args()
+
+    first, last = get_month_range(args.month)
+    weekdays = weekdays_in_range(first, last)
+
+    if not weekdays:
+        if args.json:
+            print(json.dumps({"month": first.strftime("%Y-%m"), "weekdays": 0, "inactive": []}, indent=2))
+        else:
+            print("No weekdays in range.")
+        return
+
+    api_key = os.environ.get("LINEAR_API_KEY")
+    gitlab_host = os.environ.get("GITLAB_HOST", "code.roche.com")
+    gitlab_token = os.environ.get("GITLAB_TOKEN")
+
+    if not api_key and not gitlab_token:
+        print("Set LINEAR_API_KEY and/or GITLAB_TOKEN.", file=sys.stderr)
+        sys.exit(1)
+
+    # Fetch counts from both sources in parallel
+    linear_counts: dict[datetime.date, int] = {}
+    commit_counts: dict[datetime.date, int] = {}
+    mr_counts: dict[datetime.date, int] = {}
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = {}
+        if api_key:
+            futures["linear"] = pool.submit(fetch_linear_counts, api_key, first)
+        if gitlab_host and gitlab_token:
+            futures["gitlab"] = pool.submit(fetch_gitlab_counts, gitlab_host, gitlab_token, first)
+
+        if "linear" in futures:
+            try:
+                linear_counts = futures["linear"].result()
+            except Exception as e:
+                print(f"Warning: Linear fetch failed: {e}", file=sys.stderr)
+
+        if "gitlab" in futures:
+            try:
+                commit_counts, mr_counts = futures["gitlab"].result()
+            except Exception as e:
+                print(f"Warning: GitLab fetch failed: {e}", file=sys.stderr)
+
+    inactive = [
+        d for d in weekdays
+        if linear_counts.get(d, 0) == 0
+        and commit_counts.get(d, 0) == 0
+        and mr_counts.get(d, 0) == 0
+    ]
+
+    sources = []
+    if api_key:
+        sources.append("Linear")
+    if gitlab_token:
+        sources.append("GitLab")
+
+    if args.json:
+        print(json.dumps({
+            "month": first.strftime("%Y-%m"),
+            "sources": sources,
+            "weekdays": len(weekdays),
+            "inactive": [
+                {
+                    "date": d.isoformat(),
+                    "weekday": d.strftime("%a"),
+                    "tickets": linear_counts.get(d, 0),
+                    "commits": commit_counts.get(d, 0),
+                    "mr_changes": mr_counts.get(d, 0),
+                }
+                for d in inactive
+            ],
+        }, indent=2))
+        return
+
+    console = Console()
+    month_label = first.strftime("%B %Y")
+    sources_str = " + ".join(sources)
+
+    if not inactive:
+        console.print(f"\n[green]{month_label}: No potentially inactive weekdays found.[/]")
+        console.print(f"[dim]Sources checked: {sources_str}[/]\n")
+    else:
+        console.print(f"\n[bold]{month_label}: {len(inactive)} potentially inactive weekday{'s' if len(inactive) != 1 else ''}[/]")
+        console.print(f"[dim]Sources checked: {sources_str}. Verify these manually — activity may have happened elsewhere.[/]\n")
+        for d in inactive:
+            day_name = d.strftime("%a")
+            tickets = linear_counts.get(d, 0)
+            commits = commit_counts.get(d, 0)
+            mrs = mr_counts.get(d, 0)
+            console.print(
+                f"  [red]{d.isoformat()}[/]  {day_name}"
+                f"  [dim]— {tickets} tickets, {commits} commits, {mrs} MR changes[/]"
+            )
+        console.print()
+        active_count = len(weekdays) - len(inactive)
+        console.print(f"[dim]Total weekdays: {len(weekdays)}, active: {active_count}, potentially inactive: {len(inactive)}[/]\n")
+
+
+if __name__ == "__main__":
+    main()
