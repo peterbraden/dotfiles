@@ -1,0 +1,319 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "rich",
+# ]
+# ///
+"""
+team-summary - see what your team is working on today.
+
+Shows each team member's active and recently updated Linear issues,
+grouped by person.
+
+Requires:
+    LINEAR_API_KEY   - Linear personal API key
+
+Usage:
+    team-summary                 Fleet Management team, today
+    team-summary -t NA           Different team
+    team-summary --since 2d      Last 2 days
+    team-summary --json          Machine-readable JSON output
+
+JSON shape:
+    {"team", "since", "until", "members": [{"name", "issues": [{"id",
+     "title", "status", "status_type", "group":
+     completed|in_progress|touched, "transitions", "updated_at"}]}]}
+"""
+
+import argparse
+import datetime
+import json
+import os
+import signal
+import sys
+import urllib.request
+import urllib.error
+from concurrent.futures import ThreadPoolExecutor
+
+from rich.console import Console
+from rich.markup import escape
+
+signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+
+LINEAR_API = "https://api.linear.app/graphql"
+
+
+# --- Helpers ---
+
+def parse_since(since_str: str) -> datetime.datetime:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    unit = since_str[-1]
+    try:
+        val = int(since_str[:-1])
+    except ValueError:
+        print(f"Invalid --since value: {since_str}", file=sys.stderr)
+        sys.exit(1)
+    if unit == "d":
+        return now - datetime.timedelta(days=val)
+    elif unit == "h":
+        return now - datetime.timedelta(hours=val)
+    elif unit == "w":
+        return now - datetime.timedelta(weeks=val)
+    else:
+        print(f"Invalid --since unit: {unit} (use d/h/w)", file=sys.stderr)
+        sys.exit(1)
+
+
+def start_of_today_utc() -> datetime.datetime:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+# --- Linear ---
+
+def query_linear(api_key: str, query: str, variables: dict | None = None) -> dict:
+    payload = json.dumps({"query": query, "variables": variables or {}}).encode()
+    req = urllib.request.Request(
+        LINEAR_API,
+        data=payload,
+        headers={
+            "Authorization": api_key,
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        print(f"Linear API error: {e.code} {body}", file=sys.stderr)
+        return {}
+
+
+TEAM_QUERY = """
+query($teamName: String!) {
+  teams(filter: { or: [{ name: { eq: $teamName } }, { key: { eq: $teamName } }] }) {
+    nodes {
+      id
+      name
+      members {
+        nodes {
+          id
+          name
+          isMe
+        }
+      }
+    }
+  }
+}
+"""
+
+MEMBER_ISSUES_QUERY = """
+query($userId: String!, $updatedAfter: DateTimeOrDuration!) {
+  user(id: $userId) {
+    assignedIssues(
+      filter: {
+        updatedAt: { gte: $updatedAfter }
+        state: { type: { nin: ["canceled"] } }
+      }
+      first: 50
+      orderBy: updatedAt
+    ) {
+      nodes {
+        identifier
+        title
+        state { name type }
+        completedAt
+        updatedAt
+        history(first: 10) {
+          nodes {
+            createdAt
+            fromState { name }
+            toState { name }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def fetch_team_members(api_key: str, team_name: str) -> list[dict]:
+    data = query_linear(api_key, TEAM_QUERY, {"teamName": team_name})
+    if not data or "data" not in data:
+        return []
+    teams = data["data"]["teams"]["nodes"]
+    if not teams:
+        print(f"Team '{team_name}' not found.", file=sys.stderr)
+        sys.exit(1)
+    return teams[0]["members"]["nodes"]
+
+
+def fetch_member_issues(api_key: str, user_id: str, since: datetime.datetime) -> list[dict]:
+    since_iso = since.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    data = query_linear(api_key, MEMBER_ISSUES_QUERY, {
+        "userId": user_id,
+        "updatedAfter": since_iso,
+    })
+    if not data or "data" not in data:
+        return []
+    return data["data"]["user"]["assignedIssues"]["nodes"]
+
+
+def issue_transitions(issue: dict, since: datetime.datetime) -> list[str]:
+    changes = []
+    since_str = since.strftime("%Y-%m-%dT%H:%M:%S")
+    for h in issue.get("history", {}).get("nodes", []):
+        if h.get("createdAt", "") < since_str:
+            continue
+        from_state = h.get("fromState")
+        to_state = h.get("toState")
+        if from_state and to_state:
+            changes.append(f"{from_state['name']} → {to_state['name']}")
+    return changes
+
+
+# --- Output ---
+
+def print_team_summary(
+    console: Console,
+    members: list[dict],
+    issues_by_member: dict[str, list[dict]],
+    since: datetime.datetime,
+):
+    now = datetime.datetime.now(datetime.timezone.utc)
+    delta = now - since
+    if delta.days == 0:
+        period = "today"
+    elif delta.days == 1:
+        period = "last 24h"
+    else:
+        period = f"last {delta.days}d"
+
+    console.print(f"\n[bold]Team activity ({period})[/]\n")
+
+    for member in sorted(members, key=lambda m: m["name"]):
+        if member.get("isMe"):
+            continue
+
+        issues = issues_by_member.get(member["id"], [])
+        if not issues:
+            console.print(f"[bold]{member['name']}[/] [dim]— no activity[/]")
+            console.print()
+            continue
+
+        completed = [i for i in issues if i.get("completedAt")]
+        in_progress = [i for i in issues if i["state"]["type"] == "started" and not i.get("completedAt")]
+        other = [i for i in issues if i["state"]["type"] not in ("started", "completed", "canceled") and not i.get("completedAt")]
+
+        console.print(f"[bold]{member['name']}[/]")
+
+        for i in completed:
+            transitions = issue_transitions(i, since)
+            detail = f" [dim]({', '.join(transitions)})[/]" if transitions else ""
+            console.print(f"  [green]done[/]  [cyan]{i['identifier']}[/] {escape(i['title'])}{detail}")
+
+        for i in in_progress:
+            transitions = issue_transitions(i, since)
+            detail = f" [dim]({', '.join(transitions)})[/]" if transitions else ""
+            console.print(f"  [yellow]{i['state']['name'].lower():<12}[/] [cyan]{i['identifier']}[/] {escape(i['title'])}{detail}")
+
+        for i in other:
+            transitions = issue_transitions(i, since)
+            detail = f" [dim]({', '.join(transitions)})[/]" if transitions else ""
+            console.print(f"  [dim]{i['state']['name'].lower():<12}[/] [cyan]{i['identifier']}[/] {escape(i['title'])}{detail}")
+
+        console.print()
+
+
+def build_json(
+    team: str,
+    members: list[dict],
+    issues_by_member: dict[str, list[dict]],
+    since: datetime.datetime,
+) -> dict:
+    def issue_group(i: dict) -> str:
+        if i.get("completedAt"):
+            return "completed"
+        if i["state"]["type"] == "started":
+            return "in_progress"
+        return "touched"
+
+    return {
+        "team": team,
+        "since": since.isoformat(),
+        "until": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "members": [
+            {
+                "name": m["name"],
+                "issues": [
+                    {
+                        "id": i["identifier"],
+                        "title": i["title"],
+                        "status": i["state"]["name"],
+                        "status_type": i["state"]["type"],
+                        "group": issue_group(i),
+                        "transitions": issue_transitions(i, since),
+                        "updated_at": i.get("updatedAt"),
+                    }
+                    for i in issues_by_member.get(m["id"], [])
+                ],
+            }
+            for m in sorted(members, key=lambda m: m["name"])
+            if not m.get("isMe")
+        ],
+    }
+
+
+# --- Main ---
+
+def main():
+    parser = argparse.ArgumentParser(description="See what your team is working on")
+    parser.add_argument("-t", "--team", default="Fleet Management", help="Team name or key (default: Fleet Management)")
+    parser.add_argument("--since", default=None, help="How far back to look (e.g. 1d, 2d, 12h). Default: start of today.")
+    parser.add_argument("--json", action="store_true", help="Machine-readable JSON output")
+    args = parser.parse_args()
+
+    if args.since:
+        since = parse_since(args.since)
+    else:
+        since = start_of_today_utc()
+
+    api_key = os.environ.get("LINEAR_API_KEY")
+    if not api_key:
+        print("Set LINEAR_API_KEY (Settings > API > Personal API keys)", file=sys.stderr)
+        sys.exit(1)
+
+    members = fetch_team_members(api_key, args.team)
+    if not members:
+        print("No team members found.", file=sys.stderr)
+        sys.exit(1)
+
+    # Fetch all members' issues in parallel
+    issues_by_member: dict[str, list[dict]] = {}
+    non_me = [m for m in members if not m.get("isMe")]
+
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futures = {
+            pool.submit(fetch_member_issues, api_key, m["id"], since): m["id"]
+            for m in non_me
+        }
+        for future in futures:
+            member_id = futures[future]
+            try:
+                issues_by_member[member_id] = future.result()
+            except Exception:
+                issues_by_member[member_id] = []
+
+    if args.json:
+        print(json.dumps(build_json(args.team, members, issues_by_member, since), indent=2))
+        return
+
+    console = Console()
+    print_team_summary(console, members, issues_by_member, since)
+
+
+if __name__ == "__main__":
+    main()
