@@ -5,7 +5,8 @@
 # Duplicate copy of zsh-autosuggestions; .zshrc uses ~/.config/zsh_plugins
 .zsh/zsh-autosuggestions
 
-# tmux picks up the agent socket via tmux show-environment in .profile instead
+# Kept ~/.ssh/ssh_auth_sock pointing at the agent; tmux's update-environment
+# gives new panes the attaching client's socket instead
 .ssh/rc
 
 # Old vim/neovim leftovers

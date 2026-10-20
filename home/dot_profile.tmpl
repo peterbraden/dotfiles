@@ -107,8 +107,9 @@ if [ -z "$SSH_AUTH_SOCK" -a -x "/usr/bin/ssh-agent" ]; then
 	trap "kill $SSH_AGENT_PID" 0
 else
   # We are in a forwarded session.
-  # If we are starting a shell in tmux, then we should refresh the socket
-  # This only works for new shells.
+  # tmux's update-environment already gives new panes the attaching client's
+  # socket. Panes are non-login shells, so this only matters for login shells
+  # started inside tmux (e.g. `zsh -l`).
   if [ -n "$TMUX" ]; then
     export $(tmux show-environment | grep "^SSH_AUTH_SOCK")
   fi
