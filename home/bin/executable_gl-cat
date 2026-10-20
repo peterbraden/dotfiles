@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+#
+# gl-cat - print file contents from a GitLab repository without cloning.
+#
+# Uses the GitLab Repository Files API to fetch and decode a file.
+#
+# Requires:
+#   GITLAB_TOKEN  - personal access token with read_repository scope
+#   GITLAB_HOST   - GitLab host (default: code.roche.com)
+#
+# Usage:
+#   gl-cat <owner/repo> <path> [options]
+#
+# Examples:
+#   gl-cat mygroup/myrepo README.md
+#   gl-cat mygroup/myrepo src/main.go --branch develop
+#   gl-cat mygroup/myrepo config.json | jq .
+
+set -eu
+
+usage() {
+    cat <<EOF
+Usage: gl-cat <owner/repo> <path> [options]
+
+Print file contents from a GitLab repository without cloning.
+
+Arguments:
+    owner/repo    GitLab project path (e.g. mygroup/myrepo)
+    path          File path in the repo (e.g. README.md)
+
+Options:
+    --branch BRANCH   Branch or ref (default: repo's default branch)
+    -h, --help        Show this help
+EOF
+}
+
+die() { echo "gl-cat: $*" >&2; exit 1; }
+
+# Portable base64 decode (Linux uses -d, macOS uses -D)
+b64_decode() { base64 -d 2>/dev/null || base64 -D; }
+
+# URL-encode a string (for project paths and file paths)
+urlencode() { python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$1"; }
+
+gl_api() {
+    local method="$1" endpoint="$2"
+    shift 2
+    local response http_code host
+
+    host="${GITLAB_HOST:-code.roche.com}"
+
+    response=$(curl -s -w "\n%{http_code}" \
+        -X "$method" \
+        -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+        "$@" \
+        "https://${host}/api/v4${endpoint}")
+
+    http_code=$(echo "$response" | tail -1)
+    body=$(echo "$response" | sed '$d')
+
+    if [[ "$http_code" -ge 400 ]]; then
+        local msg
+        msg=$(echo "$body" | jq -r '.message // .error // empty' 2>/dev/null || true)
+        die "API ${method} ${endpoint} failed (HTTP ${http_code}): ${msg:-$body}"
+    fi
+
+    echo "$body"
+}
+
+# --- Parse arguments ---
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+[[ $# -lt 2 ]] && { usage >&2; exit 1; }
+
+project="$1"; shift
+filepath="$1"; shift
+target_branch=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --branch)   target_branch="$2"; shift ;;
+        -h|--help)  usage; exit 0 ;;
+        *)          die "unknown option: $1" ;;
+    esac
+    shift
+done
+
+GITLAB_TOKEN="${GITLAB_TOKEN:-}"
+[[ -n "$GITLAB_TOKEN" ]] || die "set GITLAB_TOKEN (personal access token with read_repository scope)"
+[[ "$project" == */* ]] || die "project must be owner/repo format"
+[[ -n "$filepath" ]] || die "file path required"
+
+# --- Fetch and print ---
+
+encoded_project=$(urlencode "$project")
+encoded_path=$(urlencode "$filepath")
+
+query=""
+if [[ -n "$target_branch" ]]; then
+    query="?ref=${target_branch}"
+fi
+
+result=$(gl_api GET "/projects/${encoded_project}/repository/files/${encoded_path}/raw${query}")
+
+printf '%s' "$result"

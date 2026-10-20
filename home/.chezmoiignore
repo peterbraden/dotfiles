@@ -15,4 +15,5 @@ bin/roche-cal-url
 {{ if not .work }}
 bin/absent-days
 bin/daily-summary
+bin/gl-cat
 {{ end }}
