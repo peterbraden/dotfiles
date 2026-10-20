@@ -71,8 +71,6 @@ path_append /usr/local/go/bin   # Add golang
 {{ end }}
 {{ if .nodejs }}
 
-path_prepend "$HOME/repos/utils/bin"
-
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 # [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
