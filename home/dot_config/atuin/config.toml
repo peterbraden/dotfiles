@@ -3,3 +3,10 @@ inline_height = 10
 filter_mode = "global"
 filter_mode_shell_up_key_binding = "global"
 
+
+# History must never leave the machine.
+# Sync is disabled and pointed at an unreachable address, so even a
+# stray `atuin login` / `atuin register` can't upload anything.
+auto_sync = false
+sync_address = "http://127.0.0.1:1"
+update_check = false
