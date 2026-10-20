@@ -126,11 +126,11 @@ if [ "$(uname -s)" == "Linux" ]; then
         sudo apt-get install -y zsh vim
         sudo apt-get install -y mosh
         sudo apt-get install -y neovim ripgrep
-        sudo apt-get install fd-find
+        sudo apt-get install -y fd-find
         sudo apt-get install -y pass
 
         {{ if .python }}
-        sudo apt-get install -y python python-pip python-setuptools python-dev
+        sudo apt-get install -y python3 python3-pip python3-venv python3-dev
         {{ end }}
 
         {{ if .rust }}
