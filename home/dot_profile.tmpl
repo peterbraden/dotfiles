@@ -90,6 +90,9 @@ fi
 if test -e "$HOME/.cargo/env"; then
   # cargo's env adds ~/.cargo/bin to PATH if it isn't there already
   . "$HOME/.cargo/env"
+elif test -d "$HOME/.cargo/bin"; then
+  # apt's rustup doesn't create ~/.cargo/env
+  path_prepend "$HOME/.cargo/bin"
 fi
 {{ end }}
 
