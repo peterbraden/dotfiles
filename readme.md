@@ -35,7 +35,8 @@ switch between projects and have everything setup how I left it.
 
 `C-a s` Switches projects.
 
-I combine it with a variety of shell scripts to keep everything setup comfortably.
+I combine it with a variety of shell scripts (in [`home/bin`](home/bin), see
+[docs/scripts.md](docs/scripts.md)) to keep everything setup comfortably.
 
 ```bash
 tmo PROJECT_NAME # Opens the 'current' session for a project, or creates one
@@ -45,6 +46,13 @@ tmo PROJECT_NAME # Opens the 'current' session for a project, or creates one
 tml # Lists currently open sessions.
 ```
 
+
+### Scripts
+
+`~/bin` holds my command line tools: project and task workflow on top of tmux
+(`tmo`, `task-start`, `tasks`), status dashboards, GitHub/GitLab helpers and a
+few toys. They used to live in a separate `utils` repo. Each one is described
+in [docs/scripts.md](docs/scripts.md).
 
 ### [chezmoi](https://www.chezmoi.io/)
 
