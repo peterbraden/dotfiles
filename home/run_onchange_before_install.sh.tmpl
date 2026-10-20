@@ -3,17 +3,18 @@ echo "# Running peterbraden/dotfiles install.sh"
 
 mkdir -p ~/.local/bin
 
-if [ -x "$(command -v zsh)" ]; then
-  if [ "$SHELL" != "$(command -v zsh)" ]; then 
-    echo "# - Changing shell to zsh"
-    sudo chsh -s "$(which zsh)" $USER;
-  fi
-elif [ -x "$(command -v bash)" ]; then
-  if [ "$SHELL" != "/bin/bash" ]; then 
-    echo "# - Changing shell to bash"
-    sudo chsh -s "$(which bash)" $USER;
-  fi
-fi 
+# Compare against the real login shell, not $SHELL (inherited from tmux, sudo...)
+if [ "$(uname -s)" == "Darwin" ]; then
+  login_shell=$(dscl . -read ~ UserShell | awk '{print $2}')
+else
+  login_shell=$(getent passwd "$USER" | cut -d: -f7)
+fi
+# Prefer zsh, else bash. chsh only accepts shells listed in /etc/shells.
+target_shell=$(grep -m1 '/zsh$' /etc/shells || grep -m1 '/bash$' /etc/shells)
+if [ -n "$target_shell" ] && [ "$(basename "$login_shell")" != "$(basename "$target_shell")" ]; then
+  echo "# - Changing shell to $target_shell"
+  chsh -s "$target_shell" || echo "# ! chsh failed, change your shell manually" >&2
+fi
 
 # OSX
 if [ "$(uname -s)" == "Darwin" ]; then
@@ -45,6 +46,8 @@ if [ "$(uname -s)" == "Darwin" ]; then
   # launchctl unload -w /System/Library/LaunchAgents/com.apple.rcd.plist || true
   # Kill useless
   defaults write com.apple.gamed Disabled -bool true
+  # Dock settings only apply after a restart
+  killall Dock
 
 
   echo "# Installing packages on a mac" >&2
@@ -67,7 +70,6 @@ brew "findutils"
 brew "gnu-sed"
 brew "cmake"
 brew "vim"
-brew "reattach-to-user-namespace"
 brew "tmux"
 brew "pass"
 brew "ripgrep"
@@ -87,8 +89,10 @@ brew "git-delta"
 brew "f2"
 brew "gh"
 brew "khal"    # Calendar
+brew "vdirsyncer" # Calendar sync for khal
 
 cask "hammerspoon"
+cask "1password-cli"
 
 
 {{ if .rust }}
@@ -97,7 +101,6 @@ brew "rustup"
 
 EOS
 
-  brew install 1password-cli
   brew cleanup
 
   #git config --global core.pager delta
@@ -109,43 +112,44 @@ fi
 
 # Linux
 if [ "$(uname -s)" == "Linux" ]; then
-  if sudo true; then
+  # Ubuntu, Debian and derivatives
+  if [ -n "$(command -v apt-get)" ] && sudo true; then
+    [ -r /etc/os-release ] && . /etc/os-release
+    echo "# Installing packages on Linux[apt] ${PRETTY_NAME:-}" >&2
 
-    #sudo -v
-    # Keep-alive: update existing `sudo` time stamp until the script has finished.
-    #while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+    # One package at a time, so a package missing from an older release
+    # doesn't stop the rest from installing.
+    apt_install() {
+      for p in "$@"; do
+        sudo apt-get install -y "$p" || echo "# ! $p not available on ${PRETTY_NAME:-this system}" >&2
+      done
+    }
 
-    if [  -n "$(uname -a | grep Ubuntu)" ]; then
-      if [ -n "$(command -v apt-get)" ]; then
-        echo "# Installing packages on Linux[apt]" >&2
-        # Apt get stuff.
-        sudo apt-get -y update
-        sudo apt-get -y upgrade
-        sudo apt-get install -y build-essential
+    sudo apt-get -y update
+    sudo apt-get -y upgrade
+    apt_install build-essential zsh vim tmux mosh neovim ripgrep fd-find pass
+    # Packaged as batcat / fdfind on Debian; eza and git-delta need Ubuntu 24.04+
+    apt_install fzf bat zoxide eza git-delta
 
-        sudo apt-get install -y zsh vim
-        sudo apt-get install -y mosh
-        sudo apt-get install -y neovim ripgrep
-        sudo apt-get install -y fd-find
-        sudo apt-get install -y pass
+    {{ if .python }}
+    apt_install python3 python3-pip python3-venv python3-dev
+    {{ end }}
 
-        {{ if .python }}
-        sudo apt-get install -y python3 python3-pip python3-venv python3-dev
-        {{ end }}
-
-        {{ if .rust }}
-        sudo apt-get install -y rustup
-        {{ end }}
-
-        {{ if .nodejs }}
-        sudo apt-get install -y nodejs npm
-        {{ end }}
-
-        # TODO tailscale
-        #
-        #apt install bat
+    {{ if .rust }}
+    if ! [ -x "$(command -v rustup)" ]; then
+      if apt-cache show rustup > /dev/null 2>&1; then
+        apt_install rustup
+      else
+        # apt only has rustup from Ubuntu 24.04. .profile already adds ~/.cargo/bin
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
       fi
     fi
+    {{ end }}
+
+    {{ if .nodejs }}
+    apt_install nodejs npm
+    {{ end }}
+
+    # TODO tailscale, atuin
   fi
 fi
-
