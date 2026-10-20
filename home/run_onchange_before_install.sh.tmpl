@@ -76,6 +76,7 @@ brew "zoxide"  # cd replacement
 brew "git-delta"
 brew "f2"
 brew "gh"
+brew "gum"     # Interactive prompts in task-start
 brew "uv"      # Runs the Python scripts in ~/bin
 brew "khal"    # Calendar
 brew "vdirsyncer" # Calendar sync for khal
@@ -87,11 +88,26 @@ cask "1password-cli"
 {{ if .rust }}
 brew "rustup"
 {{- end }}
+{{ if .golang }}
+brew "go"
+{{- end }}
+{{ if .work }}
+brew "kubernetes-cli"
+brew "flux"
+{{- end }}
 {{ if .python }}
 brew "pyright" # LSP for nvim; independent of the active pyenv version
 {{- end }}
 
 EOS
+
+  # Installed only if missing, since they are often installed another way
+  # (macOS ships jq; podman's own installer; poetry via pipx)
+  command -v jq > /dev/null || brew install jq
+  {{- if .work }}
+  command -v podman > /dev/null || brew install podman
+  command -v poetry > /dev/null || brew install poetry
+  {{- end }}
 
   brew cleanup
 
@@ -122,6 +138,29 @@ if [ "$(uname -s)" == "Linux" ]; then
     apt_install build-essential zsh vim tmux mosh neovim ripgrep fd-find pass
     # Packaged as batcat / fdfind on Debian; eza and git-delta need Ubuntu 24.04+
     apt_install fzf bat zoxide eza git-delta
+    apt_install jq gh   # gh is packaged from Ubuntu 22.04
+
+    # Shell history search; local only, sync is disabled in its config
+    # Unmanaged install into ~/.local/bin: no rc file edits, no self-updater
+    if ! [ -x "$(command -v atuin)" ] && ! apt_install atuin; then
+      curl --proto '=https' --tlsv1.2 -LsSf https://github.com/atuinsh/atuin/releases/latest/download/atuin-installer.sh \
+        | ATUIN_UNMANAGED_INSTALL="$HOME/.local/bin" sh
+    fi
+
+    # nvim-treesitter needs nvim 0.12+, newer than apt's. Official release into
+    # ~/.local/nvim; ~/.local/bin precedes /usr/bin on PATH.
+    nvim_ok() { nvim --headless -c 'if !has("nvim-0.12") | cquit | endif' -c qa 2>/dev/null; }
+    if ! nvim_ok; then
+      case "$(uname -m)" in aarch64|arm64) nv_arch=arm64 ;; *) nv_arch=x86_64 ;; esac
+      tmp=$(mktemp -d)
+      if curl -LsSf "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-$nv_arch.tar.gz" | tar -xz -C "$tmp"; then
+        rm -rf ~/.local/nvim && mv "$tmp/nvim-linux-$nv_arch" ~/.local/nvim
+        ln -sf ~/.local/nvim/bin/nvim ~/.local/bin/nvim
+      fi
+      rm -rf "$tmp"
+    fi
+    # Builds parsers for nvim-treesitter (Ubuntu 24.04+; else via cargo below)
+    apt_install tree-sitter-cli
 
     # uv runs the Python scripts in ~/bin; not in apt. Installs to ~/.local/bin
     if ! [ -x "$(command -v uv)" ]; then
@@ -147,9 +186,23 @@ if [ "$(uname -s)" == "Linux" ]; then
     apt_install nodejs npm
     {{ end }}
 
-    # TODO tailscale, atuin
+    {{ if .rust }}
+    if ! [ -x "$(command -v tree-sitter)" ] && [ -x "$HOME/.cargo/bin/cargo" ]; then
+      "$HOME/.cargo/bin/cargo" install --locked tree-sitter-cli
+    fi
+    {{ end }}
+
+    # TODO tailscale
   fi
 fi
+
+{{ if .nodejs }}
+# nvm (loaded by .profile). Homebrew discourages its nvm package, so use the
+# official installer, which installs to ~/.nvm.
+if ! [ -s "$HOME/.nvm/nvm.sh" ]; then
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | PROFILE=/dev/null bash
+fi
+{{ end }}
 
 # Change the login shell last, so zsh is installed first on Linux
 # Compare against the real login shell, not $SHELL (inherited from tmux, sudo...)
