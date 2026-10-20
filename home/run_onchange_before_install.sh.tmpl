@@ -75,6 +75,7 @@ brew "zoxide"  # cd replacement
 brew "git-delta"
 brew "f2"
 brew "gh"
+brew "uv"      # Runs the Python scripts in ~/bin
 brew "khal"    # Calendar
 brew "vdirsyncer" # Calendar sync for khal
 
@@ -120,6 +121,11 @@ if [ "$(uname -s)" == "Linux" ]; then
     apt_install build-essential zsh vim tmux mosh neovim ripgrep fd-find pass
     # Packaged as batcat / fdfind on Debian; eza and git-delta need Ubuntu 24.04+
     apt_install fzf bat zoxide eza git-delta
+
+    # uv runs the Python scripts in ~/bin; not in apt. Installs to ~/.local/bin
+    if ! [ -x "$(command -v uv)" ]; then
+      curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
+    fi
 
     {{ if .python }}
     apt_install python3 python3-pip python3-venv python3-dev
