@@ -1,0 +1,3 @@
+# Old files that were never read by ssh/sshd
+.ssh/ssh_config
+.ssh/sshd_config
