@@ -20,6 +20,6 @@ if [ -x "$(command -v atuin)" ]; then
   eval "$(atuin init bash)"
 fi
 
-{{- if .work -}}
+{{ if .work }}
 {{-  template "work_profile.tmpl" . -}}
-{{- end -}}
+{{ end }}

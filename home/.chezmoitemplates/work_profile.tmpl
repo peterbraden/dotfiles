@@ -1,2 +1,30 @@
-# Included by bash and zsh
 
+# --- Work profile ---
+# Included by bash and zsh on machines with work = true.
+# Aliases and functions only: environment variables come from 1Password.
+
+# --- Environment ---
+# All work env vars come from the 1Password Environment mounted at ~/roche.env,
+# a pipe that 1Password fills when it's read (1Password must be unlocked).
+# Lines are exported literally rather than sourced, so values never run as code.
+if [ -p ~/roche.env ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      ''|'#'*) continue ;;
+    esac
+    export "${line#export }"
+  done < ~/roche.env
+fi
+
+# --- Aliases ---
+alias docker=podman
+alias k=kubectl
+alias flux-bump='flux reconcile source git main && flux get kustomizations -w'
+
+# --- Functions ---
+roche_lint_and_fix(){
+  poetry run ruff format src/ tests/ alembic/
+  poetry run ruff check --fix src/ tests/ alembic/
+  poetry run mypy src/ tests/
+  poetry run pyright src/ tests/
+}
