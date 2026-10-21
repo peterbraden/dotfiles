@@ -1,0 +1,298 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "rich",
+# ]
+# ///
+"""
+claude-agents - show running Claude Code sessions and their subagents.
+
+Reads session metadata from ~/.claude/sessions/, discovers subagent
+metadata from project directories, and displays a tree of active work.
+
+Usage:
+    claude-agents              Show running sessions with subagents
+    claude-agents -a           Show all sessions (including dead)
+    claude-agents -w           Watch mode (refresh every 5s)
+    claude-agents -w -i 10    Watch with custom interval
+    claude-agents --json       Machine-readable JSON output
+    claude-agents --json | jq  Pipe into other tools
+"""
+
+import argparse
+import json
+import os
+import signal
+import sys
+import time
+from pathlib import Path
+
+from rich.console import Console
+from rich.live import Live
+from rich.table import Table
+from rich.text import Text
+from rich.tree import Tree
+
+
+SESSIONS_DIR = Path.home() / ".claude" / "sessions"
+PROJECTS_DIR = Path.home() / ".claude" / "projects"
+STALE_THRESHOLD = 120  # seconds since last write to consider a subagent done
+
+
+def pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+        return True
+    except (OSError, ProcessLookupError):
+        return False
+
+
+def age(epoch_ms: int) -> str:
+    seconds = int(time.time() - epoch_ms / 1000)
+    if seconds < 0:
+        return "-"
+    if seconds < 60:
+        return f"{seconds}s"
+    if seconds < 3600:
+        return f"{seconds // 60}m"
+    if seconds < 86400:
+        return f"{seconds // 3600}h"
+    return f"{seconds // 86400}d"
+
+
+def short_cwd(cwd: str) -> str:
+    home = str(Path.home())
+    if cwd.startswith(home):
+        return "~" + cwd[len(home):]
+    return cwd
+
+
+def subagent_status(jsonl_path: Path) -> str:
+    """Infer subagent status from its transcript."""
+    try:
+        mtime = jsonl_path.stat().st_mtime
+        stale = (time.time() - mtime) > STALE_THRESHOLD
+    except OSError:
+        return "unknown"
+
+    last_stop = None
+    try:
+        with open(jsonl_path) as f:
+            for line in f:
+                pass
+            # line is now the last line
+            d = json.loads(line)
+            msg = d.get("message", {})
+            if msg.get("role") == "assistant":
+                last_stop = msg.get("stop_reason")
+    except Exception:
+        pass
+
+    if last_stop == "end_turn" and stale:
+        return "done"
+    if stale:
+        return "done"
+    return "running"
+
+
+def load_subagents(session_id: str, cwd: str) -> list[dict]:
+    """Find subagents for a session by looking in its project directory."""
+    proj_key = cwd.replace("/", "-")
+    subagents_dir = PROJECTS_DIR / proj_key / session_id / "subagents"
+    if not subagents_dir.is_dir():
+        return []
+
+    agents = []
+    for meta_file in subagents_dir.glob("*.meta.json"):
+        try:
+            meta = json.loads(meta_file.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
+
+        agent_id = meta_file.stem.replace(".meta", "")
+        jsonl_path = subagents_dir / f"{agent_id}.jsonl"
+        meta["_status"] = subagent_status(jsonl_path) if jsonl_path.exists() else "unknown"
+        meta["_agent_id"] = agent_id
+        try:
+            meta["_mtime"] = jsonl_path.stat().st_mtime
+        except OSError:
+            meta["_mtime"] = 0
+        agents.append(meta)
+
+    agents.sort(key=lambda a: a["_mtime"], reverse=True)
+    return agents
+
+
+def load_sessions() -> list[dict]:
+    if not SESSIONS_DIR.exists():
+        return []
+
+    sessions = []
+    for f in SESSIONS_DIR.iterdir():
+        if not f.name.endswith(".json"):
+            continue
+        try:
+            data = json.loads(f.read_text())
+            data["_alive"] = pid_alive(data.get("pid", -1))
+            data["_subagents"] = load_subagents(
+                data.get("sessionId", ""), data.get("cwd", "")
+            )
+            sessions.append(data)
+        except (json.JSONDecodeError, KeyError):
+            continue
+
+    sessions.sort(key=lambda s: s.get("startedAt", 0), reverse=True)
+    return sessions
+
+
+def serialize_subagent(a: dict) -> dict:
+    return {
+        "id": a.get("_agent_id", ""),
+        "name": a.get("name", ""),
+        "type": a.get("agentType", ""),
+        "status": a.get("_status", "unknown"),
+        "description": a.get("description", ""),
+        "worktree": a.get("spawnedWithWorktree", False),
+        "worktreePath": a.get("worktreePath", ""),
+        "worktreeBranch": a.get("worktreeBranch", ""),
+    }
+
+
+def serialize_session(s: dict) -> dict:
+    return {
+        "name": s.get("name", ""),
+        "sessionId": s.get("sessionId", ""),
+        "pid": s.get("pid", 0),
+        "alive": s.get("_alive", False),
+        "status": s.get("status", "unknown"),
+        "cwd": s.get("cwd", ""),
+        "tmux": s.get("tmux", ""),
+        "kind": s.get("kind", ""),
+        "entrypoint": s.get("entrypoint", ""),
+        "version": s.get("version", ""),
+        "startedAt": s.get("startedAt", 0),
+        "subagents": [serialize_subagent(a) for a in s.get("_subagents", [])],
+    }
+
+
+def status_style(status: str) -> str:
+    return {
+        "busy": "yellow",
+        "idle": "green",
+        "running": "yellow",
+        "done": "dim",
+    }.get(status, "blue")
+
+
+def build_tree(sessions: list[dict], show_all: bool) -> Tree | Text:
+    rows = sessions if show_all else [s for s in sessions if s["_alive"]]
+
+    alive_count = sum(1 for s in sessions if s["_alive"])
+    dead_count = len(sessions) - alive_count
+
+    if not rows:
+        return Text(f"No running Claude sessions ({dead_count} stale)", style="dim")
+
+    summary = f"{alive_count} running, {dead_count} stale"
+    tree = Tree(Text(f"Claude Sessions  ({summary})", style="bold"))
+
+    for s in rows:
+        alive = s["_alive"]
+        name = s.get("name", "-")
+        st = s.get("status", "unknown") if alive else "dead"
+        cwd = short_cwd(s.get("cwd", "-"))
+        tmux = s.get("tmux", "")
+        started = age(s.get("startedAt", 0))
+        pid = s.get("pid", "-")
+
+        if not alive:
+            style = "dim"
+        else:
+            style = ""
+
+        label = Text()
+        label.append(f"{name}", style="bold " + style)
+        label.append(f"  {st}", style=status_style(st) + (" dim" if not alive else ""))
+        label.append(f"  {cwd}", style=style or "cyan")
+        if tmux:
+            label.append(f"  tmux:{tmux}", style="dim")
+        label.append(f"  {started}", style="dim")
+        label.append(f"  pid:{pid}", style="dim")
+
+        branch = tree.add(label)
+
+        subagents = s.get("_subagents", [])
+        if not subagents:
+            continue
+
+        showing = subagents if show_all else [
+            a for a in subagents if a["_status"] == "running"
+        ]
+        done_count = sum(1 for a in subagents if a["_status"] == "done")
+
+        for a in showing:
+            a_name = a.get("name", a["_agent_id"])
+            a_type = a.get("agentType", "-")
+            a_desc = a.get("description", "")
+            a_st = a["_status"]
+            worktree = a.get("spawnedWithWorktree", False)
+
+            a_label = Text()
+            a_label.append(f"{a_name}", style="bold" if a_st == "running" else "dim")
+            a_label.append(f"  {a_st}", style=status_style(a_st))
+            a_label.append(f"  [{a_type}]", style="dim")
+            if worktree:
+                a_label.append("  worktree", style="dim italic")
+            if a_desc:
+                a_label.append(f"  {a_desc}", style="dim" if a_st == "done" else "")
+
+            branch.add(a_label)
+
+        if not show_all and done_count > 0 and done_count != len(subagents):
+            branch.add(Text(f"({done_count} completed)", style="dim"))
+        elif not show_all and done_count > 0 and len(showing) == 0:
+            branch.add(Text(f"({done_count} completed)", style="dim"))
+
+    return tree
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Show running Claude Code sessions and subagents"
+    )
+    parser.add_argument("-a", "--all", action="store_true", dest="show_all",
+                        help="Include dead sessions and completed subagents")
+    parser.add_argument("-j", "--json", action="store_true",
+                        help="Machine-readable JSON output")
+    parser.add_argument("-w", "--watch", action="store_true", help="Watch mode")
+    parser.add_argument("-i", "--interval", type=int, default=5,
+                        help="Refresh interval in seconds")
+    args = parser.parse_args()
+
+    if args.json:
+        sessions = load_sessions()
+        rows = sessions if args.show_all else [s for s in sessions if s["_alive"]]
+        json.dump([serialize_session(s) for s in rows], sys.stdout, indent=2)
+        sys.stdout.write("\n")
+        return
+
+    console = Console()
+
+    if args.watch:
+        with Live(console=console, refresh_per_second=1) as live:
+            while True:
+                sessions = load_sessions()
+                live.update(build_tree(sessions, args.show_all))
+                time.sleep(args.interval)
+    else:
+        sessions = load_sessions()
+        if not sessions:
+            console.print("[dim]No Claude sessions found[/]")
+            sys.exit(0)
+        console.print(build_tree(sessions, args.show_all))
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+    main()

@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+#
+# task-stop - abandon or pause a worktree-based task.
+#
+# Kills the tmux session and removes the worktree. Does not care about
+# uncommitted changes — use task-complete for a clean finish.
+#
+# Must be run from inside a worktree (under WORKTREES_DIR).
+#
+# Usage:
+#   task-stop              # stop the current task
+#   task-stop --force      # skip confirmation prompt
+
+set -eu
+
+REPOS_DIR="${REPOS_DIR:-$HOME/repos}"
+WORKTREES_DIR="${WORKTREES_DIR:-$REPOS_DIR/worktrees}"
+
+usage() {
+    cat <<EOF
+Usage: task-stop [options]
+
+Stop the current worktree-based task. Run from inside the worktree.
+
+Options:
+    --force       Skip confirmation prompt
+    -h, --help    Show this help
+EOF
+}
+
+die() { echo "task-stop: $*" >&2; exit 1; }
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+force=false
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --force)    force=true ;;
+        -h|--help)  usage; exit 0 ;;
+        *)          die "unknown option: $1" ;;
+    esac
+    shift
+done
+
+# --- Detect worktree context ---
+
+worktree_path=$(git rev-parse --show-toplevel 2>/dev/null) || die "not inside a git repository"
+
+# Verify we're in a worktree under WORKTREES_DIR
+case "$worktree_path" in
+    "$WORKTREES_DIR"/*) ;;
+    *) die "not inside a worktree (expected path under $WORKTREES_DIR)" ;;
+esac
+
+worktree_name=$(basename "$worktree_path")
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || die "cannot determine current branch"
+
+# Find the main repo this worktree belongs to
+main_repo=$(git worktree list --porcelain | awk '/^worktree / { path=$2 } /^bare$|^branch refs\/heads\/(main|master)$/ { if (path) print path }' | head -1)
+if [[ -z "$main_repo" ]]; then
+    # Fallback: first worktree listed is the main one
+    main_repo=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+fi
+
+# --- Confirm ---
+
+if [[ "$force" != true ]]; then
+    echo "This will:"
+    echo "  - Kill tmux session: $worktree_name"
+    echo "  - Remove worktree:   $worktree_path"
+    echo "  - Branch '$branch' will be kept"
+    echo ""
+    printf "Continue? [y/N] "
+    read -r confirm
+    case "$confirm" in
+        [yY]*) ;;
+        *) echo "Aborted."; exit 0 ;;
+    esac
+fi
+
+# --- Stop ---
+
+# Move out of the worktree before removing it
+cd "$REPOS_DIR"
+
+# Kill tmux session if it exists
+if tmux has-session -t "$worktree_name" 2>/dev/null; then
+    tmux kill-session -t "$worktree_name"
+    echo "Killed session: $worktree_name"
+fi
+
+# Remove the worktree
+git -C "$main_repo" worktree remove --force "$worktree_path" 2>/dev/null \
+    || rm -rf "$worktree_path"
+
+echo "Removed worktree: $worktree_path"
+echo "Branch '$branch' kept locally."

@@ -1,0 +1,3 @@
+# Every zsh, including non-interactive ones (scripts, editors), so cargo-installed
+# tools are found even without the login profile.
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"

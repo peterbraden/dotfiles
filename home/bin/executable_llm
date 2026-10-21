@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#
+# llm - send a prompt to an LLM and print the response.
+#
+# Wraps `claude -p` so other scripts stay provider-agnostic.
+# Reads the prompt from a positional argument or stdin.
+#
+# Usage:
+#   llm "What is 2+2?"
+#   echo "What is 2+2?" | llm
+#   llm < prompt.txt
+#   LLM_MODEL=sonnet llm "Complex task"
+
+set -eu
+
+MODEL="${LLM_MODEL:-haiku}"
+
+if [[ $# -gt 0 ]]; then
+    exec claude -p --model "$MODEL" --no-session-persistence "$*"
+else
+    exec claude -p --model "$MODEL" --no-session-persistence
+fi

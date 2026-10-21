@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# close-project - close the tmux session for a project.
+#
+# Usage:
+#   close-project <project>    Close the named session
+#   close-project              Close the current session (must be inside tmux)
+
+set -eu
+
+if [ $# -ge 1 ]; then
+  SESSION="${1//\./-}"
+else
+  if [ -z "${TMUX:-}" ]; then
+    echo "Usage: close-project <project>"
+    exit 1
+  fi
+  SESSION="$(tmux display-message -p '#S')"
+fi
+
+if ! tmux has-session -t "$SESSION" 2>/dev/null; then
+  echo "No session: $SESSION"
+  exit 1
+fi
+
+tmux kill-session -t "$SESSION"
+echo "Closed $SESSION"

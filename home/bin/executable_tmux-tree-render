@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# tmux-tree-render - live-updating tree of tmux sessions/windows/panes.
+#
+# Meant to be run inside a tmux pane (via tmux-tree).
+
+set -eu
+
+REFRESH=3
+
+BOLD="\033[1m"
+DIM="\033[2m"
+RESET="\033[0m"
+BLUE="\033[34m"
+CYAN="\033[36m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+RED="\033[31m"
+GRAY="\033[90m"
+
+current_session="$(tmux display-message -p '#S')"
+
+render() {
+  clear
+  printf "${DIM}tmux sessions${RESET}\n\n"
+
+  tmux list-sessions -F '#{session_name}|#{session_windows}|#{session_attached}' 2>/dev/null | \
+  while IFS='|' read -r sess win_count attached; do
+    if [[ "$sess" == "$current_session" ]]; then
+      marker="${GREEN}●${RESET}"
+      sess_color="$BOLD$BLUE"
+    elif [[ "$attached" -gt 0 ]]; then
+      marker="${YELLOW}●${RESET}"
+      sess_color="$BOLD$CYAN"
+    else
+      marker="${GRAY}○${RESET}"
+      sess_color="$BOLD"
+    fi
+    printf " $marker ${sess_color}%s${RESET}\n" "$sess"
+
+    tmux list-windows -t "$sess" -F '#{window_index}|#{window_name}|#{window_active}|#{pane_current_path}' 2>/dev/null | \
+    while IFS='|' read -r widx wname wactive wpath; do
+      if [[ "$wactive" == "1" ]]; then
+        wcolor="$CYAN"
+        wpre="▸"
+      else
+        wcolor="$GRAY"
+        wpre=" "
+      fi
+      short_path="${wpath/#$HOME/~}"
+      printf "   ${wcolor}${wpre} %s:%s${RESET} ${DIM}%s${RESET}\n" "$widx" "$wname" "$short_path"
+
+      tmux list-panes -t "$sess:$widx" -F '#{pane_index}|#{pane_current_command}|#{pane_active}|#{pane_pid}' 2>/dev/null | \
+      while IFS='|' read -r pidx pcmd pactive ppid; do
+        if [[ "$pactive" == "1" ]]; then
+          pcolor="$GREEN"
+        else
+          pcolor="$GRAY"
+        fi
+        # Get the actual foreground process (child of the pane's shell)
+        fg_cmd=$(ps -o pid=,comm= -p $(pgrep -P "$ppid" 2>/dev/null | head -5 | tr '\n' ',')0 2>/dev/null | awk '{print $2}' | grep -v '^$' | tail -1)
+        display_cmd="${fg_cmd:-$pcmd}"
+        printf "     ${pcolor}├ %s${RESET}\n" "$display_cmd"
+      done
+    done
+    echo ""
+  done
+}
+
+last_hash=""
+while true; do
+  new_hash=$(tmux list-sessions -F '#{session_name}#{session_windows}' 2>/dev/null; \
+             tmux list-windows -a -F '#{window_index}#{window_name}#{window_active}' 2>/dev/null; \
+             tmux list-panes -a -F '#{pane_current_command}#{pane_active}' 2>/dev/null)
+  if [[ "$new_hash" != "$last_hash" ]]; then
+    render
+    last_hash="$new_hash"
+  fi
+  sleep "$REFRESH"
+done

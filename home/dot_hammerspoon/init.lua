@@ -7,6 +7,9 @@ hs.window.animationDuration = 0 -- disable animations
 
 function moveFrontmostWindow(where)
   local window = hs.window.frontmostWindow()
+  if not window then
+    return
+  end
   local screen = window:screen()
   hs.grid.set(window, where, screen)
 end
@@ -24,22 +27,8 @@ hs.hotkey.bind({"ctrl", "alt"}, "down", function()
 end)
 
 
----
---- I used to use 'Visor' which became 'TotalTerminal', then disappeared.
---- This replaces it.
---- It drops a terminal down from the top of the screen.
----
-hs.hotkey.bind({"ctrl"}, "space", function()
-  local app = hs.application.get("Terminal")
-  if app:isFrontmost() then
-    app:hide()
-  else
-    app:setFrontmost(true)
-    local window = app:focusedWindow()
-    local screen = window:screen()
-    hs.grid.set(window, '0,0 12x4', screen)
-  end
-end)
+--- The drop-down terminal (ctrl+space) is Ghostty's quick terminal, see
+--- ~/.config/ghostty/config.ghostty
 
 
 
@@ -56,6 +45,7 @@ function reloadConfig(files)
   end
 end
 
-hs.pathwatcher.new(os.getenv('HOME') .. '/.hammerspoon/', reloadConfig):start()
+-- Global, so the watcher isn't garbage-collected (which stops auto-reload)
+configWatcher = hs.pathwatcher.new(os.getenv('HOME') .. '/.hammerspoon/', reloadConfig):start()
 
 

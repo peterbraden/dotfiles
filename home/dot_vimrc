@@ -17,7 +17,10 @@ set clipboard=unnamed   " Use Mac clipboard
 
 " Autoread
 set autoread " Reload files when they change on disk
-au CursorHold,CursorHoldI * checktime " Trigger the reload when the cursor stops moving
+augroup autoread
+  autocmd!
+  au CursorHold,CursorHoldI * checktime " Trigger the reload when the cursor stops moving
+augroup END
 
 " au FocusGained,BufEnter * :silent! ! " Trigger autoread when changing buffers or coming back to vim.
 
@@ -271,9 +274,6 @@ highlight clear SignColumn
 augroup vimrcFiletypes
   autocmd!
 
-  au BufRead,BufNewFile *.pde set filetype=arduino
-  au BufRead,BufNewFile *.ino set filetype=arduino
-
   " Enable spellchecking for Markdown
   autocmd FileType markdown setlocal spell
 
@@ -290,8 +290,6 @@ augroup vimrcFiletypes
   " Treat <li> and <p> tags like the block tags they are
   let g:html_indent_tags = 'li\|p'
   
-  " Typescript balloons
-  autocmd FileType typescript nmap <buffer> <Leader>t : <C-u>echo tsuquyomi#hint()<CR>
 
 
 augroup END
@@ -322,32 +320,10 @@ let g:ctrlp_prompt_mappings = {
 " }}}
 
 
-" YCM Autocomplete {{{
-let g:ycm_error_symbol = "x"
-let g:ycm_warning_symbol = ">"
-let g:ycm_key_list_previous_completion = ['<S-TAB>']
-
-nnoremap <leader>gd :tab split \| :YcmCompleter GoToDefinition<CR>
-nnoremap <leader>fi :YcmCompleter FixIt<CR>
-" }}}
-
-
-" LSP {{{
-if executable('ruff')
-    au User lsp_setup call lsp#register_server({
-        \ 'name': 'ruff',
-        \ 'cmd': {server_info->['ruff', 'server']},
-        \ 'allowlist': ['python'],
-        \ 'workspace_config': {},
-        \ })
-endif
-" }}}
-
-
 " Editing VIM {{{
 " Shortcuts.vim
-source $HOME/shortcuts.vim
+source ~/.vim/shortcuts.vim
 " Open vimrc or shortcuts.vim
 :nnoremap <leader>rc :vsplit $MYVIMRC<cr>
-:nnoremap <leader>sc :vsplit $HOME/shortcuts.vim<cr>
+:nnoremap <leader>sc :vsplit ~/.vim/shortcuts.vim<cr>
 " }}}

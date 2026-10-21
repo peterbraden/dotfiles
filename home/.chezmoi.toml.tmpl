@@ -1,43 +1,22 @@
-#------ boolean feature tags --------
+{{- /*
+  Feature toggles (work machine; Go, Node.js, Rust, Python, Kubernetes tooling). Asked once by `chezmoi init` and stored in
+  ~/.config/chezmoi/chezmoi.toml; machines that already have them aren't asked.
+  Defaults come from the known hosts below, so pressing enter (or
+  --promptDefaults) does the right thing there. Unattended:
+    chezmoi init --promptBool work=true,python=true,...
+*/ -}}
 
-# work: true if this machine is a work machine
-{{- $work := false -}} 
+{{- $host := .chezmoi.hostname -}}
+{{- $isThor := eq $host "thor" -}}
+{{- $isVidar := eq $host "Vidar" -}}
+{{- $isWork := eq $host "bradenp1-66CPFP" -}}
 
-# golang: include golang tooling?
-{{- $golang := false -}}
-
-# nodejs: include nodejs tooling?
-{{- $nodejs := false -}}
-
-# rust: include rust tooling?
-{{- $rust := false -}}{{/*  */}}
-
-# python: include python tooling?
-{{- $python := false -}}
-
-
-
-
-# ------ Machine specific config ----
-{{- if eq .chezmoi.hostname "thor" }}
-{{ $python = true }}
-{{ $rust = true }}
-{{ $nodejs = true }}
-
-{{- else if eq .chezmoi.hostname "Vidar" }} 
-{{ $python = true }}
-{{ $rust = true }}
-{{ $nodejs = true }}
-{{ $golang = true }}
-{{- else if eq .chezmoi.hostname "bradenp1-66CPFP" }}
-{{ $python = true }}
-{{ $rust = true }}
-{{ $nodejs = true }}
-{{ $golang = true }}
-
-{{- end }}
-
-{{ "" }}{{/* newline */}}
+{{- $work := promptBoolOnce . "work" "work" $isWork -}}
+{{- $golang := promptBoolOnce . "golang" "golang" (or $isVidar $isWork) -}}
+{{- $nodejs := promptBoolOnce . "nodejs" "nodejs" (or $isThor $isVidar $isWork) -}}
+{{- $rust := promptBoolOnce . "rust" "rust" (or $isThor $isVidar $isWork) -}}
+{{- $python := promptBoolOnce . "python" "python" (or $isThor $isVidar $isWork) -}}
+{{- $kubernetes := promptBoolOnce . "kubernetes" "kubernetes" $isWork -}}
 
 [data]
     work = {{ $work }}
@@ -45,6 +24,7 @@
     nodejs = {{ $nodejs }}
     rust = {{ $rust }}
     python = {{ $python }}
+    kubernetes = {{ $kubernetes }}
 
 [git]
     autoCommit = true

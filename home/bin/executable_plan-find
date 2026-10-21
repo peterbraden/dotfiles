@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# plan-find - walk up the directory tree to find plan.md.
+# Prints the absolute path if found, exits silently if not.
+#
+# Usage:
+#   plan-find
+#   PLAN_FILE="$(plan-find)"
+
+dir="$(pwd)"
+while true; do
+  if [ -f "$dir/plan.md" ]; then
+    echo "$dir/plan.md"
+    exit 0
+  fi
+  parent="$(dirname "$dir")"
+  [ "$parent" = "$dir" ] && break
+  dir="$parent"
+done
+exit 1

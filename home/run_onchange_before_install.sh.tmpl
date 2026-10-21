@@ -1,0 +1,306 @@
+#!/usr/bin/env bash
+echo "# Running peterbraden/dotfiles install.sh"
+
+mkdir -p ~/.local/bin
+# khal errors if a configured calendar directory is missing
+mkdir -p ~/.local/share/khal/home
+
+# OSX
+if [ "$(uname -s)" == "Darwin" ]; then
+  echo "# - Setting up a mac"
+
+  # Link repos on desktop
+  #ln -s ~/repos ~/Desktop/repos
+
+  #if [ "$(spctl --status)" == "assessments enabled" ]; then
+  #  echo "# -- Disabling OSX Gatekeeper (spctl)"
+  #  sudo spctl --master-disable
+  #fi
+
+  # Top left screen corner → Mission Control [2]
+  defaults write com.apple.dock wvous-tl-corner -int 2
+  defaults write com.apple.dock wvous-tl-modifier -int 0
+  # Top right screen corner → Desktop [4]
+  defaults write com.apple.dock wvous-tr-corner -int 4
+  defaults write com.apple.dock wvous-tr-modifier -int 0
+  # Bottom right screen corner → Desktop [4]
+  defaults write com.apple.dock wvous-br-corner -int 4
+  defaults write com.apple.dock wvous-br-modifier -int 0
+  # Automatically hide and show the Dock; large icons; no recent apps
+  defaults write com.apple.dock autohide -bool true
+  defaults write com.apple.dock tilesize -int 86
+  defaults write com.apple.dock show-recents -bool false
+  # Dark mode
+  defaults write NSGlobalDomain AppleInterfaceStyle -string Dark
+  # Show all file extensions; Finder column view
+  defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+  defaults write com.apple.finder FXPreferredViewStyle -string clmv
+  # Tap to click
+  defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true
+  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
+  # No autocorrect
+  defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
+  defaults write NSGlobalDomain WebAutomaticSpellingCorrectionEnabled -bool false
+  # Disable touch-style scrolling
+  defaults write NSGlobalDomain com.apple.swipescrolldirection -bool false
+  # Disable the “Are you sure you want to open this application?” dialog
+  # corp laptop rule :(
+  #defaults write com.apple.LaunchServices LSQuarantine -bool false || true 
+
+  # Disable itunes / apple music
+  # launchctl unload -w /System/Library/LaunchAgents/com.apple.rcd.plist || true
+  # Kill useless
+  defaults write com.apple.gamed Disabled -bool true
+  # Dock and Finder settings only apply after a restart
+  killall Dock Finder
+
+
+  echo "# Installing packages on a mac" >&2
+  if ! [ -x "$(command -v brew)" ]; then
+    echo "# - Installing brew" >&2
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  fi
+
+  # Homebrew.
+  # - inspired by https://github.com/mathiasbynens/dotfiles/blob/master/brew.sh
+  # - ref. https://gist.github.com/ChristopherA/a579274536aab36ea9966f301ff14f3f
+
+  brew update
+  brew upgrade
+
+brew bundle --file=- <<-EOS
+brew "coreutils"
+brew "findutils"
+brew "gnu-sed"
+brew "cmake"
+brew "vim"
+brew "tmux"
+brew "pass"
+brew "ripgrep"
+brew "mosh"
+brew "pyenv"
+brew "bash"
+brew "git"
+brew "neovim"
+brew "tree-sitter-cli" # Builds parsers for nvim-treesitter
+brew "htop"
+brew "fzf"     # Fuzzy find
+brew "atuin"   # Pretty history
+brew "fd"      # Find replacement
+brew "bat"     # Cat replacement
+brew "eza"     # ls replacement
+brew "zoxide"  # cd replacement
+brew "git-delta"
+brew "f2"
+brew "gh"
+brew "gum"     # Interactive prompts in task-start
+brew "btop"    # Process monitor
+brew "glow"    # Markdown in the terminal
+brew "jnv"     # Interactive jq
+brew "socat"
+brew "uv"      # Runs the Python scripts in ~/bin
+brew "khal"    # Calendar
+brew "vdirsyncer" # Calendar sync for khal
+
+cask "hammerspoon"
+cask "1password-cli"
+
+
+{{ if .rust }}
+brew "rustup"
+{{- end }}
+{{ if .golang }}
+brew "go"
+{{- end }}
+{{ if .kubernetes }}
+# Kubernetes and platform tooling
+brew "kubernetes-cli"
+brew "flux"
+brew "kubelogin"  # kubeconfig exec auth
+brew "helm"
+brew "k9s"
+brew "kind"
+brew "minikube"
+brew "kubebuilder"
+brew "crane"
+brew "skopeo"
+brew "sops"
+brew "age"
+brew "yq"
+brew "tflint"
+tap "siderolabs/tap"
+brew "siderolabs/tap/talosctl"
+{{- end }}
+{{ if .python }}
+brew "pyright" # LSP for nvim; independent of the active pyenv version
+{{- end }}
+
+EOS
+
+  # Installed only if missing, since they are often installed another way
+  # (macOS ships jq)
+  command -v jq > /dev/null || brew install jq
+
+  # Apps. --adopt takes over an app already in /Applications (installed by
+  # hand) instead of failing because it exists.
+  for c in ghostty 1password firefox tailscale-app{{ if .kubernetes }} freelens{{ end }}; do
+    brew list --cask "$c" > /dev/null 2>&1 || brew install --cask --adopt "$c" || echo "# ! cask $c failed" >&2
+  done
+
+  brew cleanup
+
+  #git config --global core.pager delta
+  #pip install llm
+  # TODO rclone
+fi
+
+
+
+# Linux
+if [ "$(uname -s)" == "Linux" ]; then
+  # Ubuntu, Debian and derivatives
+  if [ -n "$(command -v apt-get)" ] && sudo true; then
+    [ -r /etc/os-release ] && . /etc/os-release
+    echo "# Installing packages on Linux[apt] ${PRETTY_NAME:-}" >&2
+
+    # One package at a time, so a package missing from an older release
+    # doesn't stop the rest from installing.
+    apt_install() {
+      for p in "$@"; do
+        sudo apt-get install -y "$p" || echo "# ! $p not available on ${PRETTY_NAME:-this system}" >&2
+      done
+    }
+
+    sudo apt-get -y update
+    sudo apt-get -y upgrade
+    apt_install build-essential zsh vim tmux mosh neovim ripgrep fd-find pass
+    # Packaged as batcat / fdfind on Debian; eza and git-delta need Ubuntu 24.04+
+    apt_install fzf bat zoxide eza git-delta
+    apt_install jq gh   # gh is packaged from Ubuntu 22.04
+    apt_install btop socat
+
+    # Shell history search; local only, sync is disabled in its config
+    # Unmanaged install into ~/.local/bin: no rc file edits, no self-updater
+    command -v atuin > /dev/null || apt_install atuin
+    if ! command -v atuin > /dev/null && ! [ -x "$HOME/.local/bin/atuin" ]; then
+      curl --proto '=https' --tlsv1.2 -LsSf https://github.com/atuinsh/atuin/releases/latest/download/atuin-installer.sh \
+        | ATUIN_UNMANAGED_INSTALL="$HOME/.local/bin" sh
+    fi
+
+    # nvim-treesitter needs nvim 0.12+, newer than apt's. Official release into
+    # ~/.local/nvim; ~/.local/bin precedes /usr/bin on PATH.
+    nvim_ok() { nvim --headless -c 'if !has("nvim-0.12") | cquit | endif' -c qa 2>/dev/null; }
+    if ! nvim_ok; then
+      case "$(uname -m)" in aarch64|arm64) nv_arch=arm64 ;; *) nv_arch=x86_64 ;; esac
+      tmp=$(mktemp -d)
+      if curl -LsSf "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-$nv_arch.tar.gz" | tar -xz -C "$tmp"; then
+        rm -rf ~/.local/nvim && mv "$tmp/nvim-linux-$nv_arch" ~/.local/nvim
+        ln -sf ~/.local/nvim/bin/nvim ~/.local/bin/nvim
+      fi
+      rm -rf "$tmp"
+    fi
+    # en_US.UTF-8 is used by .profile; minimal images don't have it generated
+    if ! locale -a 2>/dev/null | grep -qi '^en_US\.utf-\?8$'; then
+      apt_install locales && sudo locale-gen en_US.UTF-8 > /dev/null
+    fi
+
+    # uv runs the Python scripts in ~/bin; not in apt. Installs to ~/.local/bin
+    if ! [ -x "$(command -v uv)" ]; then
+      curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
+    fi
+
+    {{ if .python }}
+    apt_install python3 python3-pip python3-venv python3-dev
+    {{ end }}
+
+    {{ if .rust }}
+    if ! [ -x "$(command -v rustup)" ]; then
+      if apt-cache show rustup > /dev/null 2>&1; then
+        apt_install rustup
+      else
+        # apt only has rustup from Ubuntu 24.04. .profile already adds ~/.cargo/bin
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+      fi
+    fi
+    {{ end }}
+
+    {{ if .nodejs }}
+    apt_install nodejs npm
+    {{ end }}
+
+
+    # TODO tailscale
+  fi
+fi
+
+{{ if .nodejs }}
+# nvm (loaded by .profile). Homebrew discourages its nvm package, so use the
+# official installer, which installs to ~/.nvm.
+if ! [ -s "$HOME/.nvm/nvm.sh" ]; then
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | PROFILE=/dev/null bash
+fi
+# Node LTS as the default, and global CLIs the ~/bin scripts use
+(
+  export NVM_DIR="$HOME/.nvm"
+  . "$NVM_DIR/nvm.sh"
+  nvm install --lts --no-progress > /dev/null && nvm alias default 'lts/*' > /dev/null
+  npm ls -g @github/copilot > /dev/null 2>&1 || npm install -g @github/copilot
+) || echo "# ! node setup failed" >&2
+{{ end }}
+
+{{ if .python }}
+# Default Python via pyenv (macOS; Linux uses the system python3)
+if command -v pyenv > /dev/null; then
+  pyenv install -s 3.14 && pyenv global 3.14 || echo "# ! pyenv 3.14 failed" >&2
+fi
+{{ end }}
+
+{{ if .rust }}
+# rustup alone installs no toolchain
+if command -v rustup > /dev/null || [ -x "$HOME/.cargo/bin/rustup" ]; then
+  rustup_bin=$(command -v rustup || echo "$HOME/.cargo/bin/rustup")
+  { "$rustup_bin" default stable && "$rustup_bin" component add rust-analyzer; } || echo "# ! rust toolchain failed" >&2
+fi
+{{ end }}
+
+# After the Rust toolchain, so cargo can build tree-sitter where needed
+if [ "$(uname -s)" = "Linux" ]; then
+  # Builds parsers for nvim-treesitter, which needs tree-sitter 0.26.1+.
+  # apt's is older, so use the official release binary in ~/.local/bin.
+  ts_ok() { tree-sitter --version 2>/dev/null | awk 'NR == 1 {split($2, v, "."); ok = (v[1] > 0 || v[2] >= 26)} END {exit !ok}'; }
+  if ! PATH="$HOME/.local/bin:$PATH" ts_ok; then
+    case "$(uname -m)" in aarch64|arm64) ts_arch=arm64 ;; *) ts_arch=x64 ;; esac
+    curl -LsSf "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-linux-$ts_arch.gz" \
+      | gunzip > ~/.local/bin/tree-sitter && chmod +x ~/.local/bin/tree-sitter
+    # The release binary needs a recent glibc (2.39); build it on older systems
+    if ! PATH="$HOME/.local/bin:$PATH" ts_ok; then
+      rm -f ~/.local/bin/tree-sitter
+      cargo_bin=$(command -v cargo || echo "$HOME/.cargo/bin/cargo")
+      if [ -x "$cargo_bin" ]; then
+        "$cargo_bin" install --locked --root "$HOME/.local" tree-sitter-cli \
+          || echo "# ! tree-sitter build failed" >&2
+      else
+        echo "# ! tree-sitter unavailable (no cargo); nvim runs without treesitter highlighting" >&2
+      fi
+    fi
+  fi
+fi
+
+# Claude Code (native installer, into ~/.local/bin); the ~/bin scripts use it
+command -v claude > /dev/null || [ -x "$HOME/.local/bin/claude" ] || curl -fsSL https://claude.ai/install.sh | bash
+
+# Change the login shell last, so zsh is installed first on Linux
+# Compare against the real login shell, not $SHELL (inherited from tmux, sudo...)
+if [ "$(uname -s)" == "Darwin" ]; then
+  login_shell=$(dscl . -read ~ UserShell | awk '{print $2}')
+else
+  login_shell=$(getent passwd "$USER" | cut -d: -f7)
+fi
+# Prefer zsh, else bash. chsh only accepts shells listed in /etc/shells.
+target_shell=$(grep -m1 '/zsh$' /etc/shells || grep -m1 '/bash$' /etc/shells)
+if [ -n "$target_shell" ] && [ "$(basename "$login_shell")" != "$(basename "$target_shell")" ]; then
+  echo "# - Changing shell to $target_shell"
+  sudo -n chsh -s "$target_shell" "$USER" 2>/dev/null || chsh -s "$target_shell" \
+    || echo "# ! chsh failed, change your shell manually" >&2
+fi

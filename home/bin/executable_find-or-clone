@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+# find-or-clone - resolve a repo directory, cloning if it doesn't exist.
+#
+# Looks for the repo in REPOS_DIR (default ~/repos). If not found,
+# clones from GIT_CLONE_BASE. Prints the absolute path to the repo.
+#
+# Usage:
+#   find-or-clone <repo>                  # find or clone, print path
+#   find-or-clone <repo> <target-name>    # clone into a specific directory name
+#
+# Environment:
+#   REPOS_DIR       - where repos live (default: ~/repos)
+#   GIT_CLONE_BASE  - git clone prefix (default: git@github.com:peterbraden)
+
+set -eu
+
+REPOS_DIR="${REPOS_DIR:-$HOME/repos}"
+GIT_CLONE_BASE="${GIT_CLONE_BASE:-git@github.com:peterbraden}"
+
+usage() {
+    echo "Usage: find-or-clone <repo> [target-name]"
+    echo "       Prints the absolute path to the repo directory."
+}
+
+die() { echo "find-or-clone: $*" >&2; exit 1; }
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+[[ $# -lt 1 ]] && { usage >&2; exit 1; }
+
+REPO="$1"
+TARGET="${2:-$REPO}"
+DIRECTORY="$REPOS_DIR/$TARGET"
+
+if [[ ! -d "$DIRECTORY" ]]; then
+    mkdir -p "$REPOS_DIR"
+    git clone "$GIT_CLONE_BASE/$REPO" "$DIRECTORY" >&2
+fi
+
+echo "$DIRECTORY"

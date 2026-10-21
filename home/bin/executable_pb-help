@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+#
+# pb-help - list all available utils scripts with descriptions.
+#
+# Usage:
+#   pb-help
+
+set -eu
+
+BOLD="\033[1m"
+DIM="\033[2m"
+CYAN="\033[36m"
+YELLOW="\033[33m"
+GREEN="\033[32m"
+RESET="\033[0m"
+
+section() {
+  printf "\n${BOLD}${YELLOW}%s${RESET}\n" "$1"
+}
+
+cmd() {
+  printf "  ${GREEN}%-22s${RESET} %s\n" "$1" "$2"
+}
+
+printf "${BOLD}${CYAN}utils${RESET} ${DIM}— scripts and tools for day-to-day development${RESET}\n"
+
+section "Task workflow"
+cmd "task-start" "Create worktree, branch, plan.md, tmux session"
+cmd "task-stop" "Abandon/pause a worktree task"
+cmd "task-complete" "Clean finish — assert pushed, tear down worktree"
+cmd "open-project" "Open/reattach tmux session for a repo"
+cmd "close-project" "Close a project's tmux session"
+
+section "Status & reporting"
+cmd "tasks" "All sessions, worktrees, repos (with -c picker)"
+cmd "tml" "Pretty tmux session list with branches"
+cmd "flux-status" "Reconciling Flux kustomizations"
+cmd "pod-status" "Failing pods in the cluster"
+
+section "Plan"
+cmd "plan" "Toggle plan.md sidebar in tmux"
+cmd "plan-oneline" "First line of plan.md (for status bars)"
+cmd "plan-find" "Find nearest plan.md up the directory tree"
+cmd "plan-render" "Live-render plan.md with ANSI colors"
+cmd "seed-plan" "Create a plan.md template in a directory"
+
+section "Tmux"
+cmd "tmux-tree" "Toggle session/window/pane tree sidebar"
+cmd "tmux-session" "Start or attach to a tmux session"
+
+section "Automation"
+cmd "llm" "Send a prompt to an LLM (wraps claude -p)"
+
+section "Remote files"
+cmd "gh-cat" "Print file contents from GitHub"
+cmd "gh-ls" "List directory on GitHub"
+cmd "gh-file-append" "Append to a file and commit (with --pr)"
+
+section "Other"
+cmd "brew-extras" "Brew packages not in your dotfiles"
+cmd "find-or-clone" "Resolve a repo, cloning if needed"
+cmd "pong" "Play pong while waiting for a job"
+cmd "telegram-notify" "Push notification via Telegram"
+cmd "telegram-receive" "Wait for a Telegram message"
+cmd "term-graphics-probe" "Detect terminal inline image support"
+cmd "hello" "Rainbow message"
+
+printf "\n${DIM}Tmux: C-a t = tree, Ctrl+Alt+P = ~/.plan widget${RESET}\n"

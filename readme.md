@@ -2,7 +2,7 @@
 
 My personal config files and shell scripts for a development machine.
 
-I live in a terminal (usually iTerm on a mac), so my full development experience
+I live in a terminal (usually Ghostty on a mac), so my full development experience
 is defined in these files.
 
 My philosophy is that it's far better to invest in
@@ -35,7 +35,8 @@ switch between projects and have everything setup how I left it.
 
 `C-a s` Switches projects.
 
-I combine it with a variety of shell scripts to keep everything setup comfortably.
+I combine it with a variety of shell scripts (in [`home/bin`](home/bin), see
+[docs/scripts.md](docs/scripts.md)) to keep everything setup comfortably.
 
 ```bash
 tmo PROJECT_NAME # Opens the 'current' session for a project, or creates one
@@ -45,6 +46,13 @@ tmo PROJECT_NAME # Opens the 'current' session for a project, or creates one
 tml # Lists currently open sessions.
 ```
 
+
+### Scripts
+
+`~/bin` holds my command line tools: project and task workflow on top of tmux
+(`tmo`, `task-start`, `tasks`), Kubernetes status, GitHub helpers and a
+few toys. They used to live in a separate `utils` repo. Each one is described
+in [docs/scripts.md](docs/scripts.md).
 
 ### [chezmoi](https://www.chezmoi.io/)
 
@@ -64,50 +72,38 @@ One line machine setups are pretty nice.
 # Playbooks
 
 ## Setup a vanilla machine.
+
+One command, on macOS or Linux. No SSH key is needed: the repo and its
+submodules are cloned over https.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/peterbraden/dotfiles/master/install.sh | bash
+# Answer the setup questions up front, and test a branch
+curl -fsSL https://raw.githubusercontent.com/peterbraden/dotfiles/master/install.sh \
+  | DOTFILES_BRANCH=my-branch bash -s -- --promptBool work=true,golang=true,nodejs=true,rust=true,python=true,kubernetes=true
+```
+
+chezmoi asks once which features this machine gets (`work`, `golang`,
+`nodejs`, `rust`, `python`, `kubernetes`) and remembers the answers. Without a terminal it
+uses the defaults: on for the known hosts in
+[`.chezmoi.toml.tmpl`](home/.chezmoi.toml.tmpl), off elsewhere.
+
+[`install.sh`](install.sh) only makes git available (Homebrew, which brings the
+Xcode Command Line Tools, on macOS), installs chezmoi and runs
+`chezmoi init --apply`. Running it again on a set-up machine runs
+`chezmoi update`. Codespaces and Gitpod run it from their checkout.
+
 <details>
-  <summary>Setup a new desktop machine (dedicated SSH key)</summary>
+  <summary>Still manual on macOS</summary>
 
-##### 1. Setup new SSH key and use for github:
-```sh
-ssh-keygen -t rsa -C "peterbraden@peterbraden.co.uk"
-cat ~/.ssh/id_rsa.pub | pbcopy
-```
-Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
-
-##### 2. Setup
-```sh
-chezmoi init peterbraden --apply
-```
-
-Or without chezmoi previously installed:
-
-```sh
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
-```
-
-### Setup OSX
-#### Install apps from Safari
-- [homebrew](https://brew.sh)
-- [firefox](https://www.mozilla.org/en-US/firefox/new/)
-
-#### Install apps from App Store
+#### Install apps from the App Store
 - 1Password
 - [Tailscale](https://apps.apple.com/ca/app/tailscale/id1475387142?mt=12)
 
-#### Install Apps from Firefox
-- [iterm](http://www.iterm2.com/#/section/home)
+#### Install apps from a browser
+- [firefox](https://www.mozilla.org/en-US/firefox/new/)
+- [ghostty](https://ghostty.org)
 - [nextcloud](https://nextcloud.com/install/#install-clients)
-
-</details>
-
-<details>
-  <summary>Setup a new ephemeral dev machine in the cloud (SSH agent forwarded)</summary>
-
-```sh
-# Setup / Ubuntu / from scratch
-# - Requires github authed ssh key
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
-```
 
 </details>
 

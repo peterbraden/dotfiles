@@ -1,0 +1,289 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "rich",
+# ]
+# ///
+"""
+copilot-agents - show active GitHub Copilot coding agent sessions.
+
+Finds open PRs authored by copilot-swe-agent and issues assigned to it
+across your repos and orgs. Checks workflow status to determine if the
+agent is actively running.
+
+Usage:
+    copilot-agents                 Show active copilot agents
+    copilot-agents -a              Show all (including stale)
+    copilot-agents --json          Machine-readable JSON output
+    copilot-agents -o peterbraden  Scan specific owner(s)
+"""
+
+import argparse
+import json
+import signal
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
+
+from rich.console import Console
+from rich.tree import Tree
+from rich.text import Text
+
+
+STALE_DAYS = 7
+
+
+def gh_api(endpoint: str, jq: str | None = None) -> str | None:
+    cmd = ["gh", "api", endpoint]
+    if jq:
+        cmd += ["--jq", jq]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        return r.stdout.strip() if r.returncode == 0 else None
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return None
+
+
+def gh_json(cmd: list[str]) -> list | dict | None:
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if r.returncode != 0:
+            return None
+        return json.loads(r.stdout) if r.stdout.strip() else None
+    except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def get_owners(extra: list[str] | None) -> list[str]:
+    if extra:
+        return extra
+    owners = []
+    login = gh_api("/user", jq=".login")
+    if login:
+        owners.append(login)
+    raw = gh_api("/user/orgs", jq=".[].login")
+    if raw:
+        owners.extend(raw.splitlines())
+    return owners
+
+
+def search_copilot_prs(owner: str) -> list[dict]:
+    result = gh_json([
+        "gh", "search", "prs",
+        "--author=app/copilot-swe-agent",
+        f"--owner={owner}",
+        "--state=open",
+        "--limit=50",
+        "--json=repository,title,state,number,createdAt,updatedAt,url",
+    ])
+    return result if isinstance(result, list) else []
+
+
+def search_copilot_issues(owner: str) -> list[dict]:
+    result = gh_json([
+        "gh", "search", "issues",
+        "--assignee=app/copilot-swe-agent",
+        f"--owner={owner}",
+        "--state=open",
+        "--limit=50",
+        "--json=repository,title,state,number,createdAt,updatedAt,url",
+    ])
+    return result if isinstance(result, list) else []
+
+
+def get_pr_details(repo: str, number: int) -> dict | None:
+    return gh_json([
+        "gh", "pr", "view", str(number),
+        f"--repo={repo}",
+        "--json=headRefName,statusCheckRollup,updatedAt,isDraft",
+    ])
+
+
+def age(iso: str) -> str:
+    try:
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        seconds = int((datetime.now(timezone.utc) - dt).total_seconds())
+        if seconds < 0:
+            return "-"
+        if seconds < 3600:
+            return f"{seconds // 60}m"
+        if seconds < 86400:
+            return f"{seconds // 3600}h"
+        return f"{seconds // 86400}d"
+    except Exception:
+        return "-"
+
+
+def is_stale(iso: str) -> bool:
+    try:
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        days = (datetime.now(timezone.utc) - dt).days
+        return days > STALE_DAYS
+    except Exception:
+        return False
+
+
+def infer_status(pr: dict, details: dict | None) -> str:
+    if details:
+        checks = details.get("statusCheckRollup") or []
+        states = {c.get("status", c.get("state", "")).upper() for c in checks}
+        if states & {"IN_PROGRESS", "QUEUED", "PENDING", "WAITING"}:
+            return "running"
+    if is_stale(pr.get("updatedAt", "")):
+        return "stale"
+    return "idle"
+
+
+def load_agents(owners: list[str]) -> list[dict]:
+    agents = []
+    seen_prs = set()
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        pr_futures = {pool.submit(search_copilot_prs, o): o for o in owners}
+        issue_futures = {pool.submit(search_copilot_issues, o): o for o in owners}
+
+        prs = []
+        for f in as_completed(pr_futures):
+            prs.extend(f.result())
+
+        issues = []
+        for f in as_completed(issue_futures):
+            issues.extend(f.result())
+
+    # Enrich PRs with check status
+    detail_map = {}
+    pr_items = []
+    for pr in prs:
+        repo = pr["repository"]["nameWithOwner"]
+        num = pr["number"]
+        key = f"{repo}#{num}"
+        if key in seen_prs:
+            continue
+        seen_prs.add(key)
+        pr_items.append((key, repo, num, pr))
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        detail_futures = {
+            pool.submit(get_pr_details, repo, num): key
+            for key, repo, num, _ in pr_items
+        }
+        for f in as_completed(detail_futures):
+            detail_map[detail_futures[f]] = f.result()
+
+    for key, repo, num, pr in pr_items:
+        details = detail_map.get(key)
+        st = infer_status(pr, details)
+        agents.append({
+            "name": pr["title"],
+            "kind": "pr",
+            "status": st,
+            "repository": repo,
+            "number": num,
+            "url": pr["url"],
+            "branch": (details or {}).get("headRefName", ""),
+            "createdAt": pr.get("createdAt", ""),
+            "updatedAt": pr.get("updatedAt", ""),
+        })
+
+    # Issues assigned to copilot (pending work, no PR yet)
+    for issue in issues:
+        repo = issue["repository"]["nameWithOwner"]
+        num = issue["number"]
+        # Check if there's already a PR for this issue
+        agents.append({
+            "name": issue["title"],
+            "kind": "issue",
+            "status": "assigned",
+            "repository": repo,
+            "number": num,
+            "url": issue["url"],
+            "branch": "",
+            "createdAt": issue.get("createdAt", ""),
+            "updatedAt": issue.get("updatedAt", ""),
+        })
+
+    status_order = {"running": 0, "assigned": 1, "idle": 2, "stale": 3}
+    agents.sort(key=lambda a: (status_order.get(a["status"], 9), a["updatedAt"]))
+    return agents
+
+
+def status_style(st: str) -> str:
+    return {
+        "running": "yellow",
+        "assigned": "blue",
+        "idle": "green",
+        "stale": "dim",
+    }.get(st, "")
+
+
+def build_tree(agents: list[dict], show_all: bool) -> Tree | Text:
+    rows = agents if show_all else [a for a in agents if a["status"] != "stale"]
+    stale_count = sum(1 for a in agents if a["status"] == "stale")
+    active_count = len(agents) - stale_count
+
+    if not rows:
+        if stale_count:
+            return Text(f"No active Copilot agents ({stale_count} stale)", style="dim")
+        return Text("No Copilot agents found", style="dim")
+
+    summary = f"{active_count} active"
+    if stale_count:
+        summary += f", {stale_count} stale"
+    tree = Tree(Text(f"Copilot Agents  ({summary})", style="bold"))
+
+    for a in rows:
+        st = a["status"]
+        style = "dim" if st == "stale" else ""
+
+        label = Text()
+        label.append(f"{a['repository']}#{a['number']}", style="bold " + style)
+        label.append(f"  {st}", style=status_style(st))
+        label.append(f"  [{a['kind']}]", style="dim")
+        label.append(f"  {a['name']}", style=style or "")
+        if a["branch"]:
+            label.append(f"  {a['branch']}", style="dim italic")
+        label.append(f"  {age(a['updatedAt'])}", style="dim")
+
+        tree.add(label)
+
+    return tree
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Show active GitHub Copilot coding agent sessions"
+    )
+    parser.add_argument("-a", "--all", action="store_true", dest="show_all",
+                        help="Include stale agents")
+    parser.add_argument("-j", "--json", action="store_true",
+                        help="Machine-readable JSON output")
+    parser.add_argument("-o", "--owner", action="append", dest="owners",
+                        help="GitHub owner(s) to scan (default: you + your orgs)")
+    args = parser.parse_args()
+
+    owners = get_owners(args.owners)
+    if not owners:
+        print("Could not determine GitHub owners. Pass -o OWNER.", file=sys.stderr)
+        sys.exit(1)
+
+    agents = load_agents(owners)
+
+    if args.json:
+        rows = agents if args.show_all else [a for a in agents if a["status"] != "stale"]
+        json.dump(rows, sys.stdout, indent=2)
+        sys.stdout.write("\n")
+        return
+
+    console = Console()
+    if not agents:
+        console.print("[dim]No Copilot agents found[/]")
+        sys.exit(0)
+    console.print(build_tree(agents, args.show_all))
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+    main()
