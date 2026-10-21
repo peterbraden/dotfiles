@@ -17,8 +17,10 @@
 {{- $rust := promptBoolOnce . "rust" "rust" (or $isThor $isVidar $isWork) -}}
 {{- $python := promptBoolOnce . "python" "python" (or $isThor $isVidar $isWork) -}}
 {{- $workEmail := "" -}}
+{{- $gitlabHost := "" -}}
 {{- if $work -}}
 {{-   $workEmail = promptStringOnce . "workEmail" "workEmail" "" -}}
+{{-   $gitlabHost = promptStringOnce . "gitlabHost" "gitlabHost" "" -}}
 {{- end -}}
 
 [data]
@@ -28,6 +30,7 @@
     rust = {{ $rust }}
     python = {{ $python }}
     workEmail = {{ $workEmail | quote }}
+    gitlabHost = {{ $gitlabHost | quote }}
 
 [git]
     autoCommit = true

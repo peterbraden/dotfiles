@@ -13,13 +13,16 @@
   insteadOf = https://github.com/roche/
   insteadOf = git@github.com:roche/
 
-# Work commit identity (~/.gitconfig.work) for work repos, chosen by remote URL
-[includeIf "hasconfig:remote.*.url:git@ssh.code.roche.com:*/**"]
+# Work commit identity (~/.gitconfig.work) for work repos, chosen by remote URL.
+# The GitLab host comes from chezmoi data (asked once by chezmoi init).
+{{- if .gitlabHost }}
+[includeIf "hasconfig:remote.*.url:git@ssh.{{ .gitlabHost }}:*/**"]
   path = ~/.gitconfig.work
-[includeIf "hasconfig:remote.*.url:https://*@code.roche.com/**"]
+[includeIf "hasconfig:remote.*.url:https://*@{{ .gitlabHost }}/**"]
   path = ~/.gitconfig.work
-[includeIf "hasconfig:remote.*.url:https://code.roche.com/**"]
+[includeIf "hasconfig:remote.*.url:https://{{ .gitlabHost }}/**"]
   path = ~/.gitconfig.work
+{{- end }}
 [includeIf "hasconfig:remote.*.url:git@github.com:Roche/**"]
   path = ~/.gitconfig.work
 [includeIf "hasconfig:remote.*.url:https://github.com/Roche/**"]
