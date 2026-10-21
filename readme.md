@@ -72,50 +72,32 @@ One line machine setups are pretty nice.
 # Playbooks
 
 ## Setup a vanilla machine.
+
+One command, on macOS or Linux. No SSH key is needed: the repo and its
+submodules are cloned over https.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/peterbraden/dotfiles/master/install.sh | bash
+# Test a branch, passing extra arguments to `chezmoi init`
+curl -fsSL https://raw.githubusercontent.com/peterbraden/dotfiles/master/install.sh | DOTFILES_BRANCH=roche2 bash -s -- --verbose
+```
+
+[`install.sh`](install.sh) only makes git available (Homebrew, which brings the
+Xcode Command Line Tools, on macOS), installs chezmoi and runs
+`chezmoi init --apply`. Running it again on a set-up machine runs
+`chezmoi update`. Codespaces and Gitpod run it from their checkout.
+
 <details>
-  <summary>Setup a new desktop machine (dedicated SSH key)</summary>
+  <summary>Still manual on macOS</summary>
 
-##### 1. Setup new SSH key and use for github:
-```sh
-ssh-keygen -t ed25519 -C "peterbraden@peterbraden.co.uk"
-cat ~/.ssh/id_ed25519.pub | pbcopy
-```
-Paste into: [https://github.com/settings/ssh](https://github.com/settings/ssh)
-
-##### 2. Setup
-```sh
-chezmoi init peterbraden --apply
-```
-
-Or without chezmoi previously installed:
-
-```sh
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
-```
-
-### Setup OSX
-#### Install apps from Safari
-- [homebrew](https://brew.sh)
-- [firefox](https://www.mozilla.org/en-US/firefox/new/)
-
-#### Install apps from App Store
+#### Install apps from the App Store
 - 1Password
 - [Tailscale](https://apps.apple.com/ca/app/tailscale/id1475387142?mt=12)
 
-#### Install Apps from Firefox
+#### Install apps from a browser
+- [firefox](https://www.mozilla.org/en-US/firefox/new/)
 - [ghostty](https://ghostty.org)
 - [nextcloud](https://nextcloud.com/install/#install-clients)
-
-</details>
-
-<details>
-  <summary>Setup a new ephemeral dev machine in the cloud (SSH agent forwarded)</summary>
-
-```sh
-# Setup / Ubuntu / from scratch
-# - Requires github authed ssh key
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply peterbraden
-```
 
 </details>
 
