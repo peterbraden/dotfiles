@@ -4,6 +4,23 @@ Include ~/.ssh/config.local
 # Algorithms are left at OpenSSH defaults, which are stronger than an old
 # pinned list (SHA-2 RSA signatures, post-quantum key exchange).
 
+# GitHub: one key per account. IdentitiesOnly stops ssh offering other agent
+# keys first, which GitHub would accept as the wrong account.
+Host github.com
+  User git
+  IdentityFile ~/.ssh/id_rsa
+  IdentitiesOnly yes
+{{- if .work }}
+
+# Work GitHub account. Git rewrites work org URLs to this alias
+# (~/.gitconfig.github-work).
+Host github-roche
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_rsa.roche
+  IdentitiesOnly yes
+{{- end }}
+
 Host *
   # Ensure KnownHosts are unreadable if leaked - it is otherwise easier to know which hosts your keys have access to.
   HashKnownHosts yes

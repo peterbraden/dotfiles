@@ -8,6 +8,7 @@
 # vdirsyncer only syncs the work calendar
 {{ if not .work }}
 .config/vdirsyncer
+.gitconfig.github-work
 bin/roche-cal-url
 {{ end }}
 
