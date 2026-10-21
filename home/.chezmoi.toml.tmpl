@@ -16,6 +16,10 @@
 {{- $nodejs := promptBoolOnce . "nodejs" "nodejs" (or $isThor $isVidar $isWork) -}}
 {{- $rust := promptBoolOnce . "rust" "rust" (or $isThor $isVidar $isWork) -}}
 {{- $python := promptBoolOnce . "python" "python" (or $isThor $isVidar $isWork) -}}
+{{- $workEmail := "" -}}
+{{- if $work -}}
+{{-   $workEmail = promptStringOnce . "workEmail" "workEmail" "" -}}
+{{- end -}}
 
 [data]
     work = {{ $work }}
@@ -23,6 +27,7 @@
     nodejs = {{ $nodejs }}
     rust = {{ $rust }}
     python = {{ $python }}
+    workEmail = {{ $workEmail | quote }}
 
 [git]
     autoCommit = true

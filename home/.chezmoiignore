@@ -8,8 +8,14 @@
 # vdirsyncer only syncs the work calendar
 {{ if not .work }}
 .config/vdirsyncer
-.gitconfig.github-work
+.gitconfig.roche
+.gitconfig.work
 bin/roche-cal-url
+{{ end }}
+
+# The work email comes from chezmoi data; without it there is nothing to write
+{{ if not .workEmail }}
+.gitconfig.work
 {{ end }}
 
 # Work-only scripts (they talk to Roche GitLab)

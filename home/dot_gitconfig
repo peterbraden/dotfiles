@@ -52,6 +52,6 @@
 # Machine-local settings (e.g. work identity), not in this repo. Last so it wins.
 [include]
     # Work machines only; git ignores a missing include
-    path = ~/.gitconfig.github-work
+    path = ~/.gitconfig.roche
 [include]
     path = ~/.gitconfig.local
