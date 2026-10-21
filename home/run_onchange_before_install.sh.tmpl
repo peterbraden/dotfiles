@@ -23,8 +23,24 @@ if [ "$(uname -s)" == "Darwin" ]; then
   # Top right screen corner → Desktop [4]
   defaults write com.apple.dock wvous-tr-corner -int 4
   defaults write com.apple.dock wvous-tr-modifier -int 0
-  # Automatically hide and show the Dock
+  # Bottom right screen corner → Desktop [4]
+  defaults write com.apple.dock wvous-br-corner -int 4
+  defaults write com.apple.dock wvous-br-modifier -int 0
+  # Automatically hide and show the Dock; large icons; no recent apps
   defaults write com.apple.dock autohide -bool true
+  defaults write com.apple.dock tilesize -int 86
+  defaults write com.apple.dock show-recents -bool false
+  # Dark mode
+  defaults write NSGlobalDomain AppleInterfaceStyle -string Dark
+  # Show all file extensions; Finder column view
+  defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+  defaults write com.apple.finder FXPreferredViewStyle -string clmv
+  # Tap to click
+  defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true
+  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
+  # No autocorrect
+  defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
+  defaults write NSGlobalDomain WebAutomaticSpellingCorrectionEnabled -bool false
   # Disable touch-style scrolling
   defaults write NSGlobalDomain com.apple.swipescrolldirection -bool false
   # Disable the “Are you sure you want to open this application?” dialog
@@ -35,8 +51,8 @@ if [ "$(uname -s)" == "Darwin" ]; then
   # launchctl unload -w /System/Library/LaunchAgents/com.apple.rcd.plist || true
   # Kill useless
   defaults write com.apple.gamed Disabled -bool true
-  # Dock settings only apply after a restart
-  killall Dock
+  # Dock and Finder settings only apply after a restart
+  killall Dock Finder
 
 
   echo "# Installing packages on a mac" >&2
