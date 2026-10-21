@@ -78,9 +78,15 @@ submodules are cloned over https.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/peterbraden/dotfiles/master/install.sh | bash
-# Test a branch, passing extra arguments to `chezmoi init`
-curl -fsSL https://raw.githubusercontent.com/peterbraden/dotfiles/master/install.sh | DOTFILES_BRANCH=roche2 bash -s -- --verbose
+# Answer the setup questions up front, and test a branch
+curl -fsSL https://raw.githubusercontent.com/peterbraden/dotfiles/master/install.sh \
+  | DOTFILES_BRANCH=roche2 bash -s -- --promptBool work=true,golang=true,nodejs=true,rust=true,python=true
 ```
+
+chezmoi asks once which features this machine gets (`work`, `golang`,
+`nodejs`, `rust`, `python`) and remembers the answers. Without a terminal it
+uses the defaults: on for the known hosts in
+[`.chezmoi.toml.tmpl`](home/.chezmoi.toml.tmpl), off elsewhere.
 
 [`install.sh`](install.sh) only makes git available (Homebrew, which brings the
 Xcode Command Line Tools, on macOS), installs chezmoi and runs

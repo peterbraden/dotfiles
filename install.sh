@@ -66,6 +66,11 @@ ensure_macos_git() {
 apply_chezmoi() {
   local dir
   dir="$(repo_dir)"
+  # chezmoi asks its init questions on the terminal; without one (Codespaces,
+  # Gitpod, CI) use the defaults instead of failing
+  if ! (exec </dev/tty) 2>/dev/null; then
+    set -- --promptDefaults "$@"
+  fi
   if [ -n "$dir" ]; then
     # Running from a checkout: use it as the source
     git -C "$dir" submodule update --init --recursive
