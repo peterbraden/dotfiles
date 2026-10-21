@@ -1,5 +1,10 @@
 **/.git
 
+# Only sets up cargo
+{{ if not .rust }}
+.zshenv
+{{ end }}
+
 # Hammerspoon is macOS only
 {{ if ne .chezmoi.os "darwin" }}
 .hammerspoon
