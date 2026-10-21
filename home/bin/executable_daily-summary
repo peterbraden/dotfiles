@@ -14,7 +14,7 @@ summary of tickets touched, MRs/PRs updated, and commits authored.
 Requires:
     LINEAR_API_KEY   - Linear personal API key
     GITLAB_TOKEN     - GitLab personal access token (optional)
-    GITLAB_HOST      - GitLab host (default: code.roche.com)
+    GITLAB_HOST      - GitLab host (required for GitLab)
     GITHUB_TOKEN     - GitHub personal access token (optional)
                        (also reads GITHUB_TOKEN_PERSONAL)
 
@@ -691,8 +691,11 @@ def main():
     if not api_key:
         print("LINEAR_API_KEY not set — skipping ticket activity.", file=sys.stderr)
 
-    gitlab_host = os.environ.get("GITLAB_HOST", "code.roche.com")
+    gitlab_host = os.environ.get("GITLAB_HOST")
     gitlab_token = os.environ.get("GITLAB_TOKEN")
+    if gitlab_token and not gitlab_host:
+        print("GITLAB_HOST not set — skipping GitLab.", file=sys.stderr)
+        gitlab_token = None
     github_token = os.environ.get("GITHUB_TOKEN_PERSONAL") or os.environ.get("GITHUB_TOKEN")
 
     if not gitlab_token and not github_token:

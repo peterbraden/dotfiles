@@ -11,7 +11,7 @@ my-issues - show your open Linear issues, GitLab MRs, and GitHub PRs.
 Requires:
     LINEAR_API_KEY   - Linear personal API key
     GITLAB_TOKEN     - GitLab personal access token (optional)
-    GITLAB_HOST      - GitLab host (default: code.roche.com)
+    GITLAB_HOST      - GitLab host (required for GitLab)
     GITHUB_TOKEN     - GitHub personal access token (optional)
                        (also reads GITHUB_TOKEN_PERSONAL)
 
@@ -778,8 +778,11 @@ def main():
         print("Set LINEAR_API_KEY (Settings > API > Personal API keys)", file=sys.stderr)
         sys.exit(1)
 
-    gitlab_host = os.environ.get("GITLAB_HOST", "code.roche.com")
+    gitlab_host = os.environ.get("GITLAB_HOST")
     gitlab_token = os.environ.get("GITLAB_TOKEN")
+    if gitlab_token and not gitlab_host:
+        print("GITLAB_HOST not set — skipping GitLab.", file=sys.stderr)
+        gitlab_token = None
     github_token = os.environ.get("GITHUB_TOKEN_PERSONAL") or os.environ.get("GITHUB_TOKEN")
 
     if not gitlab_token and not github_token:

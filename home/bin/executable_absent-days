@@ -15,7 +15,7 @@ sick days or holidays.
 Requires:
     LINEAR_API_KEY   - Linear personal API key
     GITLAB_TOKEN     - GitLab personal access token (optional)
-    GITLAB_HOST      - GitLab host (default: code.roche.com)
+    GITLAB_HOST      - GitLab host (required for GitLab)
 
 Usage:
     absent-days                  Current month
@@ -243,8 +243,11 @@ def main():
         return
 
     api_key = os.environ.get("LINEAR_API_KEY")
-    gitlab_host = os.environ.get("GITLAB_HOST", "code.roche.com")
+    gitlab_host = os.environ.get("GITLAB_HOST")
     gitlab_token = os.environ.get("GITLAB_TOKEN")
+    if gitlab_token and not gitlab_host:
+        print("GITLAB_HOST not set — skipping GitLab.", file=sys.stderr)
+        gitlab_token = None
 
     if not api_key and not gitlab_token:
         print("Set LINEAR_API_KEY and/or GITLAB_TOKEN.", file=sys.stderr)
