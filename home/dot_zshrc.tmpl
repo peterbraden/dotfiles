@@ -18,7 +18,8 @@ git_branch() {
 }
 
 git_dirty() {
-  st=$($GIT status --porcelain --ignore-submodules=dirty 2>/dev/null | tail -n 1)
+  # Ignore the repo's core.fsmonitor: it can be a command, and this runs on cd
+  st=$($GIT -c core.fsmonitor=false status --porcelain --ignore-submodules=dirty 2>/dev/null | tail -n 1)
   if [[ $st == "" ]]
   then
       echo "%{$fg[green]%}$(git_prompt_info)%{$reset_color%}"
@@ -43,7 +44,9 @@ directory_name(){
   echo "%{$fg[green]%}%~%{${reset_color%}%}"
 }
 
-function precmd() {
+# Set the window title to the running command.
+# preexec gets the command line as typed ($1) and fully expanded ($3).
+function preexec() {
   # escape '%' chars in $1, make nonprintables visible
   a=${(V)1//\%/\%\%}
 
@@ -51,14 +54,16 @@ function precmd() {
   a=$(print -Pn "%40>...>$a" | tr -d "\n")
 
   case $TERM in
-  screen)
-    print -Pn "\ek$a:$3\e\\" # screen title (in ^A")
+  screen*|tmux*)
+    print -Pn "\ek$a\e\\" # screen/tmux window title
     ;;
-  xterm*|rxvt)
-    print -Pn "\e]2;$2\a" # plain xterm title ($3 for pwd)
+  xterm*|rxvt*)
+    print -Pn "\e]2;$a\a" # plain xterm title
     ;;
   esac
+}
 
+function precmd() {
   export PROMPT="$(directory_name):$(git_dirty)$ "
 }
 
@@ -69,7 +74,7 @@ zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 zstyle ':completion:*' insert-tab pending
 
 ################### History #############
-HISTFILE=$HOME/.history/history._sh
+HISTFILE=$HOME/.zsh_history
 HISTSIZE=2000
 SAVEHIST=2000
 setopt   appendhistory
