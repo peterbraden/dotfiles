@@ -96,6 +96,8 @@ brew "go"
 {{ if .work }}
 brew "kubernetes-cli"
 brew "flux"
+brew "awscli"
+brew "kubelogin"  # kubeconfig exec auth
 {{- end }}
 {{ if .python }}
 brew "pyright" # LSP for nvim; independent of the active pyenv version
@@ -110,6 +112,12 @@ EOS
   command -v podman > /dev/null || brew install podman
   command -v poetry > /dev/null || brew install poetry
   {{- end }}
+
+  # Apps. --adopt takes over an app already in /Applications (installed by
+  # hand) instead of failing because it exists.
+  for c in ghostty 1password firefox tailscale-app{{ if .work }} freelens podman-desktop{{ end }}; do
+    brew list --cask "$c" > /dev/null 2>&1 || brew install --cask --adopt "$c" || echo "# ! cask $c failed" >&2
+  done
 
   brew cleanup
 
@@ -204,7 +212,32 @@ fi
 if ! [ -s "$HOME/.nvm/nvm.sh" ]; then
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | PROFILE=/dev/null bash
 fi
+# Node LTS as the default, and global CLIs the ~/bin scripts use
+(
+  export NVM_DIR="$HOME/.nvm"
+  . "$NVM_DIR/nvm.sh"
+  nvm install --lts --no-progress > /dev/null && nvm alias default 'lts/*' > /dev/null
+  npm ls -g @github/copilot > /dev/null 2>&1 || npm install -g @github/copilot
+) || echo "# ! node setup failed" >&2
 {{ end }}
+
+{{ if .python }}
+# Default Python via pyenv (macOS; Linux uses the system python3)
+if command -v pyenv > /dev/null; then
+  pyenv install -s 3.14 && pyenv global 3.14 || echo "# ! pyenv 3.14 failed" >&2
+fi
+{{ end }}
+
+{{ if .rust }}
+# rustup alone installs no toolchain
+if command -v rustup > /dev/null || [ -x "$HOME/.cargo/bin/rustup" ]; then
+  rustup_bin=$(command -v rustup || echo "$HOME/.cargo/bin/rustup")
+  { "$rustup_bin" default stable && "$rustup_bin" component add rust-analyzer; } || echo "# ! rust toolchain failed" >&2
+fi
+{{ end }}
+
+# Claude Code (native installer, into ~/.local/bin); the ~/bin scripts use it
+command -v claude > /dev/null || [ -x "$HOME/.local/bin/claude" ] || curl -fsSL https://claude.ai/install.sh | bash
 
 # Change the login shell last, so zsh is installed first on Linux
 # Compare against the real login shell, not $SHELL (inherited from tmux, sudo...)
