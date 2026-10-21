@@ -114,11 +114,13 @@ brew "rustup"
 brew "go"
 {{- end }}
 {{ if .work }}
+brew "awscli"
+{{- end }}
+{{ if .kubernetes }}
+# Kubernetes and platform tooling
 brew "kubernetes-cli"
 brew "flux"
-brew "awscli"
 brew "kubelogin"  # kubeconfig exec auth
-# Kubernetes and platform tooling
 brew "helm"
 brew "k9s"
 brew "kind"
@@ -149,7 +151,7 @@ EOS
 
   # Apps. --adopt takes over an app already in /Applications (installed by
   # hand) instead of failing because it exists.
-  for c in ghostty 1password firefox tailscale-app{{ if .work }} freelens podman-desktop{{ end }}; do
+  for c in ghostty 1password firefox tailscale-app{{ if .kubernetes }} freelens{{ end }}{{ if .work }} podman-desktop{{ end }}; do
     brew list --cask "$c" > /dev/null 2>&1 || brew install --cask --adopt "$c" || echo "# ! cask $c failed" >&2
   done
 

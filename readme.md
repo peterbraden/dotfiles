@@ -80,11 +80,11 @@ submodules are cloned over https.
 curl -fsSL https://raw.githubusercontent.com/peterbraden/dotfiles/master/install.sh | bash
 # Answer the setup questions up front, and test a branch
 curl -fsSL https://raw.githubusercontent.com/peterbraden/dotfiles/master/install.sh \
-  | DOTFILES_BRANCH=roche2 bash -s -- --promptBool work=true,golang=true,nodejs=true,rust=true,python=true
+  | DOTFILES_BRANCH=roche2 bash -s -- --promptBool work=true,golang=true,nodejs=true,rust=true,python=true,kubernetes=true
 ```
 
 chezmoi asks once which features this machine gets (`work`, `golang`,
-`nodejs`, `rust`, `python`) and remembers the answers. Without a terminal it
+`nodejs`, `rust`, `python`, `kubernetes`) and remembers the answers. Without a terminal it
 uses the defaults: on for the known hosts in
 [`.chezmoi.toml.tmpl`](home/.chezmoi.toml.tmpl), off elsewhere.
 

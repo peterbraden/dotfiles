@@ -1,5 +1,5 @@
 {{- /*
-  Feature toggles (work machine; Go, Node.js, Rust, Python tooling). Asked once by `chezmoi init` and stored in
+  Feature toggles (work machine; Go, Node.js, Rust, Python, Kubernetes tooling). Asked once by `chezmoi init` and stored in
   ~/.config/chezmoi/chezmoi.toml; machines that already have them aren't asked.
   Defaults come from the known hosts below, so pressing enter (or
   --promptDefaults) does the right thing there. Unattended:
@@ -16,6 +16,7 @@
 {{- $nodejs := promptBoolOnce . "nodejs" "nodejs" (or $isThor $isVidar $isWork) -}}
 {{- $rust := promptBoolOnce . "rust" "rust" (or $isThor $isVidar $isWork) -}}
 {{- $python := promptBoolOnce . "python" "python" (or $isThor $isVidar $isWork) -}}
+{{- $kubernetes := promptBoolOnce . "kubernetes" "kubernetes" $isWork -}}
 {{- $workEmail := "" -}}
 {{- $gitlabHost := "" -}}
 {{- if $work -}}
@@ -29,6 +30,7 @@
     nodejs = {{ $nodejs }}
     rust = {{ $rust }}
     python = {{ $python }}
+    kubernetes = {{ $kubernetes }}
     workEmail = {{ $workEmail | quote }}
     gitlabHost = {{ $gitlabHost | quote }}
 
