@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+# Drafts a commit message with an LLM from the staged diff.
+# Adapted from https://harper.blog/2024/03/11/use-an-llm-to-automagically-generate-meaningful-git-commit-messages/
+#
+# Opt-in per repo:  git config core.hooksPath ~/.git_hooks
+# Skip once:        SKIP_LLM_GITHOOK=1 git commit
+#
+# Never blocks a commit: on any failure git's normal message is left in place.
+
+if [ -n "$SKIP_LLM_GITHOOK" ]; then
+  exit 0
+fi
+
+# A second argument means the message already has a source
+# (-m, -F, template, merge, squash or amend), so leave it alone.
+if [ -n "$2" ]; then
+  exit 0
+fi
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+PROMPT_FILE=~/.config/prompts/commit-system-prompt.txt
+
+if ! command -v llm &> /dev/null; then
+  printf "${YELLOW}'llm' not found, skipping generated commit message${NC}\n"
+  exit 0
+fi
+
+diff=$(git diff --cached)
+if [ -z "$diff" ]; then
+  exit 0
+fi
+
+spin_animation() {
+  spinner=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+  tput civis
+  while true; do
+    for i in "${spinner[@]}"; do
+      printf "\r${YELLOW}%s${NC} Generating LLM commit message..." "$i"
+      sleep 0.1
+    done
+  done
+}
+
+spin_animation &
+spin_pid=$!
+stop_spinner() {
+  kill "$spin_pid" 2>/dev/null
+  wait "$spin_pid" 2>/dev/null
+  tput cnorm
+  printf "\r\033[K"
+}
+trap stop_spinner EXIT
+
+# llm reads the whole prompt from stdin: instructions, then the diff.
+if ! commit_msg=$(printf '%s\n\nStaged diff:\n%s\n' "$(cat "$PROMPT_FILE")" "$diff" | llm 2>&1) || [ -z "$commit_msg" ]; then
+  stop_spinner
+  trap - EXIT
+  printf "${RED}LLM commit message failed, write it manually:${NC}\n%s\n" "$commit_msg"
+  exit 0
+fi
+
+stop_spinner
+trap - EXIT
+
+printf "${BLUE}=== Generated Commit Message ===${NC}\n"
+printf "${GREEN}%s${NC}\n" "$commit_msg"
+printf "${BLUE}=================================${NC}\n\n"
+
+# Keep git's commented status lines below the generated message.
+{ printf '%s\n' "$commit_msg"; cat "$1"; } > "$1.tmp" && mv "$1.tmp" "$1"

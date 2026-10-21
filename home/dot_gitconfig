@@ -31,7 +31,11 @@
   editor = vim
   excludesfile = ~/.gitignore
   pager = less -FRSX
-  whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
+  whitespace=-indent-with-non-tab,trailing-space,cr-at-eol
+
+[apply]
+  # Fix whitespace errors in patches applied with git apply / git am
+  whitespace = fix
 
 [push]
   default = current
@@ -44,3 +48,7 @@
 	program = gpg
 [pull]
 	rebase = false
+
+# Machine-local settings, not in this repo. Last so it wins.
+[include]
+    path = ~/.gitconfig.local

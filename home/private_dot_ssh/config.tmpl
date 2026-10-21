@@ -1,0 +1,21 @@
+# Machine-specific hosts (e.g. work) live here, outside the public repo.
+Include ~/.ssh/config.local
+
+# Algorithms are left at OpenSSH defaults, which are stronger than an old
+# pinned list (SHA-2 RSA signatures, post-quantum key exchange).
+
+# GitHub: one key per account. IdentitiesOnly stops ssh offering other agent
+# keys first, which GitHub would accept as the wrong account.
+Host github.com
+  User git
+  IdentityFile ~/.ssh/id_rsa
+  IdentitiesOnly yes
+
+Host *
+  # Ensure KnownHosts are unreadable if leaked - it is otherwise easier to know which hosts your keys have access to.
+  HashKnownHosts yes
+  AddKeysToAgent yes
+{{- if eq .chezmoi.os "darwin" }}
+  # Store key passphrases in the macOS keychain
+  UseKeychain yes
+{{- end }}
