@@ -49,6 +49,3 @@
 [submodule "home/dot_vim/external_bundle/vim-airline-themes.vim"]
 	path = home/dot_vim/external_bundle/vim-airline-themes.vim
 	url = https://github.com/vim-airline/vim-airline-themes
-[submodule "home/dot_vim/external_bundle/vim-go.vim"]
-	path = home/dot_vim/external_bundle/vim-go.vim
-	url = https://github.com/fatih/vim-go.git
