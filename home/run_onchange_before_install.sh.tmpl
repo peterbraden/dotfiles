@@ -79,6 +79,10 @@ brew "git-delta"
 brew "f2"
 brew "gh"
 brew "gum"     # Interactive prompts in task-start
+brew "btop"    # Process monitor
+brew "glow"    # Markdown in the terminal
+brew "jnv"     # Interactive jq
+brew "socat"
 brew "uv"      # Runs the Python scripts in ~/bin
 brew "khal"    # Calendar
 brew "vdirsyncer" # Calendar sync for khal
@@ -98,6 +102,20 @@ brew "kubernetes-cli"
 brew "flux"
 brew "awscli"
 brew "kubelogin"  # kubeconfig exec auth
+# Kubernetes and platform tooling
+brew "helm"
+brew "k9s"
+brew "kind"
+brew "minikube"
+brew "kubebuilder"
+brew "crane"
+brew "skopeo"
+brew "sops"
+brew "age"
+brew "yq"
+brew "tflint"
+tap "siderolabs/tap"
+brew "siderolabs/tap/talosctl"
 {{- end }}
 {{ if .python }}
 brew "pyright" # LSP for nvim; independent of the active pyenv version
@@ -149,6 +167,7 @@ if [ "$(uname -s)" == "Linux" ]; then
     # Packaged as batcat / fdfind on Debian; eza and git-delta need Ubuntu 24.04+
     apt_install fzf bat zoxide eza git-delta
     apt_install jq gh   # gh is packaged from Ubuntu 22.04
+    apt_install btop socat
 
     # Shell history search; local only, sync is disabled in its config
     # Unmanaged install into ~/.local/bin: no rc file edits, no self-updater
