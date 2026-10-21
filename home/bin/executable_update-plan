@@ -184,14 +184,14 @@ After the workstreams, add a section for standalone tickets that don't fit a wor
 ## Example output style
 
 ```
-# Airgap communication layer
-- [NAFM-1734] Implement Sneakernet — code complete, needs review
-    - https://github.com/roche-innersource/na-sneakernet
-- [NAFM-1747] Implement Envelope lib — code complete, needs review
-    - https://github.com/roche-innersource/na-envelopelib
+# Payments refactor
+- [PROJ-101] Extract billing client — code complete, needs review
+    - https://github.com/example-org/billing-client
+- [PROJ-102] Move invoices to the new client — in progress
+    - https://github.com/example-org/invoices
 
 # Other
-- [NAFM-1729] Clean up unused edge workspace OCI config — in progress, MR !456 (0/2 approvals)
+- [PROJ-110] Remove unused feature flags — in progress, MR !456 (0/2 approvals)
 ```
 
 ## Rules

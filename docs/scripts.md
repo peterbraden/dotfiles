@@ -185,7 +185,7 @@ pod-status --all                       # show all pods including healthy
 
 Read, list, and append to files on GitHub or GitLab without cloning. All scripts share the same `owner/repo` positional pattern and `--branch` flag.
 
-GitHub scripts use `GITHUB_TOKEN_PERSONAL` (falling back to `GITHUB_TOKEN`). GitLab scripts use `GITLAB_TOKEN` and `GITLAB_HOST` (default: `code.roche.com`).
+GitHub scripts use `GITHUB_TOKEN_PERSONAL` (falling back to `GITHUB_TOKEN`). GitLab scripts use `GITLAB_TOKEN` and `GITLAB_HOST` (required, from the work environment `~/roche.env`; the `gl-*` scripts stop without it, the summaries skip GitLab).
 
 ### gh-cat / gl-cat (gl-* work only)
 
