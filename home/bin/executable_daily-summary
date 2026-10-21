@@ -14,7 +14,7 @@ summary of tickets touched, MRs/PRs updated, and commits authored.
 Requires:
     LINEAR_API_KEY   - Linear personal API key
     GITLAB_TOKEN     - GitLab personal access token (optional)
-    GITLAB_HOST      - GitLab host (required for GitLab)
+    GITLAB_HOST      - GitLab host (optional; GitLab is skipped without it)
     GITHUB_TOKEN     - GitHub personal access token (optional)
                        (also reads GITHUB_TOKEN_PERSONAL)
 

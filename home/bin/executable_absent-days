@@ -15,7 +15,7 @@ sick days or holidays.
 Requires:
     LINEAR_API_KEY   - Linear personal API key
     GITLAB_TOKEN     - GitLab personal access token (optional)
-    GITLAB_HOST      - GitLab host (required for GitLab)
+    GITLAB_HOST      - GitLab host (optional; GitLab is skipped without it)
 
 Usage:
     absent-days                  Current month

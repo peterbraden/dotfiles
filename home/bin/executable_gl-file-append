@@ -8,7 +8,7 @@
 #
 # Requires:
 #   GITLAB_TOKEN  - personal access token with api scope
-#   GITLAB_HOST   - GitLab host (required)
+#   GITLAB_HOST   - GitLab host (optional env var; this script fails without it)
 #
 # Usage:
 #   gl-file-append <owner/repo> <path> <text>
@@ -58,7 +58,7 @@ gl_api() {
     shift 2
     local response http_code host
 
-    host="${GITLAB_HOST:?GITLAB_HOST is not set (it comes from the work environment, ~/roche.env)}"
+    host="${GITLAB_HOST:?GITLAB_HOST is not set}"
 
     response=$(curl -s -w "\n%{http_code}" \
         -X "$method" \
@@ -165,7 +165,7 @@ if [[ "$create_pr" == true ]]; then
         }" >/dev/null
 
     # Open the MR
-    host="${GITLAB_HOST:?GITLAB_HOST is not set (it comes from the work environment, ~/roche.env)}"
+    host="${GITLAB_HOST:?GITLAB_HOST is not set}"
     mr_response=$(gl_api POST "/projects/${encoded_project}/merge_requests" \
         -H "Content-Type: application/json" \
         -d "{

@@ -6,7 +6,7 @@
 #
 # Requires:
 #   GITLAB_TOKEN  - personal access token with read_repository scope
-#   GITLAB_HOST   - GitLab host (required)
+#   GITLAB_HOST   - GitLab host (optional env var; this script fails without it)
 #
 # Usage:
 #   gl-cat <owner/repo> <path> [options]
@@ -47,7 +47,7 @@ gl_api() {
     shift 2
     local response http_code host
 
-    host="${GITLAB_HOST:?GITLAB_HOST is not set (it comes from the work environment, ~/roche.env)}"
+    host="${GITLAB_HOST:?GITLAB_HOST is not set}"
 
     response=$(curl -s -w "\n%{http_code}" \
         -X "$method" \
