@@ -189,7 +189,8 @@ if [ "$(uname -s)" == "Linux" ]; then
 
     # Shell history search; local only, sync is disabled in its config
     # Unmanaged install into ~/.local/bin: no rc file edits, no self-updater
-    if ! [ -x "$(command -v atuin)" ] && ! apt_install atuin; then
+    command -v atuin > /dev/null || apt_install atuin
+    if ! command -v atuin > /dev/null && ! [ -x "$HOME/.local/bin/atuin" ]; then
       curl --proto '=https' --tlsv1.2 -LsSf https://github.com/atuinsh/atuin/releases/latest/download/atuin-installer.sh \
         | ATUIN_UNMANAGED_INSTALL="$HOME/.local/bin" sh
     fi
@@ -206,8 +207,10 @@ if [ "$(uname -s)" == "Linux" ]; then
       fi
       rm -rf "$tmp"
     fi
-    # Builds parsers for nvim-treesitter (Ubuntu 24.04+; else via cargo below)
-    apt_install tree-sitter-cli
+    # en_US.UTF-8 is used by .profile; minimal images don't have it generated
+    if ! locale -a 2>/dev/null | grep -qi '^en_US\.utf-\?8$'; then
+      apt_install locales && sudo locale-gen en_US.UTF-8 > /dev/null
+    fi
 
     # uv runs the Python scripts in ~/bin; not in apt. Installs to ~/.local/bin
     if ! [ -x "$(command -v uv)" ]; then
@@ -233,11 +236,6 @@ if [ "$(uname -s)" == "Linux" ]; then
     apt_install nodejs npm
     {{ end }}
 
-    {{ if .rust }}
-    if ! [ -x "$(command -v tree-sitter)" ] && [ -x "$HOME/.cargo/bin/cargo" ]; then
-      "$HOME/.cargo/bin/cargo" install --locked tree-sitter-cli
-    fi
-    {{ end }}
 
     # TODO tailscale
   fi
@@ -273,6 +271,29 @@ if command -v rustup > /dev/null || [ -x "$HOME/.cargo/bin/rustup" ]; then
 fi
 {{ end }}
 
+# After the Rust toolchain, so cargo can build tree-sitter where needed
+if [ "$(uname -s)" = "Linux" ]; then
+  # Builds parsers for nvim-treesitter, which needs tree-sitter 0.26.1+.
+  # apt's is older, so use the official release binary in ~/.local/bin.
+  ts_ok() { tree-sitter --version 2>/dev/null | awk 'NR == 1 {split($2, v, "."); ok = (v[1] > 0 || v[2] >= 26)} END {exit !ok}'; }
+  if ! PATH="$HOME/.local/bin:$PATH" ts_ok; then
+    case "$(uname -m)" in aarch64|arm64) ts_arch=arm64 ;; *) ts_arch=x64 ;; esac
+    curl -LsSf "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-linux-$ts_arch.gz" \
+      | gunzip > ~/.local/bin/tree-sitter && chmod +x ~/.local/bin/tree-sitter
+    # The release binary needs a recent glibc (2.39); build it on older systems
+    if ! PATH="$HOME/.local/bin:$PATH" ts_ok; then
+      rm -f ~/.local/bin/tree-sitter
+      cargo_bin=$(command -v cargo || echo "$HOME/.cargo/bin/cargo")
+      if [ -x "$cargo_bin" ]; then
+        "$cargo_bin" install --locked --root "$HOME/.local" tree-sitter-cli \
+          || echo "# ! tree-sitter build failed" >&2
+      else
+        echo "# ! tree-sitter unavailable (no cargo); nvim runs without treesitter highlighting" >&2
+      fi
+    fi
+  fi
+fi
+
 # Claude Code (native installer, into ~/.local/bin); the ~/bin scripts use it
 command -v claude > /dev/null || [ -x "$HOME/.local/bin/claude" ] || curl -fsSL https://claude.ai/install.sh | bash
 
@@ -287,5 +308,6 @@ fi
 target_shell=$(grep -m1 '/zsh$' /etc/shells || grep -m1 '/bash$' /etc/shells)
 if [ -n "$target_shell" ] && [ "$(basename "$login_shell")" != "$(basename "$target_shell")" ]; then
   echo "# - Changing shell to $target_shell"
-  chsh -s "$target_shell" || echo "# ! chsh failed, change your shell manually" >&2
+  sudo -n chsh -s "$target_shell" "$USER" 2>/dev/null || chsh -s "$target_shell" \
+    || echo "# ! chsh failed, change your shell manually" >&2
 fi
