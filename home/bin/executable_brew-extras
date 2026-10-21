@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+#
+# brew-extras - show brew packages not in your dotfiles install script.
+#
+# Compares installed brew formulae/casks against the packages declared
+# in the chezmoi install script from your dotfiles repo. Shows what
+# you've installed manually (extras) and optionally what's in dotfiles
+# but not installed (missing).
+#
+# Requires:
+#   brew  - Homebrew
+#
+# Configuration:
+#   Reads the install script from the local chezmoi source by default.
+#   DOTFILES_INSTALL_URL - fetch the install script from this URL instead
+#     (fallback when there is no local source: the GitHub master copy)
+#
+# Usage:
+#   brew-extras              # show manually installed packages
+#   brew-extras --missing    # also show dotfiles packages not installed
+#   brew-extras --all        # show all: extras, missing, and shared
+
+set -eu
+
+INSTALL_SCRIPT_NAME="run_onchange_before_install.sh.tmpl"
+DEFAULT_INSTALL_URL="https://raw.githubusercontent.com/peterbraden/dotfiles/master/home/$INSTALL_SCRIPT_NAME"
+DOTFILES_INSTALL_URL="${DOTFILES_INSTALL_URL:-}"
+
+usage() {
+    cat <<EOF
+Usage: brew-extras [options]
+
+Show brew packages not in your dotfiles install script.
+
+Options:
+    --missing     Also show dotfiles packages not currently installed
+    --all         Show extras, missing, and shared packages
+    --url URL     Fetch the install script from URL instead of the local source
+    -h, --help    Show this help
+EOF
+}
+
+die() { echo "brew-extras: $*" >&2; exit 1; }
+
+show_missing=false
+show_all=false
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --missing)  show_missing=true ;;
+        --all)      show_all=true; show_missing=true ;;
+        --url)      DOTFILES_INSTALL_URL="$2"; shift ;;
+        -h|--help)  usage; exit 0 ;;
+        *)          die "unknown option: $1" ;;
+    esac
+    shift
+done
+
+command -v brew >/dev/null 2>&1 || die "brew not found"
+
+# --- Fetch dotfiles install script ---
+
+local_script=""
+if [[ -z "$DOTFILES_INSTALL_URL" ]] && command -v chezmoi >/dev/null 2>&1; then
+    local_script="$(chezmoi source-path 2>/dev/null)/$INSTALL_SCRIPT_NAME"
+fi
+if [[ -n "$local_script" && -f "$local_script" ]]; then
+    install_script=$(cat "$local_script")
+else
+    DOTFILES_INSTALL_URL="${DOTFILES_INSTALL_URL:-$DEFAULT_INSTALL_URL}"
+    install_script=$(curl -sfL "$DOTFILES_INSTALL_URL") \
+        || die "failed to fetch install script from ${DOTFILES_INSTALL_URL}"
+fi
+
+# --- Extract declared packages ---
+# Matches: brew "pkg", cask "pkg", brew install pkg
+
+dotfiles_packages=$(echo "$install_script" | \
+    grep -E '^[[:space:]]*(brew|cask)[[:space:]]+"[^"]+"' | \
+    sed -E 's/^[[:space:]]*(brew|cask)[[:space:]]+"([^"]+)".*/\2/' ; \
+    echo "$install_script" | \
+    grep -E '^[[:space:]]*brew install[[:space:]]+' | \
+    sed -E 's/^[[:space:]]*brew install[[:space:]]+//' | \
+    tr -s ' ' '\n'
+)
+
+dotfiles_sorted=$(echo "$dotfiles_packages" | sort -u)
+
+# --- Get installed packages ---
+
+installed_sorted=$(brew list --formula -1 2>/dev/null; brew list --cask -1 2>/dev/null)
+installed_sorted=$(echo "$installed_sorted" | sort -u)
+
+# --- Compare ---
+
+extras=$(comm -23 <(echo "$installed_sorted") <(echo "$dotfiles_sorted"))
+missing=$(comm -13 <(echo "$installed_sorted") <(echo "$dotfiles_sorted"))
+shared=$(comm -12 <(echo "$installed_sorted") <(echo "$dotfiles_sorted"))
+
+if [[ "$show_all" == true ]]; then
+    if [[ -n "$shared" ]]; then
+        echo "=== In dotfiles and installed ==="
+        echo "$shared"
+        echo
+    fi
+fi
+
+if [[ -n "$extras" ]]; then
+    echo "=== Installed but not in dotfiles ==="
+    echo "$extras"
+    if [[ "$show_missing" == true ]]; then echo; fi
+fi
+
+if [[ "$show_missing" == true && -n "$missing" ]]; then
+    echo "=== In dotfiles but not installed ==="
+    echo "$missing"
+fi
+
+if [[ -z "$extras" && "$show_missing" != true ]]; then
+    echo "No extra packages — everything installed is in your dotfiles."
+fi

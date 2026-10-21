@@ -1,0 +1,330 @@
+#!/usr/bin/env bash
+#
+# term-graphics-probe - detect and demonstrate terminal inline image support.
+#
+# Terminals have no standard way to display images. Instead, several
+# competing protocols exist, each using escape sequences to smuggle
+# pixel data through a channel designed for text. This script probes
+# for the three most common ones and displays a test image.
+#
+# Background
+# ----------
+# Terminal escape sequences start with ESC (\033). The terminal
+# interprets these as control instructions rather than printable text.
+# There are several "sequence types" built on this:
+#
+#   CSI  (Control Sequence Introducer) — ESC [
+#        Standard cursor/colour/mode control. e.g. ESC [ 3 1 m
+#        sets text colour to red.
+#
+#   OSC  (Operating System Command) — ESC ]
+#        Application-defined extensions, terminated by BEL (\007)
+#        or ST (ESC \). iTerm2's image protocol lives here.
+#
+#   APC  (Application Program Command) — ESC _
+#        Rarely used historically; Kitty adopted it for graphics.
+#        Terminated by ST (ESC \).
+#
+#   DCS  (Device Control String) — ESC P
+#        Used for Sixel, and by tmux for passthrough wrapping.
+#        Terminated by ST (ESC \).
+#
+# The Protocols
+# -------------
+#
+# 1. Kitty Graphics Protocol
+#    Sends raw pixel data (RGBA) or PNG via APC sequences.
+#    Supports a query action (a=q) that asks the terminal to
+#    acknowledge support without displaying anything — ideal
+#    for probing.
+#
+#    Format: ESC _ G <key>=<value>,... ; <base64 payload> ESC \
+#
+# 2. iTerm2 Inline Images
+#    Sends a file (typically PNG) via an OSC 1337 sequence.
+#    No query mechanism exists, so detection relies on the
+#    TERM_PROGRAM environment variable.
+#
+#    Format: ESC ] 1337 ; File=inline=1;... : <base64> BEL
+#
+# 3. Sixel
+#    The oldest protocol (DEC, 1980s). Encodes images as a
+#    stream of six-pixel-tall vertical strips using printable
+#    ASCII characters. Terminals advertise Sixel support in
+#    their response to a Device Attributes (DA) query: the
+#    presence of ";4" in the response means Sixel.
+#
+#    Format: ESC P q <colour/pixel data> ESC \
+#
+# tmux Passthrough
+# ----------------
+# tmux interpates escape sequences itself and does not forward
+# unrecognised ones to the outer terminal. To send an image
+# sequence through tmux to (say) iTerm2, two things are needed:
+#
+#   1. tmux must have `allow-passthrough on` (off by default).
+#   2. The sequence must be wrapped in a DCS passthrough:
+#
+#        ESC P tmux; ESC <sequence with ESCs doubled> ESC \
+#
+#      Every ESC byte inside the wrapped sequence must be sent
+#      twice — tmux strips one layer and forwards the rest to
+#      the outer terminal.
+#
+# Usage:
+#   term-graphics-probe
+
+set -eu
+
+die() { echo "term-graphics-probe: $*" >&2; exit 1; }
+
+# We write escape sequences to stdout, so it must be a terminal.
+[[ -t 1 ]] || die "stdout is not a terminal"
+
+supported=()
+
+
+# === Probe: Kitty Graphics ================================================
+#
+# Send a 1x1 RGBA pixel using the query action (a=q). The terminal
+# must respond with an APC sequence containing "OK" if it supports
+# the protocol. We never display this pixel (query-only).
+#
+# To read the response, we put the terminal into raw mode (stty):
+#   -echo     suppress local echo of the response bytes
+#   -icanon   disable line buffering so we get chars immediately
+#   min 0     don't block waiting for input
+#   time 5    timeout after 0.5s (units are tenths of a second)
+
+test_kitty() {
+    local old_settings response="" char
+    old_settings=$(stty -g)
+    stty -echo -icanon min 0 time 5
+
+    #            APC  action=query  id  fmt=RGBA  1x1    base64(RGBA red)  ST
+    printf '\033_Ga=q,i=31,f=32,s=1,v=1;/wAAfw==\033\\' > /dev/tty
+
+    # Read until we see the ST terminator (backslash) or timeout
+    while IFS= read -r -n 1 -t 1 char; do
+        response+="$char"
+        [[ "$char" == '\' ]] && break
+    done < /dev/tty
+
+    stty "$old_settings"
+
+    # Kitty responds: ESC _ G i=31 ; OK ESC \
+    [[ "$response" == *"OK"* ]]
+}
+
+
+# === Probe: iTerm2 Inline Images ==========================================
+#
+# iTerm2 has no query mechanism for image support. It does, however,
+# set TERM_PROGRAM=iTerm.app (or LC_TERMINAL=iTerm2 when forwarded
+# over SSH). We check both.
+
+test_iterm2() {
+    [[ "${TERM_PROGRAM:-}" == "iTerm.app" ]] || [[ "${LC_TERMINAL:-}" == "iTerm2" ]]
+}
+
+
+# === Probe: Sixel ==========================================================
+#
+# Send a Primary Device Attributes request: CSI c (i.e. ESC [ c).
+# The terminal responds with a CSI sequence listing its capabilities
+# as semicolon-separated numbers, terminated by 'c'. The number 4
+# means "Sixel graphics". So ";4" anywhere in the response indicates
+# support.
+#
+# Example response from xterm with Sixel: ESC [ ? 6 4 ; 4 c
+
+test_sixel() {
+    local old_settings response="" char
+    old_settings=$(stty -g)
+    stty -echo -icanon min 0 time 5
+
+    printf '\033[c' > /dev/tty
+
+    while IFS= read -r -n 1 -t 1 char; do
+        response+="$char"
+        [[ "$char" == "c" ]] && break
+    done < /dev/tty
+
+    stty "$old_settings"
+
+    [[ "$response" == *";4"* ]]
+}
+
+
+# === Run probes ============================================================
+
+echo "Probing terminal graphics support..."
+echo ""
+
+if test_kitty; then
+    supported+=("kitty")
+    echo "  Kitty graphics protocol:  yes"
+else
+    echo "  Kitty graphics protocol:  no"
+fi
+
+if test_iterm2; then
+    supported+=("iterm2")
+    echo "  iTerm2 inline images:     yes"
+else
+    echo "  iTerm2 inline images:     no"
+fi
+
+if test_sixel; then
+    supported+=("sixel")
+    echo "  Sixel graphics:           yes"
+else
+    echo "  Sixel graphics:           no"
+fi
+
+echo ""
+
+if [[ ${#supported[@]} -eq 0 ]]; then
+    echo "No inline image protocols detected."
+    exit 1
+fi
+
+echo "Supported: ${supported[*]}"
+echo ""
+
+
+# === Generate a test PNG ===================================================
+#
+# We need a real PNG file for iTerm2 (which expects a complete image
+# file, not raw pixels). Rather than embedding a binary blob that
+# can't be verified, we generate one at runtime.
+#
+# A PNG file is: magic bytes, then a series of chunks. Each chunk is:
+#   4 bytes  length (big-endian)
+#   4 bytes  type (ASCII)
+#   N bytes  data
+#   4 bytes  CRC32 of type+data
+#
+# We need three chunks:
+#   IHDR  — width, height, bit depth, colour type
+#   IDAT  — zlib-compressed pixel rows (each row prefixed with
+#           a filter byte; \x00 means "no filter")
+#   IEND  — empty, marks end of file
+
+make_png_b64() {
+    if command -v python3 &>/dev/null; then
+        python3 -c "
+import base64, struct, zlib
+width, height = 8, 8
+colours = [
+    (255,0,0),(255,136,0),(255,255,0),(0,255,0),
+    (0,136,255),(0,0,255),(136,0,255),(255,0,255),
+]
+raw = b''
+for row in range(height):
+    raw += b'\x00'                          # filter byte: none
+    for col in range(width):
+        r,g,b = colours[row]
+        raw += struct.pack('BBB', r, g, b)  # one RGB pixel
+def chunk(ctype, data):
+    c = ctype + data
+    return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+ihdr = struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)
+#                   W  H  depth=8 RGB  compress filter interlace
+png = b'\x89PNG\r\n\x1a\n'
+png += chunk(b'IHDR', ihdr)
+png += chunk(b'IDAT', zlib.compress(raw))
+png += chunk(b'IEND', b'')
+print(base64.b64encode(png).decode())
+"
+    elif command -v convert &>/dev/null; then
+        convert -size 8x8 gradient:red-blue png:- 2>/dev/null | base64
+    else
+        return 1
+    fi
+}
+
+
+# === tmux passthrough check ================================================
+#
+# See "tmux Passthrough" in the header for why this is necessary.
+
+if [[ -n "${TMUX:-}" ]]; then
+    passthrough=$(tmux show -gv allow-passthrough 2>/dev/null || echo "off")
+    if [[ "$passthrough" != "on" && "$passthrough" != "all" ]]; then
+        echo "tmux detected but allow-passthrough is not enabled."
+        echo "Image display requires:"
+        echo ""
+        echo "  tmux set -g allow-passthrough on"
+        echo ""
+        echo "Add it to ~/.tmux.conf to persist."
+        exit 1
+    fi
+fi
+
+
+# === Display a test image ==================================================
+#
+# Each protocol encodes the image differently:
+#
+#   Kitty   — raw RGBA bytes, base64-encoded, in an APC sequence.
+#             Parameters specify format (f=32 means RGBA), dimensions
+#             (s=width, v=height), and action (a=T means transmit and
+#             display).
+#
+#   iTerm2  — a complete image file (PNG), base64-encoded, in an OSC
+#             1337 sequence. The terminal decodes the file format
+#             itself. inline=1 means display in the text flow rather
+#             than as a download.
+#
+#   Sixel   — pixel data encoded in a bespoke ASCII format. Colour
+#             registers are defined with #N;2;R;G;B (percentages),
+#             then pixel columns are written as characters in the
+#             range 0x3F-0x7E, where each character encodes 6
+#             vertical pixels as a bitmask. '~' = 0x7E = 0b111111
+#             = all 6 pixels on. '-' moves to the next row of 6.
+#             !N repeats the next character N times.
+
+echo "Displaying test image..."
+echo ""
+
+in_tmux=false
+[[ -n "${TMUX:-}" ]] && in_tmux=true
+
+case "${supported[0]}" in
+    kitty)
+        # 4x4 RGBA gradient: each printf produces one row of 4 pixels
+        # (4 bytes per pixel: R, G, B, A=0xff)
+        payload=$(printf '\xff\x00\x00\xff\xff\x55\x00\xff\xff\xaa\x00\xff\xff\xff\x00\xff' | base64)
+        payload+=$(printf '\x00\xff\x00\xff\x55\xff\x00\xff\xaa\xff\x00\xff\xff\xff\x00\xff' | base64)
+        payload+=$(printf '\x00\x00\xff\xff\x00\x55\xff\xff\x00\xaa\xff\xff\x00\xff\xff\xff' | base64)
+        payload+=$(printf '\xff\x00\xff\xff\xff\x55\xff\xff\xff\xaa\xff\xff\xff\xff\xff\xff' | base64)
+        if $in_tmux; then
+            # Wrap in DCS passthrough, doubling inner ESC bytes
+            printf '\033Ptmux;\033\033_Ga=T,f=32,s=4,v=4;%s\033\033\\\033\\' "$payload"
+        else
+            printf '\033_Ga=T,f=32,s=4,v=4;%s\033\\' "$payload"
+        fi
+        ;;
+    iterm2)
+        png_b64=$(make_png_b64) || { echo "Could not generate PNG (need ImageMagick or python3)."; exit 1; }
+        if $in_tmux; then
+            # OSC 1337 wrapped in DCS passthrough; BEL (\007) terminates the inner OSC
+            printf '\033Ptmux;\033\033]1337;File=inline=1;width=64px;height=64px:%s\007\033\\' "$png_b64"
+        else
+            printf '\033]1337;File=inline=1;width=64px;height=64px:%s\a' "$png_b64"
+        fi
+        ;;
+    sixel)
+        # Two colour registers, then a 2-row chequerboard pattern
+        if $in_tmux; then
+            printf '\033Ptmux;\033\033Pq#0;2;100;0;0#1;2;0;100;0#0!8~-#1!8~-#0!8~-#1!8~-\033\033\\\033\\'
+        else
+            printf '\033Pq#0;2;100;0;0#1;2;0;100;0#0!8~-#1!8~-#0!8~-#1!8~-\033\\'
+        fi
+        ;;
+esac
+echo
+
+echo ""
+echo "If you see a coloured block above, graphics are working."

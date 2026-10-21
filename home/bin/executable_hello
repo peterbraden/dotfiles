@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Print a message in rainbow colors using ANSI escape codes.
+# No dependencies beyond a terminal that supports 256-color or truecolor.
+
+set -eu
+
+message="${1:-Hello from utils! The quick brown fox jumps over the lazy dog.}"
+
+# Rainbow hues as ANSI 256-color codes (red -> orange -> yellow -> green -> cyan -> blue -> violet)
+colors=(196 202 208 214 220 226 190 154 118 82 46 47 48 49 50 51 45 39 33 27 21 57 93 129 165 201)
+
+i=0
+len=${#message}
+output=""
+
+while [ "$i" -lt "$len" ]; do
+  char="${message:$i:1}"
+  if [ "$char" = " " ]; then
+    output+=" "
+  else
+    color_index=$(( i % ${#colors[@]} ))
+    output+="\033[38;5;${colors[$color_index]}m${char}\033[0m"
+  fi
+  i=$(( i + 1 ))
+done
+
+echo -e "$output"

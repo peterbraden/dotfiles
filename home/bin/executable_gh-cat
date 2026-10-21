@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+#
+# gh-cat - print file contents from a GitHub repository without cloning.
+#
+# Uses the GitHub Contents API to fetch and decode a file.
+#
+# Requires:
+#   GITHUB_TOKEN_PERSONAL or GITHUB_TOKEN  - personal access token with repo scope
+#
+# Usage:
+#   gh-cat <owner/repo> <path> [options]
+#
+# Examples:
+#   gh-cat myorg/myrepo README.md
+#   gh-cat myorg/myrepo src/main.go --branch develop
+#   gh-cat myorg/myrepo config.json | jq .
+
+set -eu
+
+API="https://api.github.com"
+
+usage() {
+    cat <<EOF
+Usage: gh-cat <owner/repo> <path> [options]
+
+Print file contents from a GitHub repository without cloning.
+
+Arguments:
+    owner/repo    GitHub repository (e.g. myorg/myrepo)
+    path          File path in the repo (e.g. README.md)
+
+Options:
+    --branch BRANCH   Branch or ref (default: repo's default branch)
+    -h, --help        Show this help
+EOF
+}
+
+die() { echo "gh-cat: $*" >&2; exit 1; }
+
+# Portable base64 decode (Linux uses -d, macOS uses -D)
+b64_decode() { base64 -d 2>/dev/null || base64 -D; }
+
+gh_api() {
+    local method="$1" endpoint="$2"
+    shift 2
+    local response http_code
+
+    response=$(curl -s -w "\n%{http_code}" \
+        -X "$method" \
+        -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+        -H "Accept: application/vnd.github+json" \
+        "$@" \
+        "${API}${endpoint}")
+
+    http_code=$(echo "$response" | tail -1)
+    body=$(echo "$response" | sed '$d')
+
+    if [[ "$http_code" -ge 400 ]]; then
+        local msg
+        msg=$(echo "$body" | jq -r '.message // empty' 2>/dev/null || true)
+        die "API ${method} ${endpoint} failed (HTTP ${http_code}): ${msg:-$body}"
+    fi
+
+    echo "$body"
+}
+
+# --- Parse arguments ---
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+[[ $# -lt 2 ]] && { usage >&2; exit 1; }
+
+repo="$1"; shift
+filepath="$1"; shift
+target_branch=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --branch)   target_branch="$2"; shift ;;
+        -h|--help)  usage; exit 0 ;;
+        *)          die "unknown option: $1" ;;
+    esac
+    shift
+done
+
+GITHUB_TOKEN="${GITHUB_TOKEN_PERSONAL:-${GITHUB_TOKEN:-}}"
+[[ -n "$GITHUB_TOKEN" ]] || die "set GITHUB_TOKEN_PERSONAL or GITHUB_TOKEN (personal access token with repo scope)"
+[[ "$repo" == */* ]] || die "repo must be owner/repo format"
+[[ -n "$filepath" ]] || die "file path required"
+
+# --- Fetch and print ---
+
+endpoint="/repos/${repo}/contents/${filepath}"
+query=""
+if [[ -n "$target_branch" ]]; then
+    query="?ref=${target_branch}"
+fi
+
+result=$(gh_api GET "${endpoint}${query}")
+
+# Check it's a file, not a directory
+type=$(echo "$result" | jq -r '.type // empty')
+if [[ "$type" != "file" ]]; then
+    die "${filepath} is a ${type:-unknown type}, not a file (use gh-ls to list directories)"
+fi
+
+echo "$result" | jq -r '.content' | tr -d '\n' | b64_decode

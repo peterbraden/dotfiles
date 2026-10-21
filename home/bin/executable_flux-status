@@ -14,10 +14,17 @@ Usage:
     flux-status -w -i 10     Watch with custom interval
     flux-status -n flux      Filter by namespace
     flux-status -a           Show all (including ready)
+    flux-status --json       Machine-readable JSON output
+
+JSON shape:
+    {"context": str, "revision": str, "ready": int, "pending": int,
+     "total": int, "kustomizations": [{"namespace", "name", "ready",
+     "status", "message"}]}
 """
 
 import argparse
 import json
+import re
 import signal
 import subprocess
 import sys
@@ -48,7 +55,31 @@ def get_kustomizations(namespace: str | None) -> list[dict]:
     return data.get("items", [])
 
 
-def parse_item(item: dict) -> dict:
+def get_kube_context() -> str:
+    try:
+        ctx = subprocess.run(
+            ["kubectl", "config", "current-context"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        # Shorten AWS EKS ARNs: arn:aws:eks:...:cluster/name -> aws:name
+        m = re.match(r"arn:aws:eks:[^:]+:[^:]+:cluster/(.+)", ctx)
+        if m:
+            ctx = f"aws:{m.group(1)}"
+        return ctx
+    except Exception:
+        return "unknown"
+
+
+def get_last_revision(items: list[dict]) -> str:
+    for item in items:
+        rev = item.get("status", {}).get("lastAppliedRevision", "")
+        if rev:
+            # Short hash from "main@sha1:<sha>" (Flux v2) or "main/<sha>" (older)
+            return re.split(r"[/:]", rev)[-1][:7]
+    return ""
+
+
+def parse_item(item: dict, truncate: bool = True) -> dict:
     conditions = {
         c["type"]: c for c in item.get("status", {}).get("conditions", [])
     }
@@ -68,7 +99,7 @@ def parse_item(item: dict) -> dict:
     else:
         status = "Unknown"
 
-    if len(message) > 60:
+    if truncate and len(message) > 60:
         message = message[:57] + "..."
 
     return {
@@ -80,41 +111,27 @@ def parse_item(item: dict) -> dict:
     }
 
 
+def build_json(items: list[dict], show_all: bool) -> dict:
+    parsed = [parse_item(item, truncate=False) for item in items]
+    ready_count = sum(1 for p in parsed if p["ready"])
+    return {
+        "context": get_kube_context(),
+        "revision": get_last_revision(items),
+        "ready": ready_count,
+        "pending": len(parsed) - ready_count,
+        "total": len(parsed),
+        "kustomizations": parsed if show_all else [p for p in parsed if not p["ready"]],
+    }
+
+
 def build_table(items: list[dict], show_all: bool) -> Table | Text:
     parsed = [parse_item(item) for item in items]
     ready_count = sum(1 for p in parsed if p["ready"])
     pending_count = len(parsed) - ready_count
     total = len(parsed)
 
-    # Get current kube context and last applied revision
-    import re
-    try:
-        ctx = subprocess.run(
-            ["kubectl", "config", "current-context"],
-            capture_output=True, text=True,
-        ).stdout.strip()
-        # Shorten AWS EKS ARNs: arn:aws:eks:...:cluster/name -> aws:name
-        m = re.match(r"arn:aws:eks:[^:]+:[^:]+:cluster/(.+)", ctx)
-        if m:
-            ctx = f"aws:{m.group(1)}"
-    except Exception:
-        ctx = "unknown"
-
-    last_rev = ""
-    for p in parsed:
-        # Find most recent revision from any item
-        break
-    # Get from raw items instead
-    for item in items:
-        rev = item.get("status", {}).get("lastAppliedRevision", "")
-        if rev:
-            # Take just the short hash
-            if "/" in rev:
-                rev = rev.rsplit("/", 1)[-1]
-            if len(rev) > 7:
-                rev = rev[:7]
-            last_rev = rev
-            break
+    ctx = get_kube_context()
+    last_rev = get_last_revision(items)
 
     ctx_str = f" | {ctx}" if ctx else ""
     rev_str = f" | {last_rev}" if last_rev else ""
@@ -166,11 +183,21 @@ def main():
     parser.add_argument("-i", "--interval", type=int, default=5, help="Refresh interval (seconds)")
     parser.add_argument("-n", "--namespace", help="Filter by namespace")
     parser.add_argument("-a", "--all", action="store_true", dest="show_all", help="Show all including ready")
+    parser.add_argument("--json", action="store_true", help="Machine-readable JSON output")
     args = parser.parse_args()
+
+    if args.json and args.watch:
+        parser.error("--json cannot be combined with --watch")
 
     console = Console()
 
-    if args.watch:
+    if args.json:
+        items = get_kustomizations(args.namespace)
+        if not items:
+            print("Failed to get kustomizations. Is kubectl configured?", file=sys.stderr)
+            sys.exit(1)
+        print(json.dumps(build_json(items, args.show_all), indent=2))
+    elif args.watch:
         with Live(console=console, refresh_per_second=1) as live:
             while True:
                 items = get_kustomizations(args.namespace)

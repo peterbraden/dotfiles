@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#
+# plan-oneline - print the first line of plan.md, stripped of markdown heading.
+# Useful for embedding in tmux status bars, prompts, or other UI.
+#
+# Outputs nothing if plan.md doesn't exist.
+
+set -eu
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLAN_FILE="$("$SCRIPT_DIR/plan-find" 2>/dev/null)" || exit 0
+
+head -n 1 "$PLAN_FILE" | sed 's/^#\+ *//'

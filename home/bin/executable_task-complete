@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+#
+# task-complete - finish a worktree-based task cleanly.
+#
+# Asserts all changes are committed and pushed, reverts plan.md to its
+# state on the base branch, pushes that commit, then removes the
+# worktree and kills the tmux session.
+#
+# Must be run from inside a worktree (under WORKTREES_DIR).
+#
+# Usage:
+#   task-complete
+
+set -eu
+
+REPOS_DIR="${REPOS_DIR:-$HOME/repos}"
+WORKTREES_DIR="${WORKTREES_DIR:-$REPOS_DIR/worktrees}"
+
+usage() {
+    cat <<EOF
+Usage: task-complete [options]
+
+Finish the current worktree-based task. Run from inside the worktree.
+
+Checks:
+    - Working tree is clean (no uncommitted changes)
+    - Branch is pushed upstream (no unpushed commits)
+
+Actions:
+    - Reverts plan.md to its base-branch state and pushes
+    - Removes the worktree
+    - Deletes the local branch
+    - Kills the tmux session
+    - Leaves the remote branch for the MR
+
+Options:
+    -h, --help    Show this help
+EOF
+}
+
+die() { echo "task-complete: $*" >&2; exit 1; }
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+# --- Detect worktree context ---
+
+worktree_path=$(git rev-parse --show-toplevel 2>/dev/null) || die "not inside a git repository"
+
+case "$worktree_path" in
+    "$WORKTREES_DIR"/*) ;;
+    *) die "not inside a worktree (expected path under $WORKTREES_DIR)" ;;
+esac
+
+worktree_name=$(basename "$worktree_path")
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || die "cannot determine current branch"
+
+# Find the main repo
+main_repo=$(git worktree list --porcelain | awk '/^worktree / { path=$2 } /^bare$|^branch refs\/heads\/(main|master)$/ { if (path) print path }' | head -1)
+if [[ -z "$main_repo" ]]; then
+    main_repo=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+fi
+
+# --- Determine base branch ---
+
+cd "$worktree_path"
+
+base_branch=""
+if git show-ref --verify --quiet refs/remotes/origin/main 2>/dev/null; then
+    base_branch="main"
+elif git show-ref --verify --quiet refs/remotes/origin/master 2>/dev/null; then
+    base_branch="master"
+else
+    base_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || true)
+fi
+
+[[ -n "$base_branch" ]] || die "cannot determine base branch"
+
+# --- Pre-flight checks ---
+
+# Check for uncommitted changes
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    die "uncommitted changes — commit or stash before completing"
+fi
+
+# Check for untracked files (excluding plan.md which we'll handle)
+untracked=$(git ls-files --others --exclude-standard)
+if [[ -n "$untracked" ]]; then
+    echo "task-complete: untracked files present:" >&2
+    echo "$untracked" >&2
+    exit 1
+fi
+
+# Check branch is pushed
+git fetch origin --quiet 2>/dev/null || true
+
+local_sha=$(git rev-parse HEAD)
+remote_sha=""
+if git show-ref --verify --quiet "refs/remotes/origin/$branch" 2>/dev/null; then
+    remote_sha=$(git rev-parse "origin/$branch")
+fi
+
+if [[ -z "$remote_sha" ]]; then
+    die "branch '$branch' has not been pushed upstream"
+fi
+
+if [[ "$local_sha" != "$remote_sha" ]]; then
+    die "local branch is ahead of origin/$branch — push first"
+fi
+
+# --- Revert plan.md to base branch state ---
+
+if git show "origin/$base_branch:plan.md" >/dev/null 2>&1; then
+    # plan.md exists on base branch — restore it
+    git checkout "origin/$base_branch" -- plan.md 2>/dev/null
+    if ! git diff --quiet -- plan.md; then
+        git add plan.md
+        git commit -m "Revert plan.md to $base_branch state"
+        git push origin "$branch"
+        echo "Reverted plan.md to $base_branch state."
+    fi
+elif git ls-files --error-unmatch plan.md >/dev/null 2>&1; then
+    # plan.md doesn't exist on base branch but exists here — remove it
+    git rm plan.md
+    git commit -m "Remove task-scoped plan.md"
+    git push origin "$branch"
+    echo "Removed task-scoped plan.md."
+fi
+
+# --- Clean up ---
+
+# Move out of the worktree
+cd "$REPOS_DIR"
+
+# Kill tmux session
+if tmux has-session -t "$worktree_name" 2>/dev/null; then
+    tmux kill-session -t "$worktree_name"
+    echo "Killed session: $worktree_name"
+fi
+
+# Remove worktree
+git -C "$main_repo" worktree remove --force "$worktree_path" 2>/dev/null \
+    || rm -rf "$worktree_path"
+echo "Removed worktree: $worktree_path"
+
+# Delete local branch
+git -C "$main_repo" branch -D "$branch" 2>/dev/null \
+    && echo "Deleted local branch: $branch" \
+    || echo "Could not delete local branch: $branch (may already be gone)"
+
+echo ""
+echo "Task complete. Remote branch '$branch' kept for the MR."

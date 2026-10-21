@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+#
+# tml - pretty tmux session list.
+#
+# Shows sessions with window count, attached status, age, and
+# the working directory of the active pane.
+#
+# Usage:
+#   tml            Pretty list
+#   tml --json     JSON array (requires jq):
+#                  [{"name", "windows", "attached", "current", "age_seconds",
+#                    "dir", "branch"}]
+
+set -eu
+
+json=false
+for arg in "$@"; do
+    case "$arg" in
+        --json)    json=true ;;
+        -h|--help) sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *)         echo "tml: unknown option: $arg" >&2; exit 1 ;;
+    esac
+done
+
+if [[ "$json" = true ]]; then
+    command -v jq >/dev/null || { echo "tml: --json requires jq" >&2; exit 1; }
+fi
+
+if ! tmux list-sessions &>/dev/null; then
+    if [[ "$json" = true ]]; then
+        echo "[]"
+    else
+        echo "No tmux server running."
+    fi
+    exit 0
+fi
+
+current=""
+if [[ -n "${TMUX:-}" ]]; then
+    current="$(tmux display-message -p '#S')"
+fi
+
+names=()
+windows=()
+attached=()
+ages=()
+created_at=()
+dirs=()
+branches=()
+max_name=0
+max_win=0
+max_age=0
+
+now=$(date +%s)
+
+human_age() {
+    local secs=$1
+    if (( secs < 60 )); then
+        echo "${secs}s"
+    elif (( secs < 3600 )); then
+        echo "$(( secs / 60 ))m"
+    elif (( secs < 86400 )); then
+        echo "$(( secs / 3600 ))h"
+    else
+        echo "$(( secs / 86400 ))d"
+    fi
+}
+
+while IFS=$'\t' read -r name nwin is_attached created pane_path; do
+    names+=("$name")
+    windows+=("$nwin")
+    attached+=("$is_attached")
+
+    age=$(human_age $(( now - created )))
+    ages+=("$age")
+    created_at+=("$created")
+
+    pane_path="${pane_path/$HOME/\~}"
+    dirs+=("$pane_path")
+
+    branch=""
+    expanded="${pane_path/#\~/$HOME}"
+    if [[ -d "$expanded/.git" ]] || git -C "$expanded" rev-parse --git-dir &>/dev/null; then
+        branch=$(git -C "$expanded" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+    fi
+    branches+=("$branch")
+
+    (( ${#name} > max_name )) && max_name=${#name}
+    win_label="${nwin}w"
+    (( ${#win_label} > max_win )) && max_win=${#win_label}
+    (( ${#age} > max_age )) && max_age=${#age}
+done < <(tmux list-sessions -F '#{session_name}	#{session_windows}	#{session_attached}	#{session_created}	#{pane_current_path}')
+
+order=()
+for i in "${!names[@]}"; do
+    if [[ "${names[$i]}" = "$current" ]]; then
+        order=("$i" "${order[@]}")
+    elif [[ "${attached[$i]}" != "0" ]]; then
+        order+=("$i")
+    fi
+done
+for i in "${!names[@]}"; do
+    [[ "${names[$i]}" != "$current" && "${attached[$i]}" = "0" ]] && order+=("$i")
+done
+
+if [[ "$json" = true ]]; then
+    for i in "${order[@]}"; do
+        jq -nc \
+            --arg name "${names[$i]}" \
+            --argjson windows "${windows[$i]}" \
+            --argjson attached "${attached[$i]}" \
+            --argjson current "$([[ "${names[$i]}" = "$current" ]] && echo true || echo false)" \
+            --argjson age "$(( now - created_at[i] ))" \
+            --arg dir "${dirs[$i]/#\~/$HOME}" \
+            --arg branch "${branches[$i]}" \
+            '{name: $name, windows: $windows, attached: $attached, current: $current,
+              age_seconds: $age, dir: $dir, branch: (if $branch == "" then null else $branch end)}'
+    done | jq -s .
+    exit 0
+fi
+
+for i in "${order[@]}"; do
+    name="${names[$i]}"
+    nwin="${windows[$i]}w"
+    is_attached="${attached[$i]}"
+    age="${ages[$i]}"
+    dir="${dirs[$i]}"
+    branch="${branches[$i]}"
+
+    if [[ "$name" = "$current" ]]; then
+        name_fmt="\033[97;42m"
+        att_fmt="\033[32m+\033[0m"
+    elif [[ "$is_attached" != "0" ]]; then
+        name_fmt="\033[97;44m"
+        att_fmt="\033[34m+\033[0m"
+    else
+        name_fmt="\033[97;48;5;240m"
+        att_fmt="\033[38;5;245m-\033[0m"
+    fi
+
+    branch_fmt=""
+    if [[ -n "$branch" ]]; then
+        if [[ "$branch" == "main" || "$branch" == "master" ]]; then
+            branch_fmt="\033[38;5;245m$branch\033[0m"
+        else
+            branch_fmt="\033[1;33m$branch\033[0m"
+        fi
+    fi
+
+    printf " %b %-${max_name}s \033[0m  \033[36m%-${max_win}s\033[0m %b \033[38;5;248m%${max_age}s\033[0m" \
+        "$name_fmt" "$name" "$nwin" "$att_fmt" "$age"
+    if [[ -n "$branch_fmt" ]]; then
+        printf "  %b" "$branch_fmt"
+    fi
+    printf "  \033[38;5;248m%s\033[0m\n" "$dir"
+done

@@ -1,0 +1,351 @@
+#!/usr/bin/env bash
+#
+# tasks - show all projects, worktrees, and sessions.
+#
+# By default prints a static table grouped by type with branch, git
+# status, and plan summary. With --choose, opens an fzf picker to
+# switch to or open a project.
+#
+# Requires fzf for --choose. Popup mode requires tmux 3.2+.
+#
+# Usage:
+#   tasks              # list everything
+#   tasks --choose     # interactive picker
+#   tasks -c           # short form
+#   tasks --json       # JSON array (requires jq):
+#                      # [{"name", "type", "path", "branch", "status", "plan",
+#                      #   "current"}]; type is session|worktree|repo
+
+set -eu
+
+REPOS_DIR="${REPOS_DIR:-$HOME/repos}"
+WORKTREES_DIR="${WORKTREES_DIR:-$REPOS_DIR/worktrees}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+OPEN_PROJECT="$SCRIPT_DIR/open-project"
+TMUX_SESSION="$SCRIPT_DIR/tmux-session"
+IN_TMUX="${TMUX:-}"
+
+usage() {
+    cat <<EOF
+Usage: tasks [options]
+
+Show all projects, worktrees, and sessions.
+
+Options:
+    -c, --choose    Interactive fzf picker to switch/open
+    --json          Machine-readable JSON output (requires jq)
+    -h, --help      Show this help
+EOF
+}
+
+choose_mode=false
+json_mode=false
+for arg in "$@"; do
+    case "$arg" in
+        -h|--help)   usage; exit 0 ;;
+        -c|--choose) choose_mode=true ;;
+        --json)      json_mode=true ;;
+        *)           echo "tasks: unknown option: $arg" >&2; exit 1 ;;
+    esac
+done
+
+if [[ "$json_mode" = true ]]; then
+    [[ "$choose_mode" = true ]] && { echo "tasks: --json cannot be combined with --choose" >&2; exit 1; }
+    command -v jq >/dev/null || { echo "tasks: --json requires jq" >&2; exit 1; }
+fi
+
+# ============================================================
+# Collect entries
+# ============================================================
+
+all_names=()
+all_paths=()
+all_types=()
+
+# --- Active tmux sessions ---
+
+active_paths=()
+CURRENT=""
+if tmux list-sessions &>/dev/null; then
+    [[ -n "$IN_TMUX" ]] && CURRENT="$(tmux display-message -p '#S')"
+    while IFS=$'\t' read -r name path; do
+        all_names+=("$name")
+        all_paths+=("$path")
+        all_types+=("session")
+        active_paths+=("$path")
+    done < <(tmux list-sessions -F '#{session_name}	#{session_path}')
+fi
+
+# --- Worktrees (without active sessions) ---
+
+if [[ -d "$WORKTREES_DIR" ]]; then
+    for dir in "$WORKTREES_DIR"/*/; do
+        [[ -d "$dir" ]] || continue
+        dir="${dir%/}"
+        [[ -d "$dir/.git" || -f "$dir/.git" ]] || continue
+
+        skip=0
+        for ap in "${active_paths[@]+"${active_paths[@]}"}"; do
+            [[ "$ap" = "$dir" ]] && { skip=1; break; }
+        done
+        [[ $skip -eq 1 ]] && continue
+
+        all_names+=("$(basename "$dir")")
+        all_paths+=("$dir")
+        all_types+=("worktree")
+    done
+fi
+
+# --- Repos (without active sessions, skip worktrees dir) ---
+
+if [[ -d "$REPOS_DIR" ]]; then
+    for dir in "$REPOS_DIR"/*/; do
+        [[ -d "$dir" ]] || continue
+        dir="${dir%/}"
+        [[ "$dir" = "$WORKTREES_DIR" ]] && continue
+
+        skip=0
+        for ap in "${active_paths[@]+"${active_paths[@]}"}"; do
+            [[ "$ap" = "$dir" ]] && { skip=1; break; }
+        done
+        [[ $skip -eq 1 ]] && continue
+
+        all_names+=("$(basename "$dir")")
+        all_paths+=("$dir")
+        all_types+=("repo")
+    done
+fi
+
+if [[ ${#all_names[@]} -eq 0 ]]; then
+    if [[ "$json_mode" = true ]]; then
+        echo "[]"
+    else
+        echo "No projects found."
+    fi
+    exit 0
+fi
+
+# ============================================================
+# Gather metadata
+# ============================================================
+
+git_status() {
+    local dir="$1" branch="$2"
+
+    if ! git -C "$dir" diff --quiet >/dev/null 2>&1 || ! git -C "$dir" diff --cached --quiet >/dev/null 2>&1; then
+        echo "dirty"
+    elif [[ -n "$(git -C "$dir" ls-files --others --exclude-standard 2>/dev/null)" ]]; then
+        echo "untracked"
+    else
+        local local_sha remote_sha
+        local_sha=$(git -C "$dir" rev-parse HEAD 2>/dev/null || echo "")
+        remote_sha=""
+        if git -C "$dir" show-ref --verify --quiet "refs/remotes/origin/$branch" 2>/dev/null; then
+            remote_sha=$(git -C "$dir" rev-parse "origin/$branch" 2>/dev/null || echo "")
+        fi
+        if [[ -z "$remote_sha" ]]; then
+            echo "not pushed"
+        elif [[ "$local_sha" != "$remote_sha" ]]; then
+            echo "unpushed"
+        else
+            echo "clean"
+        fi
+    fi
+}
+
+branches=()
+statuses=()
+onelines=()
+max_name=0
+max_branch=0
+max_status=0
+
+for i in "${!all_names[@]}"; do
+    path="${all_paths[$i]}"
+
+    branch=""
+    status="-"
+    if [[ -d "$path/.git" || -f "$path/.git" ]]; then
+        branch=$(git -C "$path" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+        status=$(git_status "$path" "$branch")
+    fi
+
+    oneline=""
+    if [[ -f "$path/plan.md" ]]; then
+        oneline=$(head -n 1 "$path/plan.md" | sed 's/^#\+ *//')
+    fi
+
+    branches+=("$branch")
+    statuses+=("$status")
+    onelines+=("$oneline")
+
+    [[ ${#all_names[$i]} -gt $max_name ]] && max_name=${#all_names[$i]}
+    [[ ${#branch} -gt $max_branch ]] && max_branch=${#branch}
+    [[ ${#status} -gt $max_status ]] && max_status=${#status}
+done
+
+if [[ "$json_mode" = true ]]; then
+    for i in "${!all_names[@]}"; do
+        jq -nc \
+            --arg name "${all_names[$i]}" \
+            --arg type "${all_types[$i]}" \
+            --arg path "${all_paths[$i]}" \
+            --arg branch "${branches[$i]}" \
+            --arg status "${statuses[$i]}" \
+            --arg plan "${onelines[$i]}" \
+            --argjson current "$([[ "${all_types[$i]}" = session && "${all_names[$i]}" = "$CURRENT" ]] && echo true || echo false)" \
+            '{name: $name, type: $type, path: $path,
+              branch: (if $branch == "" then null else $branch end),
+              status: (if $status == "-" then null else $status end),
+              plan: (if $plan == "" then null else $plan end),
+              current: $current}'
+    done | jq -s .
+    exit 0
+fi
+
+# ============================================================
+# Status colour helper
+# ============================================================
+
+status_color() {
+    case "$1" in
+        clean)        echo "\033[32m" ;;
+        dirty)        echo "\033[31m" ;;
+        untracked)    echo "\033[33m" ;;
+        unpushed)     echo "\033[33m" ;;
+        "not pushed") echo "\033[33m" ;;
+        *)            echo "\033[0m"  ;;
+    esac
+}
+
+# ============================================================
+# List mode (default)
+# ============================================================
+
+if [[ "$choose_mode" != true ]]; then
+    last_type=""
+    for i in "${!all_names[@]}"; do
+        name="${all_names[$i]}"
+        type="${all_types[$i]}"
+        branch="${branches[$i]}"
+        status="${statuses[$i]}"
+        oneline="${onelines[$i]}"
+        sc=$(status_color "$status")
+
+        # Section headers
+        if [[ "$type" != "$last_type" ]]; then
+            [[ -n "$last_type" ]] && echo ""
+            case "$type" in
+                session)  printf "\033[1;37mSessions\033[0m\n" ;;
+                worktree) printf "\033[1;37mWorktrees\033[0m\n" ;;
+                repo)     printf "\033[1;37mRepos\033[0m\n" ;;
+            esac
+            last_type="$type"
+        fi
+
+        # Marker
+        case "$type" in
+            session)
+                if [[ "$name" = "$CURRENT" ]]; then
+                    marker="\033[33m*\033[0m"
+                else
+                    marker=" "
+                fi
+                nc="\033[36m" ;;
+            worktree) marker="\033[32m⚙\033[0m"; nc="\033[32m" ;;
+            repo)     marker=" ";                 nc="\033[34m" ;;
+        esac
+
+        printf "  ${marker} ${nc}%-${max_name}s\033[0m  \033[34m%-${max_branch}s\033[0m  ${sc}%-${max_status}s\033[0m  \033[37m%s\033[0m\n" \
+            "$name" "$branch" "$status" "$oneline"
+    done
+    exit 0
+fi
+
+# ============================================================
+# Choose mode (--choose)
+# ============================================================
+
+ITEMS_FILE="$(mktemp)"
+CHOICE_FILE="$(mktemp)"
+trap 'rm -f "$ITEMS_FILE" "$CHOICE_FILE"' EXIT
+
+for i in "${!all_names[@]}"; do
+    name="${all_names[$i]}"
+    type="${all_types[$i]}"
+    branch="${branches[$i]}"
+    status="${statuses[$i]}"
+    oneline="${onelines[$i]}"
+    sc=$(status_color "$status")
+
+    case "$type" in
+        session)
+            if [[ "$name" = "$CURRENT" ]]; then
+                marker="\033[33m*\033[0m"
+            else
+                marker=" "
+            fi
+            nc="\033[36m"; bc="\033[32m" ;;
+        worktree)
+            marker="\033[32m⚙\033[0m"
+            nc="\033[32m"; bc="\033[32m" ;;
+        repo)
+            marker="\033[34m \033[0m"
+            nc="\033[34m"; bc="\033[34m" ;;
+    esac
+
+    printf "${marker}  ${nc}%-${max_name}s\033[0m  ${bc}%-${max_branch}s\033[0m  ${sc}%-${max_status}s\033[0m  \033[37m%s\033[0m\t${type}:${name}:${all_paths[$i]}\n" \
+        "$name" "$branch" "$status" "$oneline" >> "$ITEMS_FILE"
+done
+
+FZF_OPTS=(
+    --ansi
+    --no-info
+    --no-header
+    --reverse
+    --color='fg:white,fg+:white,bg+:black,pointer:cyan,prompt:cyan'
+    --prompt='  switch to: '
+    --pointer='▸'
+    --margin=1,2
+    --delimiter=$'\t'
+    --with-nth=1
+)
+
+if [[ -n "$IN_TMUX" ]]; then
+    FZF_BIN="$(which fzf)"
+    tmux display-popup -E -w 80% -h 50% -- sh -c \
+        "cat '$ITEMS_FILE' | '$FZF_BIN' \
+          --ansi \
+          --no-info \
+          --no-header \
+          --reverse \
+          --color='fg:white,fg+:white,bg+:black,pointer:cyan,prompt:cyan' \
+          --prompt='  switch to: ' \
+          --pointer='▸' \
+          --margin=1,2 \
+          --delimiter='	' \
+          --with-nth=1 \
+        > '$CHOICE_FILE' || true"
+else
+    fzf "${FZF_OPTS[@]}" < "$ITEMS_FILE" > "$CHOICE_FILE" || true
+fi
+
+if [[ -s "$CHOICE_FILE" ]]; then
+    CHOICE="$(awk -F'\t' '{print $NF}' < "$CHOICE_FILE")"
+    TYPE="${CHOICE%%:*}"
+    REST="${CHOICE#*:}"
+    NAME="${REST%%:*}"
+    PATH_="${REST#*:}"
+
+    if [[ "$TYPE" = "session" ]]; then
+        if [[ -n "$IN_TMUX" ]]; then
+            tmux switch-client -t "$NAME"
+        else
+            tmux attach -d -t "$NAME"
+        fi
+    elif [[ "$TYPE" = "worktree" ]]; then
+        "$TMUX_SESSION" "$NAME" "$PATH_"
+    elif [[ "$TYPE" = "repo" ]]; then
+        "$OPEN_PROJECT" "$NAME"
+    fi
+fi

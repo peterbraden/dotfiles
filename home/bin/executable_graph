@@ -1,0 +1,470 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "plotext==5.2.8",
+#     "matplotlib",
+# ]
+# ///
+"""
+graph - Plot data in the terminal or save to a PNG file.
+
+Usage:
+    graph <type> [values...] [options]
+    <cmd> | graph <type> [options]
+
+Types:
+    bar       Bar chart from y-values
+    line      Line chart from y-values or x,y pairs
+    scatter   Scatter plot from x,y pairs
+    hist      Histogram of raw values
+    pie       Pie chart from y-values (terminal falls back to bar)
+
+Data formats:
+    Plain y-values:  graph bar 10 20 30 40
+    x,y pairs:       graph scatter 1,2 3,4 5,1
+    Stdin:           echo "1,2 3,4 5,1" | graph scatter
+                     seq 20 | graph hist
+
+Examples:
+    graph bar 1 2 3 4
+    graph bar --labels Q1,Q2,Q3,Q4 10 20 30 40
+    graph line 1 4 9 16 25
+    graph line 0,0 1,1 2,4 3,9
+    graph scatter 1,2 3,4 5,1 7,3
+    echo "1,3 2,2 3,1 4,0" | graph scatter
+    seq 1 20 | graph hist
+    graph pie --labels Cats,Dogs,Fish 45 35 20
+    graph bar --out chart.png --title "Sales 2024" 10 20 15 30
+    graph line --xlabel Month --ylabel Revenue 10 20 15 30
+"""
+
+import argparse
+import doctest
+import math
+import sys
+from typing import Optional
+
+
+# ---------------------------------------------------------------------------
+# Data parsing
+# ---------------------------------------------------------------------------
+
+def parse_floats(tokens: list[str]) -> list[float]:
+    """Parse a list of string tokens into floats.
+
+    >>> parse_floats(["1", "2", "3"])
+    [1.0, 2.0, 3.0]
+    >>> parse_floats(["3.14", "-1.5", "0"])
+    [3.14, -1.5, 0.0]
+    >>> parse_floats(["-10", "0", "10"])
+    [-10.0, 0.0, 10.0]
+    >>> parse_floats([])
+    []
+    """
+    return [float(t) for t in tokens]
+
+
+def is_xy_token(token: str) -> bool:
+    """Return True if a token looks like an "x,y" numeric pair.
+
+    >>> is_xy_token("1,2")
+    True
+    >>> is_xy_token("3.5,-1.0")
+    True
+    >>> is_xy_token("-2.5,0")
+    True
+    >>> is_xy_token("42")
+    False
+    >>> is_xy_token("hello")
+    False
+    >>> is_xy_token(",2")
+    False
+    >>> is_xy_token("1,")
+    False
+    >>> is_xy_token("1,2,3")
+    False
+    >>> is_xy_token("")
+    False
+    """
+    parts = token.split(",")
+    if len(parts) != 2:
+        return False
+    a, b = parts
+    if not a or not b:
+        return False
+    try:
+        float(a)
+        float(b)
+        return True
+    except ValueError:
+        return False
+
+
+def parse_xy_pairs(tokens: list[str]) -> tuple[list[float], list[float]]:
+    """Parse "x,y" tokens into two parallel lists.
+
+    >>> parse_xy_pairs(["1,2", "3,4", "5,6"])
+    ([1.0, 3.0, 5.0], [2.0, 4.0, 6.0])
+    >>> parse_xy_pairs(["0,0", "-1,3.5"])
+    ([0.0, -1.0], [0.0, 3.5])
+    >>> parse_xy_pairs(["-2,-3", "0,0", "2,3"])
+    ([-2.0, 0.0, 2.0], [-3.0, 0.0, 3.0])
+    >>> parse_xy_pairs([])
+    ([], [])
+    """
+    xs: list[float] = []
+    ys: list[float] = []
+    for t in tokens:
+        x, y = t.split(",")
+        xs.append(float(x))
+        ys.append(float(y))
+    return xs, ys
+
+
+def infer_xy(tokens: list[str]) -> bool:
+    """Return True if the majority of tokens look like x,y pairs.
+
+    >>> infer_xy(["1,2", "3,4", "5,6"])
+    True
+    >>> infer_xy(["1", "2", "3"])
+    False
+    >>> infer_xy([])
+    False
+    >>> infer_xy(["1,2"])
+    True
+    >>> infer_xy(["42"])
+    False
+    >>> infer_xy(["1,2", "bad", "3,4"])
+    True
+    >>> infer_xy(["1", "2", "3,4"])
+    False
+    """
+    if not tokens:
+        return False
+    xy_count = sum(1 for t in tokens if is_xy_token(t))
+    return xy_count / len(tokens) > 0.5
+
+
+def parse_labels(text: str) -> list[str]:
+    """Split a comma-separated label string.
+
+    >>> parse_labels("A,B,C")
+    ['A', 'B', 'C']
+    >>> parse_labels("Q1,Q2,Q3,Q4")
+    ['Q1', 'Q2', 'Q3', 'Q4']
+    >>> parse_labels("single")
+    ['single']
+    >>> parse_labels("Cats,Dogs,Fish")
+    ['Cats', 'Dogs', 'Fish']
+    """
+    return text.split(",")
+
+
+def auto_labels(n: int) -> list[str]:
+    """Generate default 1-based numeric labels for n items.
+
+    >>> auto_labels(4)
+    ['1', '2', '3', '4']
+    >>> auto_labels(1)
+    ['1']
+    >>> auto_labels(0)
+    []
+    """
+    return [str(i) for i in range(1, n + 1)]
+
+
+def ideal_bins(n: int) -> int:
+    """Sturges-like bin count clamped to a readable range.
+
+    >>> ideal_bins(10)
+    5
+    >>> ideal_bins(100)
+    8
+    >>> ideal_bins(1000)
+    11
+    >>> ideal_bins(1)
+    5
+    """
+    return max(5, min(20, int(math.ceil(math.log2(n + 1) + 1)))) if n > 1 else 5
+
+
+def read_stdin_tokens() -> list[str]:
+    """Read all of stdin and return whitespace-split tokens."""
+    return sys.stdin.read().split()
+
+
+def collect_tokens(cli_values: list[str]) -> list[str]:
+    """Return CLI values, or stdin tokens when none were given.
+
+    >>> collect_tokens(["1", "2", "3"])
+    ['1', '2', '3']
+    >>> collect_tokens([])  # stdin not read in test context
+    []
+    """
+    if cli_values:
+        return cli_values
+    if not sys.stdin.isatty():
+        return read_stdin_tokens()
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Terminal pie chart (ANSI, no plotext)
+# ---------------------------------------------------------------------------
+
+# Distinct ANSI-256 colors that read well on dark terminals
+_PIE_COLORS = [204, 215, 228, 114, 75, 183, 87, 209, 156, 141]
+
+
+def _bg(color: int, text: str) -> str:
+    return f"\033[48;5;{color}m{text}\033[0m"
+
+
+def _fg(color: int, text: str) -> str:
+    return f"\033[38;5;{color}m{text}\033[0m"
+
+
+def _distribute(fracs: list[float], total: int) -> list[int]:
+    """Distribute `total` slots across fracs using the largest-remainder method.
+
+    >>> _distribute([0.5, 0.3, 0.2], 10)
+    [5, 3, 2]
+    >>> _distribute([1.0], 7)
+    [7]
+    >>> sum(_distribute([0.45, 0.35, 0.20], 20))
+    20
+    >>> _distribute([0.0, 1.0], 8)
+    [0, 8]
+    """
+    raw = [f * total for f in fracs]
+    floors = [int(r) for r in raw]
+    deficit = total - sum(floors)
+    remainders = sorted(range(len(fracs)), key=lambda i: -(raw[i] - floors[i]))
+    for i in remainders[:deficit]:
+        floors[i] += 1
+    return floors
+
+
+def render_terminal_pie(
+    ys: list[float],
+    labels: Optional[list[str]] = None,
+    title: Optional[str] = None,
+    width: Optional[int] = None,
+) -> None:
+    import shutil
+
+    total = sum(ys)
+    if total == 0:
+        print("all values are zero", file=sys.stderr)
+        return
+
+    cols = (width or shutil.get_terminal_size().columns) - 4
+    lb = labels or auto_labels(len(ys))
+    fracs = [y / total for y in ys]
+    widths = _distribute(fracs, cols)
+    indent = "  "
+
+    # Title
+    if title:
+        print()
+        print(f"{indent}{title}")
+        print(f"{indent}\033[2m{'─' * min(len(title), cols)}\033[0m")
+
+    # Stacked bar — 3 rows for visual weight
+    bar_line = indent + "".join(
+        _bg(_PIE_COLORS[i % len(_PIE_COLORS)], " " * max(1, w))
+        for i, w in enumerate(widths)
+    )
+    print()
+    for _ in range(3):
+        print(bar_line)
+    print()
+
+    # Legend: swatch · label · mini-bar · percentage · value
+    max_lbl = max(len(l) for l in lb)
+    mini_w = 20
+    for i, (y, label, frac) in enumerate(zip(ys, lb, fracs)):
+        color = _PIE_COLORS[i % len(_PIE_COLORS)]
+        swatch = _bg(color, "  ")
+        pct = frac * 100
+        n = max(1, round(frac * mini_w))
+        mini = _fg(color, "█" * n) + " " * (mini_w - n)
+        val = f"\033[2m({y:g})\033[0m"
+        print(f"{indent}{swatch}  {label:<{max_lbl}}  {mini}  {pct:5.1f}%  {val}")
+    print()
+
+
+# ---------------------------------------------------------------------------
+# Terminal rendering
+# ---------------------------------------------------------------------------
+
+def render_terminal(
+    chart_type: str,
+    xs: list[float],
+    ys: list[float],
+    labels: Optional[list[str]] = None,
+    title: Optional[str] = None,
+    xlabel: Optional[str] = None,
+    ylabel: Optional[str] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+) -> None:
+    import plotext as plt
+
+    plt.clf()
+    plt.theme("clear")
+    if width or height:
+        plt.plotsize(width or plt.terminal_width(), height or 24)
+    if title:
+        plt.title(title)
+    if xlabel:
+        plt.xlabel(xlabel)
+    if ylabel:
+        plt.ylabel(ylabel)
+
+    lb = labels or auto_labels(len(ys))
+
+    if chart_type == "bar":
+        plt.bar(lb, ys)
+    elif chart_type == "line":
+        plt.plot(xs, ys)
+    elif chart_type == "scatter":
+        plt.scatter(xs, ys)
+    elif chart_type == "hist":
+        plt.hist(ys, bins=ideal_bins(len(ys)))
+    elif chart_type == "pie":
+        render_terminal_pie(ys, labels=labels, title=title, width=width)
+        return
+
+    plt.show()
+
+
+# ---------------------------------------------------------------------------
+# PNG rendering
+# ---------------------------------------------------------------------------
+
+def render_png(
+    chart_type: str,
+    xs: list[float],
+    ys: list[float],
+    out_path: str,
+    labels: Optional[list[str]] = None,
+    title: Optional[str] = None,
+    xlabel: Optional[str] = None,
+    ylabel: Optional[str] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+) -> None:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    w_in = (width or 900) / 100
+    h_in = (height or 560) / 100
+    fig, ax = plt.subplots(figsize=(w_in, h_in))
+
+    if title:
+        ax.set_title(title)
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+
+    lb = labels or auto_labels(len(ys))
+
+    if chart_type == "bar":
+        ax.bar(lb, ys)
+        ax.set_xticks(range(len(lb)))
+        ax.set_xticklabels(lb, rotation=30 if max(len(s) for s in lb) > 5 else 0,
+                           ha="right" if max(len(s) for s in lb) > 5 else "center")
+    elif chart_type == "line":
+        ax.plot(xs, ys, marker="o", markersize=4)
+    elif chart_type == "scatter":
+        ax.scatter(xs, ys, alpha=0.7)
+    elif chart_type == "hist":
+        ax.hist(ys, bins=ideal_bins(len(ys)), edgecolor="white", linewidth=0.5)
+    elif chart_type == "pie":
+        ax.pie(ys, labels=lb, autopct="%1.1f%%", startangle=90)
+        ax.axis("equal")
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=100)
+    print(f"Saved {out_path}", file=sys.stderr)
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+CHART_TYPES = ("bar", "line", "scatter", "hist", "pie")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="graph",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument("type", choices=CHART_TYPES, metavar="TYPE", nargs="?",
+                   help=f"Chart type: {', '.join(CHART_TYPES)}")
+    p.add_argument("values", nargs="*", metavar="VALUE",
+                   help="Data values. Omit to read from stdin.")
+    p.add_argument("-o", "--out", metavar="FILE",
+                   help="Save as PNG (default: render in terminal)")
+    p.add_argument("-t", "--title", metavar="TEXT")
+    p.add_argument("-l", "--labels", metavar="A,B,C",
+                   help="Comma-separated category labels")
+    p.add_argument("-x", "--xlabel", metavar="TEXT")
+    p.add_argument("-y", "--ylabel", metavar="TEXT")
+    p.add_argument("-W", "--width", type=int, metavar="N",
+                   help="Width in chars (terminal) or pixels (PNG)")
+    p.add_argument("-H", "--height", type=int, metavar="N",
+                   help="Height in chars (terminal) or pixels (PNG)")
+    p.add_argument("--test", action="store_true",
+                   help="Run doctests and exit")
+    return p
+
+
+def main(argv: Optional[list[str]] = None) -> None:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    if args.test:
+        results = doctest.testmod(verbose=True)
+        sys.exit(0 if results.failed == 0 else 1)
+
+    if not args.type:
+        parser.error(f"TYPE is required: {', '.join(CHART_TYPES)}")
+
+    tokens = collect_tokens(args.values)
+    if not tokens:
+        parser.error("No data provided — pass values as arguments or pipe to stdin.")
+
+    labels = parse_labels(args.labels) if args.labels else None
+
+    # Detect x,y pairs vs plain y-values
+    use_xy = args.type in ("scatter",) or infer_xy(tokens)
+    if use_xy:
+        xs, ys = parse_xy_pairs(tokens)
+    else:
+        ys = parse_floats(tokens)
+        xs = list(range(len(ys)))
+
+    chart_kwargs: dict = dict(
+        labels=labels,
+        title=args.title,
+        xlabel=args.xlabel,
+        ylabel=args.ylabel,
+        width=args.width,
+        height=args.height,
+    )
+
+    if args.out:
+        render_png(args.type, xs, ys, out_path=args.out, **chart_kwargs)
+    else:
+        render_terminal(args.type, xs, ys, **chart_kwargs)
+
+
+if __name__ == "__main__":
+    main()

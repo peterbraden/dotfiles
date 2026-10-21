@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+#
+# tmux-session - start or attach to a tmux session for a directory.
+#
+# Creates a session with 3 windows if it doesn't exist, then attaches.
+# Uses switch-client when already inside tmux to avoid nesting.
+#
+# Usage:
+#   tmux-session <name> <directory>
+#   tmux-session <name> <directory> --no-attach   # create but don't attach
+
+set -eu
+
+usage() {
+    echo "Usage: tmux-session <name> <directory> [--no-attach]"
+}
+
+die() { echo "tmux-session: $*" >&2; exit 1; }
+
+for arg in "$@"; do
+    case "$arg" in -h|--help) usage; exit 0 ;; esac
+done
+
+[[ $# -lt 2 ]] && { usage >&2; exit 1; }
+
+SESSION="$1"
+DIRECTORY="$2"
+NO_ATTACH=false
+
+if [[ "${3:-}" == "--no-attach" ]]; then
+    NO_ATTACH=true
+fi
+
+# Sanitise session name (tmux doesn't like dots)
+SESSION="${SESSION//./-}"
+
+[[ -d "$DIRECTORY" ]] || die "directory does not exist: $DIRECTORY"
+
+# Reattach if session already exists
+if tmux has-session -t "$SESSION" 2>/dev/null; then
+    if [[ "$NO_ATTACH" == true ]]; then
+        exit 0
+    fi
+    if [[ -n "${TMUX:-}" ]]; then
+        tmux switch-client -t "$SESSION"
+    else
+        tmux attach-session -t "$SESSION"
+    fi
+    exit 0
+fi
+
+# Create session with 3 windows
+tmux new-session -d -s "$SESSION" -c "$DIRECTORY"
+tmux new-window -t "$SESSION:1" -c "$DIRECTORY"
+tmux new-window -t "$SESSION:2" -c "$DIRECTORY"
+tmux select-window -t "$SESSION:0"
+
+if [[ "$NO_ATTACH" == true ]]; then
+    exit 0
+fi
+
+if [[ -n "${TMUX:-}" ]]; then
+    tmux switch-client -t "$SESSION"
+else
+    tmux attach-session -t "$SESSION"
+fi

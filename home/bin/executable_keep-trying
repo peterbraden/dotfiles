@@ -2,7 +2,6 @@
 # Usage: ./keep-trying [--sleep SECONDS] <command...>
 
 SLEEP_DURATION=1  # Default sleep duration
-POSITIONAL=()
 
 # Parse optional --sleep argument
 while [[ $# -gt 0 ]]; do
@@ -24,14 +23,13 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
         *)
-            POSITIONAL+=("$1")
-            shift
+            break   # first non-option: the command starts here
             ;;
     esac
 done
 
 # Remaining args are the command
-CMD=("${POSITIONAL[@]}")
+CMD=("$@")
 
 # Validate command presence
 if [ "${#CMD[@]}" -eq 0 ]; then

@@ -1,0 +1,249 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "rich",
+# ]
+# ///
+"""
+running-agents - unified view of all running AI agents.
+
+Aggregates output from claude-agents and copilot-agents into a single
+tree. Each source is gathered in parallel for speed.
+
+Usage:
+    running-agents              Show all running agents
+    running-agents -a           Include stale/dead entries
+    running-agents --json       Machine-readable JSON output
+    running-agents -w           Watch mode (refresh every 10s)
+    running-agents -w -i 30    Watch with custom interval
+"""
+
+import argparse
+import json
+import os
+import signal
+import subprocess
+import sys
+import time
+
+from rich.console import Console
+from rich.live import Live
+from rich.text import Text
+from rich.tree import Tree
+
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+SOURCES = [
+    {"key": "claude", "label": "Claude Code", "cmd": "claude-agents"},
+    {"key": "copilot", "label": "GitHub Copilot", "cmd": "copilot-agents"},
+]
+
+
+def gather_source(src: dict, show_all: bool) -> list[dict] | None:
+    cmd = [os.path.join(SCRIPT_DIR, src["cmd"]), "--json"]
+    if show_all:
+        cmd.append("--all")
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if r.returncode != 0:
+            return None
+        return json.loads(r.stdout)
+    except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def gather_all(show_all: bool) -> dict[str, list[dict] | None]:
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    results = {}
+    with ThreadPoolExecutor(max_workers=len(SOURCES)) as pool:
+        futures = {
+            pool.submit(gather_source, src, show_all): src["key"]
+            for src in SOURCES
+        }
+        for f in as_completed(futures):
+            results[futures[f]] = f.result()
+    return results
+
+
+def status_style(st: str) -> str:
+    return {
+        "busy": "yellow",
+        "idle": "green",
+        "running": "yellow",
+        "assigned": "blue",
+        "done": "dim",
+        "stale": "dim",
+        "dead": "dim",
+    }.get(st, "")
+
+
+def age_ms(epoch_ms: int) -> str:
+    seconds = int(time.time() - epoch_ms / 1000)
+    if seconds < 0:
+        return "-"
+    if seconds < 60:
+        return f"{seconds}s"
+    if seconds < 3600:
+        return f"{seconds // 60}m"
+    if seconds < 86400:
+        return f"{seconds // 3600}h"
+    return f"{seconds // 86400}d"
+
+
+def age_iso(iso: str) -> str:
+    if not iso:
+        return "-"
+    from datetime import datetime, timezone
+    try:
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        seconds = int((datetime.now(timezone.utc) - dt).total_seconds())
+        if seconds < 0:
+            return "-"
+        if seconds < 60:
+            return f"{seconds}s"
+        if seconds < 3600:
+            return f"{seconds // 60}m"
+        if seconds < 86400:
+            return f"{seconds // 3600}h"
+        return f"{seconds // 86400}d"
+    except Exception:
+        return "-"
+
+
+def short_cwd(cwd: str) -> str:
+    from pathlib import Path
+    home = str(Path.home())
+    if cwd.startswith(home):
+        return "~" + cwd[len(home):]
+    return cwd
+
+
+def build_claude_branch(branch: Tree, agents: list[dict]) -> int:
+    count = 0
+    for s in agents:
+        alive = s.get("alive", False)
+        name = s.get("name", "-")
+        st = s.get("status", "unknown") if alive else "dead"
+        cwd = short_cwd(s.get("cwd", "-"))
+        tmux = s.get("tmux", "")
+        started = age_ms(s.get("startedAt", 0))
+
+        label = Text()
+        style = "dim" if not alive else ""
+        label.append(name, style="bold " + style)
+        label.append(f"  {st}", style=status_style(st))
+        label.append(f"  {cwd}", style=style or "cyan")
+        if tmux:
+            label.append(f"  tmux:{tmux}", style="dim")
+        label.append(f"  {started}", style="dim")
+
+        session_branch = branch.add(label)
+        if alive:
+            count += 1
+
+        subagents = s.get("subagents", [])
+        running_subs = [a for a in subagents if a.get("status") == "running"]
+        done_subs = [a for a in subagents if a.get("status") != "running"]
+
+        for a in running_subs:
+            a_label = Text()
+            a_label.append(a.get("name") or a.get("id", "?"), style="bold")
+            a_label.append("  running", style="yellow")
+            a_label.append(f"  [{a.get('type', '-')}]", style="dim")
+            if a.get("worktree"):
+                a_label.append("  worktree", style="dim italic")
+            if a.get("description"):
+                a_label.append(f"  {a['description']}")
+            session_branch.add(a_label)
+            count += 1
+
+        if done_subs:
+            session_branch.add(Text(f"({len(done_subs)} completed)", style="dim"))
+
+    return count
+
+
+def build_copilot_branch(branch: Tree, agents: list[dict]) -> int:
+    count = 0
+    for a in agents:
+        st = a.get("status", "unknown")
+        label = Text()
+        label.append(f"{a.get('repository', '?')}#{a.get('number', '?')}", style="bold" if st != "stale" else "dim")
+        label.append(f"  {st}", style=status_style(st))
+        label.append(f"  [{a.get('kind', '-')}]", style="dim")
+        label.append(f"  {a.get('name', '')}", style="" if st != "stale" else "dim")
+        if a.get("branch"):
+            label.append(f"  {a['branch']}", style="dim italic")
+        label.append(f"  {age_iso(a.get('updatedAt', ''))}", style="dim")
+        branch.add(label)
+        if st not in ("stale", "done"):
+            count += 1
+    return count
+
+
+def build_tree(data: dict[str, list[dict] | None]) -> Tree | Text:
+    total = 0
+
+    tree = Tree(Text("Running Agents", style="bold"))
+
+    for src in SOURCES:
+        agents = data.get(src["key"])
+        if agents is None:
+            branch = tree.add(Text(f"{src['label']}  ", style="bold") + Text("unavailable", style="red"))
+            continue
+        if not agents:
+            branch = tree.add(Text(f"{src['label']}  ", style="bold") + Text("none", style="dim"))
+            continue
+
+        branch = tree.add(Text(src["label"], style="bold"))
+        if src["key"] == "claude":
+            total += build_claude_branch(branch, agents)
+        elif src["key"] == "copilot":
+            total += build_copilot_branch(branch, agents)
+
+    tree.label = Text(f"Running Agents  ({total} active)", style="bold")
+    return tree
+
+
+def build_json(data: dict[str, list[dict] | None]) -> dict:
+    return {
+        src["key"]: data.get(src["key"]) or []
+        for src in SOURCES
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Unified view of all running AI agents")
+    parser.add_argument("-a", "--all", action="store_true", dest="show_all",
+                        help="Include stale/dead entries")
+    parser.add_argument("-j", "--json", action="store_true",
+                        help="Machine-readable JSON output")
+    parser.add_argument("-w", "--watch", action="store_true", help="Watch mode")
+    parser.add_argument("-i", "--interval", type=int, default=10,
+                        help="Refresh interval in seconds")
+    args = parser.parse_args()
+
+    if args.json:
+        data = gather_all(args.show_all)
+        json.dump(build_json(data), sys.stdout, indent=2)
+        sys.stdout.write("\n")
+        return
+
+    console = Console()
+
+    if args.watch:
+        with Live(console=console, refresh_per_second=1) as live:
+            while True:
+                data = gather_all(args.show_all)
+                live.update(build_tree(data))
+                time.sleep(args.interval)
+    else:
+        data = gather_all(args.show_all)
+        console.print(build_tree(data))
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+    main()

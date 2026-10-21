@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# plan-plan-render - renders plan.md with ANSI colouring, refreshing on change.
+# Intended to run in the plan pane of a plan session. Not called directly.
+
+set -eu
+
+PLAN_FILE="${1:-plan.md}"
+INTERVAL="${2:-2}"
+
+render() {
+  clear
+  if [ ! -f "$PLAN_FILE" ]; then
+    echo -e "\033[33mNo plan.md yet.\033[0m"
+    echo ""
+    echo "vi plan.md"
+    return
+  fi
+
+  while IFS= read -r line; do
+    case "$line" in
+      '# '*)           echo -e "\033[1;34m${line}\033[0m" ;;
+      '## '*)          echo -e "\033[1;36m${line}\033[0m" ;;
+      '### '*)         echo -e "\033[1;33m${line}\033[0m" ;;
+      *'[x]'*|*'[X]'*) echo -e "\033[32m${line}\033[0m" ;;
+      *'[ ]'*)         echo -e "\033[37m${line}\033[0m" ;;
+      '>'*)            echo -e "\033[33m${line}\033[0m" ;;
+      '---'*)          echo -e "\033[90m${line}\033[0m" ;;
+      *)               echo "$line" ;;
+    esac
+  done < "$PLAN_FILE"
+}
+
+render
+LAST_MOD=""
+
+while true; do
+  if [ -f "$PLAN_FILE" ]; then
+    CURRENT_MOD="$(stat -c %Y "$PLAN_FILE" 2>/dev/null || stat -f %m "$PLAN_FILE" 2>/dev/null || echo "")"
+  else
+    CURRENT_MOD="missing"
+  fi
+
+  if [ "$CURRENT_MOD" != "$LAST_MOD" ]; then
+    render
+    LAST_MOD="$CURRENT_MOD"
+  fi
+  sleep "$INTERVAL"
+done

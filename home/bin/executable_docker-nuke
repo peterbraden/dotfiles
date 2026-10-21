@@ -1,7 +1,10 @@
 #!/bin/bash
-read -a docker_processes < <(docker ps --all -q)
-read -a docker_images < <(docker images --all -q)
-docker stop "${docker_processes[@]}"
-docker rm --force "${docker_processes[@]}"
-docker rmi --force "${docker_images[@]}"
-docker volume rm "$(docker volume ls -f dangling=true -q)"
+# Remove all containers, images and dangling volumes.
+# Word splitting of the id lists is intentional.
+containers=$(docker ps --all -q)
+[ -n "$containers" ] && docker rm --force $containers
+images=$(docker images --all -q)
+[ -n "$images" ] && docker rmi --force $images
+volumes=$(docker volume ls -f dangling=true -q)
+[ -n "$volumes" ] && docker volume rm $volumes
+exit 0

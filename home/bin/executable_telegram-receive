@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -eu
+
+# Wait for a Telegram message and print it to stdout.
+#
+# Uses long-polling via getUpdates (no busy loop). Confirms the
+# update offset so the message isn't re-read by subsequent calls.
+#
+# Requires:
+#   TELEGRAM_BOT_TOKEN  - bot token from @BotFather
+#   TELEGRAM_CHAT_ID    - your chat ID (only accepts messages from this chat)
+#
+# Usage:
+#   telegram-receive                 # wait up to 30s (default)
+#   telegram-receive --poll 60       # wait up to 60s
+#   telegram-receive --poll 0        # check once, don't wait
+#
+# Exit codes:
+#   0 - message received (printed to stdout)
+#   1 - timeout or error
+
+usage() {
+    cat <<EOF
+Usage: telegram-receive [--poll SECONDS]
+
+Wait for a Telegram message and print it to stdout.
+
+Options:
+    --poll SECONDS   How long to wait (default: 30, max: 60)
+    -h, --help       Show this help
+
+Examples:
+    reply=\$(telegram-receive --poll 60)
+    telegram-notify "Rerun?" && telegram-receive --poll 120
+EOF
+}
+
+poll=30
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --poll)
+            poll="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "telegram-receive: unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+
+: "${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN (from @BotFather)}"
+: "${TELEGRAM_CHAT_ID:?Set TELEGRAM_CHAT_ID (your chat ID)}"
+
+api="https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}"
+
+# Flush any pending updates so we only get new messages.
+# Get the latest update_id and set offset past it.
+flush=$(curl -s "${api}/getUpdates?timeout=0")
+last_id=$(echo "$flush" | sed -n 's/.*"update_id":\([0-9]*\).*/\1/p' | tail -1)
+if [[ -n "$last_id" ]]; then
+    offset=$((last_id + 1))
+    # Confirm the offset to discard old updates
+    curl -s "${api}/getUpdates?offset=${offset}&timeout=0" > /dev/null
+else
+    offset=""
+fi
+
+# Long-poll for new messages. Telegram supports up to 60s per request.
+# For longer waits, loop with 60s chunks.
+deadline=$(($(date +%s) + poll))
+
+while true; do
+    now=$(date +%s)
+    remaining=$((deadline - now))
+    if [[ $remaining -le 0 ]]; then
+        exit 1
+    fi
+
+    # Telegram caps long-poll at 60s
+    timeout=$remaining
+    if [[ $timeout -gt 60 ]]; then
+        timeout=60
+    fi
+
+    url="${api}/getUpdates?timeout=${timeout}"
+    if [[ -n "${offset:-}" ]]; then
+        url="${url}&offset=${offset}"
+    fi
+
+    response=$(curl -s --max-time $((timeout + 5)) "$url")
+
+    # Extract message text and chat id from the first result.
+    # Using sed to avoid jq dependency.
+    result_chat_id=$(echo "$response" | sed -n 's/.*"chat":{[^}]*"id":\([0-9-]*\).*/\1/p' | head -1)
+    msg_text=$(echo "$response" | sed -n 's/.*"text":"\([^"]*\)".*/\1/p' | head -1)
+    update_id=$(echo "$response" | sed -n 's/.*"update_id":\([0-9]*\).*/\1/p' | head -1)
+
+    if [[ -z "$update_id" ]]; then
+        # No updates, loop will retry or timeout
+        continue
+    fi
+
+    # Confirm this update so it's not re-read
+    offset=$((update_id + 1))
+    curl -s "${api}/getUpdates?offset=${offset}&timeout=0" > /dev/null
+
+    # Only accept messages from our chat
+    if [[ "$result_chat_id" == "$TELEGRAM_CHAT_ID" && -n "$msg_text" ]]; then
+        echo "$msg_text"
+        exit 0
+    fi
+done

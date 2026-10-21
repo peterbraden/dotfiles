@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#
+# plan - toggle a plan.md pane in the current tmux window.
+#
+# Opens a right-side pane that live-renders plan.md with syntax highlighting,
+# refreshing when the file changes. Run again to close it.
+#
+# Usage:
+#   plan                      Toggle the plan pane
+
+set -eu
+
+PLAN_WIDTH=35
+PANE_TITLE="plan-pane"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLAN_FILE="$("$SCRIPT_DIR/plan-find" 2>/dev/null)" || PLAN_FILE="plan.md"
+
+# Must be inside tmux
+if [ -z "${TMUX:-}" ]; then
+  echo "Not in a tmux session."
+  exit 1
+fi
+
+# Toggle: if the plan pane exists in this window, kill it
+pane_id="$(tmux list-panes -F '#{pane_id} #{pane_title}' | grep "$PANE_TITLE" | awk '{print $1}' || true)"
+if [ -n "$pane_id" ]; then
+  tmux kill-pane -t "$pane_id"
+  exit 0
+fi
+
+# Open the plan pane on the right
+tmux split-window -h -p "$PLAN_WIDTH" \
+  "printf '\\033]2;$PANE_TITLE\\033\\\\'; exec $SCRIPT_DIR/plan-render $PLAN_FILE"
+
+# Return focus to the original pane
+tmux last-pane
