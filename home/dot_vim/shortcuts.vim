@@ -9,7 +9,8 @@ iabbr _eml peterbraden@peterbraden.co.uk
 " Spelling mistakes:  {{{
 cnoreabbrev Wq wq
 nnoremap q: q:iq<esc>
-nnoremap :W :w<esc>
+command! W w
 " }}}
 
-nnoremap :whitespace :%s/\s\+$//
+" Strip trailing whitespace
+command! Whitespace %s/\s\+$//e

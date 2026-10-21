@@ -1,1 +1,1 @@
-home/dot_config/prompts/llm-instructions.md
+../../.config/prompts/llm-instructions.md
