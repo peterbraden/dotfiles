@@ -137,6 +137,7 @@ brew "siderolabs/tap/talosctl"
 {{- end }}
 {{ if .python }}
 brew "pyright" # LSP for nvim; independent of the active pyenv version
+brew "tcl-tk"   # Lets pyenv build Python with tkinter; its build fails without it
 {{- end }}
 
 EOS
