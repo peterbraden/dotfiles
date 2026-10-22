@@ -90,7 +90,6 @@ brew "atuin"   # Pretty history
 brew "fd"      # Find replacement
 brew "bat"     # Cat replacement
 brew "eza"     # ls replacement
-brew "git-delta"
 brew "f2"
 brew "gh"
 brew "gum"     # Interactive prompts in task-start
@@ -156,7 +155,6 @@ EOS
 
   brew cleanup
 
-  #git config --global core.pager delta
   #pip install llm
   # TODO rclone
 fi
@@ -181,8 +179,8 @@ if [ "$(uname -s)" == "Linux" ]; then
     sudo apt-get -y update
     sudo apt-get -y upgrade
     apt_install build-essential zsh vim tmux mosh neovim ripgrep fd-find pass
-    # Packaged as batcat / fdfind on Debian; eza and git-delta need Ubuntu 24.04+
-    apt_install fzf bat eza git-delta
+    # Packaged as batcat / fdfind on Debian; eza needs Ubuntu 24.04+
+    apt_install fzf bat eza
     apt_install jq gh   # gh is packaged from Ubuntu 22.04
     apt_install btop socat
 
