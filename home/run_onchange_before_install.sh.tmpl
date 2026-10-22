@@ -252,7 +252,9 @@ fi
 (
   export NVM_DIR="$HOME/.nvm"
   . "$NVM_DIR/nvm.sh"
-  nvm install --lts --no-progress > /dev/null && nvm alias default 'lts/*' > /dev/null
+  # nvm reports an up-to-date LTS on stderr; only show other output
+  nvm install --lts --no-progress 2>&1 > /dev/null | grep -v 'is already installed' >&2
+  nvm alias default 'lts/*' > /dev/null
   npm ls -g @github/copilot > /dev/null 2>&1 || npm install -g @github/copilot
 ) || echo "# ! node setup failed" >&2
 {{ end }}
