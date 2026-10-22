@@ -1,5 +1,24 @@
 #!/bin/sh
-# Prints the Roche calendar feed URL from 1Password, for vdirsyncer's url.fetch.
+# Prints the Roche calendar feed URL, for vdirsyncer's url.fetch.
+#
+# Read from 1Password once and cached (mode 600), so the background sync
+# (brew services, every minute, minimal PATH, often with 1Password locked)
+# doesn't need 1Password. After resetting the URL in Google Calendar and
+# 1Password, run `roche-cal-url --refresh`.
+#
 # A helper because vdirsyncer normalises command arguments like paths, which
 # turns op:// into op:/. The stored value is wrapped in quotes, so strip them.
-op read --account my.1password.eu "op://Personal/Roche/cal-url" | tr -d '"'
+
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/roche-cal-url"
+
+if [ "${1:-}" = "--refresh" ] || [ ! -s "$cache" ]; then
+  PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+  url=$(op read --account my.1password.eu "op://Personal/Roche/cal-url" | tr -d '"') || exit 1
+  [ -n "$url" ] || exit 1
+  mkdir -p "$(dirname "$cache")"
+  (umask 077 && printf '%s\n' "$url" > "$cache")
+fi
+
+if [ "${1:-}" != "--refresh" ]; then
+  cat "$cache"
+fi
