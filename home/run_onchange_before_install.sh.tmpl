@@ -95,7 +95,6 @@ brew "gh"
 brew "gum"     # Interactive prompts in task-start
 brew "glow"    # Markdown in the terminal
 brew "jnv"     # Interactive jq
-brew "socat"
 brew "uv"      # Runs the Python scripts in ~/bin
 brew "khal"    # Calendar
 brew "vdirsyncer" # Calendar sync for khal
@@ -181,7 +180,6 @@ if [ "$(uname -s)" == "Linux" ]; then
     # Packaged as batcat / fdfind on Debian; eza needs Ubuntu 24.04+
     apt_install fzf bat eza
     apt_install jq gh   # gh is packaged from Ubuntu 22.04
-    apt_install socat
 
     # Shell history search; local only, sync is disabled in its config
     # Unmanaged install into ~/.local/bin: no rc file edits, no self-updater
