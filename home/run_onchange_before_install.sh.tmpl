@@ -150,9 +150,9 @@ EOS
   command -v poetry > /dev/null || brew install poetry
   {{- end }}
 
-  # Apps. --adopt takes over an app already in /Applications (installed by
-  # hand) instead of failing because it exists.
-  for c in ghostty 1password firefox tailscale-app{{ if .kubernetes }} freelens{{ end }}{{ if .work }} podman-desktop{{ end }}; do
+  # Apps (Firefox is blocked on work machines). --adopt takes over an app
+  # already in /Applications, installed by hand, instead of failing.
+  for c in ghostty 1password tailscale-app{{ if not .work }} firefox{{ end }}; do
     brew list --cask "$c" > /dev/null 2>&1 || brew install --cask --adopt "$c" || echo "# ! cask $c failed" >&2
   done
 
