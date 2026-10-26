@@ -24,8 +24,9 @@ export PATH="$HOME/bin:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bi
 # API keys (for my-issues, daily-summary) from the 1Password Environment pipe.
 # Reading it needs 1Password unlocked, so give up after a few seconds rather
 # than hanging cron, and keep the previous plan instead of writing one from
-# incomplete data.
-if ! env_lines=$(perl -e 'alarm 5; exec @ARGV' cat "$HOME/roche.env" 2>/dev/null) || [[ -z $env_lines ]]; then
+# incomplete data. The lock is shared with the shell profile, as concurrent
+# readers of the pipe split its content between them.
+if ! env_lines=$(perl -e 'alarm 5; exec @ARGV' lockf -k "$HOME/.cache/roche.env.lock" cat "$HOME/roche.env" 2>/dev/null) || [[ -z $env_lines ]]; then
     echo "[$(date '+%F %T')] update-plan: ~/roche.env unavailable (1Password locked?), keeping previous plan" >&2
     exit 0
 fi

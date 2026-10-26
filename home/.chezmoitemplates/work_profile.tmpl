@@ -7,13 +7,20 @@
 # All work env vars come from the 1Password Environment mounted at ~/roche.env,
 # a pipe that 1Password fills when it's read (1Password must be unlocked).
 # Lines are exported literally rather than sourced, so values never run as code.
+# Concurrent readers split the pipe's content (one gets it all, the rest get
+# nothing or fragments), so readers take turns under a lock shared with
+# ~/bin/update-plan.
 if [ -p ~/roche.env ]; then
-  while IFS= read -r line || [ -n "$line" ]; do
+  roche_env=$(lockf -k -t 10 ~/.cache/roche.env.lock cat ~/roche.env)
+  while IFS= read -r line; do
     case "$line" in
       ''|'#'*) continue ;;
     esac
     export "${line#export }"
-  done < ~/roche.env
+  done <<EOF
+$roche_env
+EOF
+  unset roche_env line
 fi
 
 # --- Aliases ---
