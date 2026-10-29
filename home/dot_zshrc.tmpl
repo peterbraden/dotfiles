@@ -93,6 +93,14 @@ fi
 autoload -Uz compinit
 compinit
 
+# open-project (tmo): complete with existing tmux sessions
+_open_project() {
+  local -a sessions
+  sessions=(${(f)"$(tmux list-sessions -F '#S' 2>/dev/null)"})
+  _describe 'tmux session' sessions
+}
+compdef _open_project open-project
+
 # Plugins
 source ~/.config/zsh_plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 
