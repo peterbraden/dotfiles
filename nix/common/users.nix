@@ -28,14 +28,20 @@
         "network-online.target"
         "ssh-agent.service"
       ];
+      # Give up after five failures in an hour rather than retry forever.
+      StartLimitIntervalSec = 3600;
+      StartLimitBurst = 5;
     };
     wantedBy = [ "default.target" ];
     serviceConfig = {
       Type = "oneshot";
       Environment = "SSH_AUTH_SOCK=%t/ssh-agent.socket";
-      ExecStart = "${pkgs.chezmoi}/bin/chezmoi init peterbraden --apply";
+      # No TTY in a service: the template's prompts take their per-host
+      # defaults. Without this every start failed ("could not open a new
+      # TTY") and restarted every 5 s.
+      ExecStart = "${pkgs.chezmoi}/bin/chezmoi init peterbraden --apply --promptDefaults";
       Restart = "on-failure";
-      RestartSec = 5;
+      RestartSec = 60;
     };
   };
 }
